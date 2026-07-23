@@ -49,7 +49,7 @@ class IbadahController extends Controller
         $countJenazah = PantauIbadah::where('jenis_ibadah', 'sholat_jenazah')->count();
         $countWudhu   = PantauIbadah::where('jenis_ibadah', 'gerakan_wudhu')->count();
 
-        $kelasList   = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelasList   = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $guruIsmuba  = Guru::where('guru_ismuba', 'ya')->orderBy('nama_guru')->get();
         $siswaDaftar = UserSiswa::with('kelas')->orderBy('nama_siswa')->get(['nis', 'nama_siswa', 'id_kelas']);
 

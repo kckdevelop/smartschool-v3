@@ -45,40 +45,33 @@
     <table class="tabel-data">
         <thead>
             <tr>
-                <th style="width:40px;">No</th>
-                <th style="width:100px;">NIS</th>
-                <th style="width:200px;">Nama Siswa</th>
-                <th style="width:90px;">Kelas</th>
-                <th>DUDI Tempat PKL</th>
-                <th>Guru Pembimbing</th>
-                <th style="width:180px;">Periode PKL</th>
-                <th style="width:90px;">Status</th>
+                <th style="width:35px;">No</th>
+                <th style="width:85px;">Kelas</th>
+                <th style="width:75px;">NIS</th>
+                <th>Nama Siswa</th>
+                <th>Pembimbing</th>
+                <th>NAMA DUDI</th>
+                <th>ALAMAT</th>
+                <th style="width:100px;">HP DUDI</th>
+                <th>Nama Pemilik DuDi</th>
             </tr>
         </thead>
         <tbody>
             @forelse($penempatan as $i => $p)
             <tr>
-                <td>{{ $i+1 }}</td>
-                <td>{{ $p->nis }}</td>
+                <td style="text-align:center;">{{ $i+1 }}</td>
+                <td style="text-align:center;">{{ optional(optional($p->siswa)->kelas)->nama_kelas ?? '-' }}</td>
+                <td style="text-align:center;">{{ $p->nis }}</td>
                 <td style="font-weight:bold;">{{ optional($p->siswa)->nama_siswa ?? '-' }}</td>
-                <td>{{ optional(optional($p->siswa)->kelas)->nama_kelas ?? '-' }}</td>
-                <td>
-                    <div style="font-weight:bold;">{{ optional($p->dudi)->nama_dudi ?? '-' }}</div>
-                    <div style="font-size:8pt;color:#555;">{{ optional($p->dudi)->kota ?? '' }}</div>
-                </td>
                 <td>{{ optional(optional($p->pembimbing)->guru)->nama_guru ?? '-' }}</td>
-                <td>
-                    {{ $p->tanggal_masuk ? \Carbon\Carbon::parse($p->tanggal_masuk)->format('d/m/Y') : '-' }}
-                    s/d
-                    {{ $p->tanggal_keluar ? \Carbon\Carbon::parse($p->tanggal_keluar)->format('d/m/Y') : '-' }}
-                </td>
-                <td class="text-center" style="font-weight:bold;">
-                    {{ strtoupper($p->status) }}
-                </td>
+                <td style="font-weight:bold;">{{ optional($p->dudi)->nama_dudi ?? '-' }}</td>
+                <td style="font-size:8.5pt;">{{ optional($p->dudi)->alamat ?? '-' }}</td>
+                <td style="text-align:center;">{{ optional($p->dudi)->no_telepon ?: (optional($p->dudi)->no_hp_pic ?: '-') }}</td>
+                <td>{{ optional($p->dudi)->nama_pic ?? '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align:center; font-style:italic; padding:20px;">
+                <td colspan="9" style="text-align:center; font-style:italic; padding:20px;">
                     Tidak ada data penempatan siswa
                 </td>
             </tr>

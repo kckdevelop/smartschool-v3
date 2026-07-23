@@ -161,26 +161,25 @@
             text-align: left;
         }
 
-        .print-btn { 
+        .no-print-bar { 
             position: fixed; 
             top: 20px; 
             right: 20px; 
-            background: #4f46e5; 
-            color: #fff; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 8px; 
-            font-size: 14px; 
-            font-weight: 600;
-            cursor: pointer; 
-            font-family: sans-serif; 
             z-index: 9999; 
-            box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            background: #ffffff; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18); 
+            border: 1px solid #cbd5e1; 
+            font-family: sans-serif; 
         }
 
         @media print {
             body { background: #fff; }
-            .print-btn { display: none; }
+            .no-print-bar, .print-btn { display: none !important; }
             .page { 
                 margin: 0; 
                 box-shadow: none; 
@@ -193,7 +192,22 @@
 </head>
 <body>
 
-<button class="print-btn" onclick="window.print()">🖨️ Cetak Surat (2 Halaman)</button>
+<div class="no-print-bar">
+    <button type="button" onclick="window.print()" style="background:#4f46e5; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+        🖨️ Cetak Surat (2 Halaman)
+    </button>
+    <div style="font-size:11px; font-weight:700; color:#475569; margin-top:2px; text-transform:uppercase; letter-spacing:0.5px;">Opsi Tanda Tangan:</div>
+    <div style="display:flex; flex-direction:column; gap:6px; font-size:13px; color:#1e293b;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="ttd_toggle" value="1" {{ ($denganTtd ?? true) ? 'checked' : '' }} onchange="toggleTtd(true)">
+            ✍️ Dengan Tanda Tangan
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="ttd_toggle" value="0" {{ !($denganTtd ?? true) ? 'checked' : '' }} onchange="toggleTtd(false)">
+            📄 Tanpa Tanda Tangan
+        </label>
+    </div>
+</div>
 
 {{-- ============================================================================ --}}
 {{-- HALAMAN 1: SURAT PERMOHONAN TEMPAT PKL --}}
@@ -302,7 +316,11 @@
         <div class="ttd-box-right">
             <div>{{ $sekolah->kota ?? 'Bantul' }}, {{ \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') }}</div>
             <div>Kepala {{ $sekolah->nama_sekolah ?? 'SMK Muhammadiyah 1 Bantul' }}</div>
-            <div style="height: 60px;"></div>
+            <div style="height: 70px; position: relative; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
+                @if(!empty($sekolah->ttd_kepala_sekolah) && file_exists(storage_path('app/public/' . $sekolah->ttd_kepala_sekolah)))
+                    <img src="{{ asset('storage/' . $sekolah->ttd_kepala_sekolah) }}" class="img-ttd-digital" style="max-height: 80px; width: auto; object-fit: contain; {{ ($denganTtd ?? true) ? '' : 'display:none;' }}">
+                @endif
+            </div>
             <div><strong>{{ $sekolah->kepala_sekolah ?? 'Harimawan, S.Pd.T., M.S.I.' }}</strong></div>
             <div>NBM. {{ $sekolah->nip ?? '907793' }}</div>
         </div>
@@ -498,5 +516,12 @@
     </div>
 </div>
 
+<script>
+function toggleTtd(show) {
+    document.querySelectorAll('.img-ttd-digital').forEach(el => {
+        el.style.display = show ? 'block' : 'none';
+    });
+}
+</script>
 </body>
 </html>

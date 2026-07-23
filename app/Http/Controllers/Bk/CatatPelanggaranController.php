@@ -15,7 +15,7 @@ class CatatPelanggaranController extends Controller
 {
     public function index(Request $request)
     {
-        $kelas    = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas    = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $jenisList = JenisPelanggaran::orderBy('jenis_pelanggaran')->get();
 
         $query = RiwayatPoin::with(['siswa', 'guru'])

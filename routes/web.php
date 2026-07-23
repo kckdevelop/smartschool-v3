@@ -336,6 +336,8 @@ Route::middleware('auth')->group(function () {
         Route::get('gelombang/{id}/info', [\App\Http\Controllers\Pkl\GelombangController::class, 'getInfo'])->name('gelombang.info');
 
         // Data DUDI
+        Route::get('dudi/template', [\App\Http\Controllers\Pkl\DudiController::class, 'downloadTemplate'])->name('dudi.template');
+        Route::post('dudi/import', [\App\Http\Controllers\Pkl\DudiController::class, 'importExcel'])->name('dudi.import');
         Route::get('dudi', [\App\Http\Controllers\Pkl\DudiController::class, 'index'])->name('dudi.index');
         Route::post('dudi', [\App\Http\Controllers\Pkl\DudiController::class, 'store'])->name('dudi.store');
         Route::put('dudi/{id}', [\App\Http\Controllers\Pkl\DudiController::class, 'update'])->name('dudi.update');

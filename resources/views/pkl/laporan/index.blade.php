@@ -139,32 +139,30 @@
                     <table class="data-table" style="margin:0;">
                         <thead>
                             <tr style="background:#f8fafc;">
-                                <th style="width:50px;">#</th>
-                                <th>Siswa</th>
-                                <th>DUDI Tempat PKL</th>
-                                <th>Guru Pembimbing</th>
-                                <th>Tanggal PKL</th>
-                                <th style="width:100px;text-align:center;">Status</th>
+                                <th style="width:40px;text-align:center;">#</th>
+                                <th>Kelas</th>
+                                <th>NIS</th>
+                                <th>Nama Siswa</th>
+                                <th>Pembimbing</th>
+                                <th>NAMA DUDI</th>
+                                <th>ALAMAT</th>
+                                <th>HP DUDI</th>
+                                <th>Nama Pemilik DuDi</th>
+                                <th style="width:90px;text-align:center;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($penempatan as $i => $p)
                             <tr>
                                 <td style="color:var(--text-muted);font-size:.8rem;text-align:center;">{{ $penempatan->firstItem() + $loop->index }}</td>
-                                <td>
-                                    <div style="font-weight:700;">{{ $p->nis }}</div>
-                                    <div style="font-size:.8rem;color:var(--text-muted);">{{ optional($p->siswa)->nama_siswa ?? '-' }}</div>
-                                    <div style="font-size:.75rem;margin-top:2px;"><span class="badge badge-info" style="font-size:.68rem;">{{ optional(optional($p->siswa)->kelas)->nama_kelas ?? '-' }}</span></div>
-                                </td>
-                                <td>
-                                    <div style="font-weight:600;">{{ optional($p->dudi)->nama_dudi ?? '-' }}</div>
-                                    <div style="font-size:.78rem;color:var(--text-muted);">{{ optional($p->dudi)->kota ?? '' }}</div>
-                                </td>
+                                <td style="font-weight:600;font-size:.85rem;">{{ optional(optional($p->siswa)->kelas)->nama_kelas ?? '-' }}</td>
+                                <td style="font-family:monospace;font-size:.85rem;">{{ $p->nis }}</td>
+                                <td style="font-weight:700;font-size:.88rem;">{{ optional($p->siswa)->nama_siswa ?? '-' }}</td>
                                 <td style="font-size:.85rem;">{{ optional(optional($p->pembimbing)->guru)->nama_guru ?? '-' }}</td>
-                                <td style="font-size:.85rem;">
-                                    <div>Masuk: {{ $p->tanggal_masuk ? \Carbon\Carbon::parse($p->tanggal_masuk)->format('d/m/Y') : '-' }}</div>
-                                    <div style="color:var(--text-muted);margin-top:2px;">Selesai: {{ $p->tanggal_keluar ? \Carbon\Carbon::parse($p->tanggal_keluar)->format('d/m/Y') : '-' }}</div>
-                                </td>
+                                <td style="font-weight:700;font-size:.85rem;">{{ optional($p->dudi)->nama_dudi ?? '-' }}</td>
+                                <td style="font-size:.8rem;color:#475569;max-width:220px;">{{ optional($p->dudi)->alamat ?? '-' }}</td>
+                                <td style="font-size:.85rem;font-family:monospace;">{{ optional($p->dudi)->no_telepon ?: (optional($p->dudi)->no_hp_pic ?: '-') }}</td>
+                                <td style="font-size:.85rem;">{{ optional($p->dudi)->nama_pic ?? '-' }}</td>
                                 <td class="text-center">
                                     @php $colors = ['aktif'=>'success','selesai'=>'info','ditarik'=>'warning','batal'=>'danger']; @endphp
                                     <span class="badge badge-{{ $colors[$p->status] ?? 'muted' }}">{{ ucfirst($p->status) }}</span>
@@ -172,7 +170,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-6">
+                                <td colspan="10" class="text-center text-muted py-6">
                                     <i class="fa-solid fa-file-circle-xmark" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
                                     Tidak ada data penempatan PKL untuk filter yang dipilih
                                 </td>

@@ -180,7 +180,7 @@
                 <thead>
                     <tr>
                         <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all" style="cursor: pointer;"></th>
-                        <th>#</th><th>No ID</th><th>Foto</th><th>Nama Guru</th><th>L/P</th><th>No. HP</th><th>Guru BK</th><th>Guru ISMUBA</th><th>Status</th><th>Wali Kelas</th><th>Aksi</th>
+                        <th>#</th><th>No ID</th><th>Foto</th><th>Nama Guru</th><th>L/P</th><th>No. HP</th><th>Kecamatan</th><th>Kabupaten</th><th>Guru BK</th><th>Guru ISMUBA</th><th>Status</th><th>Wali Kelas</th><th>Aksi</th>
                     </tr>
                 </thead>
             <tbody>
@@ -205,6 +205,8 @@
                         <td><strong>{{ $guru->nama_guru }}</strong></td>
                         <td style="text-align: center;"><span class="badge {{ $guru->jenkel === 'L' ? 'badge-info' : 'badge-pink' }}">{{ $guru->jenkel }}</span></td>
                         <td class="font-mono">{{ $guru->no_hp ?? '-' }}</td>
+                        <td>{{ $guru->kecamatan ?? '-' }}</td>
+                        <td>{{ $guru->kabupaten ?? '-' }}</td>
                         <td class="text-center">
                             <select class="select-inline-badge {{ $guru->guru_bk === 'ya' ? 'select-bk-ya' : 'select-tidak' }}"
                                     data-original="{{ $guru->guru_bk }}"
@@ -235,7 +237,7 @@
                         </td>
                         <td class="action-cell">
                             <button type="button" class="btn-icon btn-edit" title="Edit"
-                                onclick="editGuru({{ $guru->id_guru }},{{ $guru->no_id }},'{{ addslashes($guru->nama_guru) }}','{{ $guru->jenkel }}','{{ addslashes($guru->no_hp ?? '') }}','{{ $guru->guru_bk }}','{{ $guru->guru_ismuba }}','{{ $guru->status }}')">
+                                onclick="editGuru({{ $guru->id_guru }},{{ $guru->no_id }},'{{ addslashes($guru->nama_guru) }}','{{ $guru->jenkel }}','{{ addslashes($guru->no_hp ?? '') }}','{{ addslashes($guru->kecamatan ?? '') }}','{{ addslashes($guru->kabupaten ?? '') }}','{{ $guru->guru_bk }}','{{ $guru->guru_ismuba }}','{{ $guru->status }}')">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <button type="button" class="btn-icon btn-warning" title="Reset Password"
@@ -254,7 +256,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="11" class="text-center text-muted py-6">Belum ada data guru</td></tr>
+                    <tr><td colspan="14" class="text-center text-muted py-6">Belum ada data guru</td></tr>
                     @endforelse
             </tbody>
             </table>
@@ -299,6 +301,16 @@
                 <div class="form-group">
                     <label class="form-label">No. HP / WhatsApp</label>
                     <input type="text" name="no_hp" id="g_no_hp" class="form-control" placeholder="Contoh: 081234567890">
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Kecamatan</label>
+                        <input type="text" name="kecamatan" id="g_kecamatan" class="form-control" placeholder="Kecamatan">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kabupaten / Kota</label>
+                        <input type="text" name="kabupaten" id="g_kabupaten" class="form-control" placeholder="Kabupaten/Kota">
+                    </div>
                 </div>
                 <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
                     <div class="form-group">
@@ -478,13 +490,15 @@ function showInlineToast(message) {
         toast.classList.remove('show');
     }, 3000);
 }
-function editGuru(id, noId, nama, jenkel, noHp, guruBk, guruIsmuba, status) {
+function editGuru(id, noId, nama, jenkel, noHp, kecamatan, kabupaten, guruBk, guruIsmuba, status) {
     isEdit = true;
     document.getElementById('form-guru').action = `/atur-data/guru/${id}`;
     document.getElementById('g_no_id').value = noId;
     document.getElementById('g_nama').value  = nama;
     document.getElementById('g_jenkel').value = jenkel;
     document.getElementById('g_no_hp').value = noHp || '';
+    document.getElementById('g_kecamatan').value = kecamatan || '';
+    document.getElementById('g_kabupaten').value = kabupaten || '';
     document.getElementById('g_bk').value    = guruBk;
     document.getElementById('g_ismuba').value = guruIsmuba;
     document.getElementById('g_status').value = status;

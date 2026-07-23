@@ -34,9 +34,10 @@ class SekolahController extends Controller
             'nip'            => 'nullable|string|max:50',
             'status'         => 'required|in:negeri,swasta',
             'alamat_sekolah' => 'nullable|string',
-            'logo'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'kop'            => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'ijin'           => 'nullable|in:ya,tidak',
+            'logo'               => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'kop'                => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'ijin'               => 'nullable|in:ya,tidak',
         ]);
 
         $data = $request->only([
@@ -50,6 +51,10 @@ class SekolahController extends Controller
 
         if ($request->hasFile('kop')) {
             $data['kop'] = $request->file('kop')->store('sekolah/kop', 'public');
+        }
+
+        if ($request->hasFile('ttd_kepala_sekolah')) {
+            $data['ttd_kepala_sekolah'] = $request->file('ttd_kepala_sekolah')->store('sekolah/ttd', 'public');
         }
 
         $sekolah = Sekolah::create($data);
@@ -82,15 +87,16 @@ class SekolahController extends Controller
         $sekolah = Sekolah::findOrFail($id);
 
         $request->validate([
-            'npsn'           => 'sometimes|required|integer',
-            'nama_sekolah'   => 'sometimes|required|string|max:255',
-            'kepala_sekolah' => 'sometimes|required|string|max:255',
-            'nip'            => 'nullable|string|max:50',
-            'status'         => 'sometimes|required|in:negeri,swasta',
-            'alamat_sekolah' => 'nullable|string',
-            'logo'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'kop'            => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'ijin'           => 'nullable|in:ya,tidak',
+            'npsn'               => 'sometimes|required|integer',
+            'nama_sekolah'       => 'sometimes|required|string|max:255',
+            'kepala_sekolah'     => 'sometimes|required|string|max:255',
+            'nip'                => 'nullable|string|max:50',
+            'status'             => 'sometimes|required|in:negeri,swasta',
+            'alamat_sekolah'     => 'nullable|string',
+            'logo'               => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'kop'                => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'ijin'               => 'nullable|in:ya,tidak',
         ]);
 
         $data = $request->only([
@@ -110,6 +116,13 @@ class SekolahController extends Controller
                 Storage::disk('public')->delete($sekolah->kop);
             }
             $data['kop'] = $request->file('kop')->store('sekolah/kop', 'public');
+        }
+
+        if ($request->hasFile('ttd_kepala_sekolah')) {
+            if ($sekolah->ttd_kepala_sekolah) {
+                Storage::disk('public')->delete($sekolah->ttd_kepala_sekolah);
+            }
+            $data['ttd_kepala_sekolah'] = $request->file('ttd_kepala_sekolah')->store('sekolah/ttd', 'public');
         }
 
         $sekolah->update($data);

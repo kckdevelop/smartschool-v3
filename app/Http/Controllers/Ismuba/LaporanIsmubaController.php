@@ -14,7 +14,7 @@ class LaporanIsmubaController extends Controller
 {
     public function index(Request $request)
     {
-        $kelasList  = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelasList  = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $guruIsmuba = Guru::where('guru_ismuba', 'ya')->orderBy('nama_guru')->get();
 
         // Default filter bulan & tahun ini

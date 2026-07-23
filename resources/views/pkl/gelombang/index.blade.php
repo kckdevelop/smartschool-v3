@@ -67,7 +67,7 @@
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <button type="button" class="btn-icon btn-delete" title="Hapus"
-                                onclick="confirmDelete('{{ route('pkl.gelombang.destroy', $item->id_gelombang) }}','Hapus gelombang {{ $item->nama_gelombang }}?')">
+                                onclick="confirmDelete('{{ route('pkl.gelombang.destroy', $item->id_gelombang) }}','Hapus gelombang {{ $item->nama_gelombang }} beserta seluruh data terkait (penempatan, pembimbing, persuratan, dll)?')">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>

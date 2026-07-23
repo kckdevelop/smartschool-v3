@@ -98,7 +98,7 @@ class LaporanJurnalController extends Controller
 
         // ── Filter options ───────────────────────────────────────────────────
         $guruList  = Guru::orderBy('nama_guru')->get(['id_guru', 'nama_guru']);
-        $kelasList = Kelas::with('jurusan')->orderBy('tingkat')->orderBy('rombel')->get();
+        $kelasList = Kelas::where('status', 'aktif')->with('jurusan')->orderBy('tingkat')->orderBy('rombel')->get();
         $mapelList = Mapel::orderBy('nama_mapel')->get(['id_mapel', 'nama_mapel']);
 
         return view('laporan-jurnal.index', compact(

@@ -10,10 +10,17 @@ class PklDudi extends Model
     protected $primaryKey = 'id_dudi';
 
     protected $fillable = [
+        'id_jurusan',
         'nama_dudi', 'bidang_usaha', 'alamat', 'kota',
+        'kecamatan', 'kabupaten',
         'no_telepon', 'email', 'nama_pic', 'jabatan_pic',
         'no_hp_pic', 'kuota_siswa', 'status',
     ];
+
+    public function jurusan()
+    {
+        return $this->belongsTo(Jurusan::class, 'id_jurusan', 'id_jurusan');
+    }
 
     public function penempatan()
     {

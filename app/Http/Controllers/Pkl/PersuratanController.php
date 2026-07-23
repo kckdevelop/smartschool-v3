@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pkl;
 use App\Http\Controllers\Controller;
 use App\Models\PklPersuratan;
 use App\Models\PklPenempatan;
+use App\Models\PklPembimbing;
 use App\Models\PklGelombang;
 use App\Models\PklDudi;
 use App\Models\PklNomorSurat;
@@ -113,6 +114,9 @@ class PersuratanController extends Controller
     /**
      * Generate surat dan simpan ke DB
      */
+    /**
+     * Generate surat dan simpan ke DB
+     */
     public function generate(Request $request)
     {
         $request->validate([
@@ -121,6 +125,7 @@ class PersuratanController extends Controller
             'id_dudi'       => 'required|integer',
             'tanggal_surat' => 'required|date',
             'siswa_list'    => 'nullable|array',
+            'ttd'           => 'nullable|boolean',
         ]);
 
         $daftarSiswaData = [];
@@ -165,7 +170,9 @@ class PersuratanController extends Controller
             'dicetak_oleh'  => Auth::id(),
         ]);
 
-        return redirect()->route('pkl.persuratan.cetak', $surat->id_surat);
+        $ttd = $request->get('ttd', '1');
+
+        return redirect()->route('pkl.persuratan.cetak', ['id' => $surat->id_surat, 'ttd' => $ttd]);
     }
 
     /**
@@ -177,6 +184,7 @@ class PersuratanController extends Controller
             'jenis_surat'   => 'required|in:penempatan,penarikan',
             'id_gelombang'  => 'required|integer',
             'tanggal_surat' => 'required|date',
+            'ttd'           => 'nullable|boolean',
         ]);
 
         $idGelombang = $request->id_gelombang;
@@ -220,9 +228,12 @@ class PersuratanController extends Controller
             }
         }
 
+        $ttd = $request->get('ttd', '1');
+
         return redirect()->route('pkl.persuratan.cetak-masal', [
             'jenis_surat'  => $jenisSurat,
             'id_gelombang' => $idGelombang,
+            'ttd'          => $ttd,
         ])->with('success', "Berhasil men-generate {$generatedCount} surat baru. {$skippedCount} surat sudah ada sebelumnya.");
     }
 
@@ -238,6 +249,7 @@ class PersuratanController extends Controller
 
         $idGelombang = $request->id_gelombang;
         $jenisSurat  = $request->jenis_surat;
+        $denganTtd   = $request->get('ttd', '1') == '1';
 
         $sekolah = Sekolah::first();
         $gelombang = PklGelombang::findOrFail($idGelombang);
@@ -256,25 +268,32 @@ class PersuratanController extends Controller
         // Ambil penempatan untuk masing-masing surat
         $dataCetak = [];
         foreach ($suratList as $surat) {
-            $penempatan = PklPenempatan::with(['siswa.kelas'])
+            $penempatan = PklPenempatan::with(['siswa.kelas.jurusan'])
                 ->where('id_gelombang', $idGelombang)
                 ->where('id_dudi', $surat->id_dudi)
                 ->whereIn('status', ['aktif', 'selesai'])
                 ->get();
 
+            $pembimbing = PklPembimbing::with('guru')
+                ->where('id_gelombang', $idGelombang)
+                ->where('id_dudi', $surat->id_dudi)
+                ->first();
+
             $dataCetak[] = [
                 'surat'      => $surat,
-                'penempatan' => $penempatan
+                'penempatan' => $penempatan,
+                'pembimbing' => $pembimbing,
             ];
         }
 
-        return view('pkl.persuratan.cetak-masal', compact('dataCetak', 'sekolah', 'gelombang', 'jenisSurat'));
+        return view('pkl.persuratan.cetak-masal', compact('dataCetak', 'sekolah', 'gelombang', 'jenisSurat', 'denganTtd'));
     }
 
-    public function cetak(int $id)
+    public function cetak(Request $request, int $id)
     {
-        $surat   = PklPersuratan::with(['dudi', 'gelombang'])->findOrFail($id);
-        $sekolah = Sekolah::first();
+        $surat     = PklPersuratan::with(['dudi', 'gelombang'])->findOrFail($id);
+        $sekolah   = Sekolah::first();
+        $denganTtd = $request->get('ttd', '1') == '1';
 
         if (!empty($surat->daftar_siswa) && is_array($surat->daftar_siswa)) {
             $penempatan = collect($surat->daftar_siswa)->map(function ($item) {
@@ -301,6 +320,11 @@ class PersuratanController extends Controller
                 ->get();
         }
 
+        $pembimbing = PklPembimbing::with('guru')
+            ->where('id_gelombang', $surat->id_gelombang)
+            ->where('id_dudi', $surat->id_dudi)
+            ->first();
+
         $view = match($surat->jenis_surat) {
             'permohonan' => 'pkl.persuratan.cetak-permohonan',
             'penempatan' => 'pkl.persuratan.cetak-penempatan',
@@ -308,7 +332,7 @@ class PersuratanController extends Controller
             default      => abort(404),
         };
 
-        return view($view, compact('surat', 'sekolah', 'penempatan'));
+        return view($view, compact('surat', 'sekolah', 'penempatan', 'pembimbing', 'denganTtd'));
     }
 
     public function destroy(int $id)

@@ -46,7 +46,7 @@
                         @error('kepala_sekolah')<span class="form-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="form-group">
-                        <label class="form-label">NIP Kepala Sekolah</label>
+                        <label class="form-label">NBM Kepala Sekolah</label>
                         <input type="text" name="nip" class="form-control"
                                value="{{ old('nip', $sekolah->nip ?? '') }}">
                     </div>
@@ -94,6 +94,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">TTD Kepala Sekolah</label>
+                        <div class="dropzone-area" id="dropzone-ttd">
+                            <div class="dropzone-icon">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <div class="dropzone-text">Drag & drop file TTD Kepala Sekolah di sini atau klik untuk memilih</div>
+                            <input type="file" name="ttd_kepala_sekolah" id="file-ttd" class="dropzone-input" accept=".jpg,.jpeg,.png" style="display:none">
+                            
+                            <div class="dropzone-preview" id="preview-ttd" style="{{ ($sekolah && $sekolah->ttd_kepala_sekolah) ? 'display:flex;' : 'display:none;' }}">
+                                <img src="{{ ($sekolah && $sekolah->ttd_kepala_sekolah) ? asset('storage/'.$sekolah->ttd_kepala_sekolah) : '#' }}" alt="TTD Preview">
+                                <button type="button" class="btn-remove-preview" id="btn-remove-ttd">&times;</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="btn-simpan-sekolah">
@@ -109,6 +124,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     setupDropzone('dropzone-logo', 'file-logo', 'preview-logo', 'btn-remove-logo');
     setupDropzone('dropzone-kop', 'file-kop', 'preview-kop', 'btn-remove-kop');
+    setupDropzone('dropzone-ttd', 'file-ttd', 'preview-ttd', 'btn-remove-ttd');
 
     function setupDropzone(areaId, inputId, previewId, removeId) {
         const area = document.getElementById(areaId);
@@ -163,8 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const reader = new FileReader();
             reader.onloadend = function() {
-                if (inputId === 'file-kop') {
-                    // Use actual size of the uploaded Kop surat file directly without cropping
+                if (inputId === 'file-kop' || inputId === 'file-ttd') {
+                    // Use actual size of the uploaded Kop / TTD file directly without cropping
                     const dt = new DataTransfer();
                     dt.items.add(file);
                     input.files = dt.files;

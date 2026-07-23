@@ -72,11 +72,29 @@ class PklGelombangController extends Controller
     public function destroy($id)
     {
         $gelombang = PklGelombang::findOrFail($id);
-        $gelombang->delete();
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            \Illuminate\Support\Facades\DB::table('pkl_kelas_gelombang')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_penempatan')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_pembimbing')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_persuratan')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_riwayat_pindah')->where('id_gelombang', $id)->delete();
+
+            $gelombang->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus gelombang: ' . $e->getMessage(),
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Gelombang PKL berhasil dihapus.',
+            'message' => 'Gelombang PKL beserta seluruh data terkait berhasil dihapus.',
         ]);
     }
 }

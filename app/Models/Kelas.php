@@ -34,6 +34,11 @@ class Kelas extends Model
         return $this->tingkat . ' ' . $this->rombel;
     }
 
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'aktif');
+    }
+
     // Relations
     public function jurusan()
     {

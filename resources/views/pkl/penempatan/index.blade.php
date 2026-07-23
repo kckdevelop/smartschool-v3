@@ -113,17 +113,29 @@
 
     {{-- Filter Search & View Mode Switcher --}}
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
-        <div style="display:flex; align-items:center; gap:10px; flex:1; max-width:400px;">
-            <form method="GET" action="{{ route('pkl.penempatan.index') }}" style="width:100%;">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; max-width:600px;">
+            <form method="GET" action="{{ route('pkl.penempatan.index') }}" style="width:100%; display:flex; gap:10px; flex-wrap:wrap;">
                 <input type="hidden" name="id_gelombang" value="{{ optional($selectedGelombang)->id_gelombang }}">
-                <div style="position:relative;">
+                <div style="position:relative; flex:1; min-width:200px;">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted,#94a3b8);"></i>
                     <input type="text" name="search_dudi" class="form-control form-control-sm"
-                        placeholder="Cari DUDI / Perusahaan..."
+                        placeholder="Cari DUDI / Perusahaan / Jurusan..."
                         value="{{ request('search_dudi') }}"
                         style="padding-left:36px;"
                         onchange="this.form.submit()">
                 </div>
+                @if(isset($jurusanList) && $jurusanList->isNotEmpty())
+                <div style="min-width:180px;">
+                    <select name="id_jurusan" class="form-control form-control-sm" onchange="this.form.submit()">
+                        <option value="">-- Semua Jurusan --</option>
+                        @foreach($jurusanList as $j)
+                            <option value="{{ $j->id_jurusan }}" {{ request('id_jurusan') == $j->id_jurusan ? 'selected' : '' }}>
+                                {{ $j->nama_jurusan }} ({{ $j->kode_jurusan }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
             </form>
         </div>
 
@@ -132,7 +144,7 @@
                 <i class="fa-solid fa-building"></i> Tampilan DUDI per Jurusan ({{ $dudisWithPenempatan->count() }})
             </button>
             <button type="button" onclick="switchView('flat')" id="view-btn-flat" class="btn btn-sm btn-secondary" style="font-weight:600;">
-                <i class="fa-solid fa-table"></i> Tabel Flat ({{ $data->total() }})
+                <i class="fa-solid fa-table"></i> Tabel Flat DUDI ({{ $dudisWithPenempatan->count() }})
             </button>
         </div>
     </div>
@@ -143,11 +155,11 @@
     <div id="view-panel-dudi" style="display:block;">
         @forelse($groupedDudis as $jurusanNama => $items)
         <div class="jurusan-section mb-6" style="margin-bottom:28px;">
-            {{-- Header Kelompok Jurusan / Bidang --}}
+            {{-- Header Kelompok Jurusan --}}
             <div style="background:linear-gradient(135deg, #1e293b, #334155); color:#fff; padding:12px 20px; border-radius:10px; font-size:0.95rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <i class="fa-solid fa-graduation-cap" style="color:#818cf8; font-size:1.1rem;"></i>
-                    <span>JURUSAN / BIDANG KEAHLIAN: {{ strtoupper($jurusanNama) }}</span>
+                    <span>JURUSAN: {{ strtoupper($jurusanNama) }}</span>
                 </div>
                 <span class="badge" style="background:rgba(255,255,255,0.18); color:#fff; font-size:0.78rem; padding:4px 10px; border-radius:20px;">
                     {{ $items->count() }} DUDI Terdaftar
@@ -168,6 +180,9 @@
                         <div class="dudi-title">
                             <i class="fa-solid fa-building" style="color:var(--color-primary,#4f46e5);"></i>
                             {{ $dudi->nama_dudi }}
+                            @if($dudi->jurusan)
+                                <span class="badge badge-info" style="font-size:0.72rem; font-weight:normal;">{{ $dudi->jurusan->kode_jurusan ?? $dudi->jurusan->nama_jurusan }}</span>
+                            @endif
                             @if($dudi->bidang_usaha)
                                 <span class="badge badge-secondary" style="font-size:0.72rem; font-weight:normal;">{{ $dudi->bidang_usaha }}</span>
                             @endif
@@ -268,70 +283,97 @@
     </div>
 
     {{-- ============================================================================ --}}
-    {{-- VIEW MODE 2: TABEL FLAT ALTERNATIF --}}
+    {{-- VIEW MODE 2: TABEL FLAT DUDI ALTERNATIF --}}
     {{-- ============================================================================ --}}
     <div id="view-panel-flat" style="display:none;">
         <div class="card">
+            <div class="card-header" style="background:#fafbff; border-bottom:1px solid #f1f5f9;">
+                <h3 class="card-title" style="font-size:0.95rem; font-weight:700; color:var(--text-color,#1e293b);">
+                    <i class="fa-solid fa-table-list" style="color:var(--color-primary,#4f46e5);"></i>
+                    Daftar Semua DUDI (Tabel Flat)
+                </h3>
+            </div>
             <div class="card-body p-0">
                 <table class="data-table">
                     <thead>
-                        <tr>
-                            <th style="width:50px;">#</th>
-                            <th>Siswa</th>
-                            <th>DUDI / Perusahaan</th>
-                            <th>Pembimbing</th>
-                            <th>Tanggal Masuk</th>
-                            <th>Tanggal Keluar</th>
-                            <th style="width:100px;">Status</th>
-                            <th style="width:110px;">Aksi</th>
+                        <tr style="background:#f8fafc;">
+                            <th style="width:40px;">#</th>
+                            <th>Nama DUDI / Perusahaan</th>
+                            <th>Jurusan</th>
+                            <th>Bidang Usaha</th>
+                            <th>Kota / Alamat</th>
+                            <th>Kuota Gelombang Ini</th>
+                            <th>Siswa Ditempatkan</th>
+                            <th style="width:140px; text-align:center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($data as $i => $item)
+                        @forelse($dudisWithPenempatan as $i => $item)
+                        @php
+                            $dudi = $item->dudi;
+                            $penempatanList = $item->penempatanList;
+                            $terpakai = $item->terpakai;
+                            $sisaKuota = $item->sisa_kuota;
+                            $percent = $dudi->kuota_siswa > 0 ? min(100, round(($terpakai / $dudi->kuota_siswa) * 100)) : 0;
+                        @endphp
                         <tr>
-                            <td style="color:var(--text-muted);font-size:.8rem;">{{ $data->firstItem() + $i }}</td>
+                            <td style="color:var(--text-muted);font-size:.8rem;">{{ $i + 1 }}</td>
                             <td>
-                                <div style="font-weight:600;">{{ $item->nis }}</div>
-                                @if($item->siswa)
-                                <div style="font-size:.8rem;color:var(--text-muted);">{{ $item->siswa->nama_siswa }}</div>
-                                <div style="font-size:.75rem;"><span class="badge badge-info" style="font-size:.68rem;">{{ optional(optional($item->siswa)->kelas)->nama_kelas ?? '-' }}</span></div>
+                                <div style="font-weight:700; color:var(--text-color,#1e293b);">{{ $dudi->nama_dudi }}</div>
+                                <div style="font-size:.78rem; color:var(--text-muted);">{{ Str::limit($dudi->alamat, 50) }}</div>
+                            </td>
+                            <td>
+                                @if($dudi->jurusan)
+                                    <span class="badge badge-info" style="font-size:.72rem;">{{ $dudi->jurusan->kode_jurusan ?? $dudi->jurusan->nama_jurusan }}</span>
+                                @else
+                                    <span style="font-size:.75rem; color:var(--text-muted);">-</span>
                                 @endif
                             </td>
+                            <td style="font-size:.83rem;">{{ $dudi->bidang_usaha ?? '-' }}</td>
+                            <td style="font-size:.83rem;">{{ $dudi->kota ?? '-' }}</td>
                             <td>
-                                <div style="font-weight:600;">{{ optional($item->dudi)->nama_dudi ?? '-' }}</div>
-                                <div style="font-size:.78rem;color:var(--text-muted);">{{ optional($item->dudi)->kota ?? '' }}</div>
+                                <div style="font-size:0.83rem; font-weight:700;">
+                                    <span style="color:var(--color-primary,#4f46e5);">{{ $terpakai }}</span> / {{ $dudi->kuota_siswa }} siswa
+                                    <span style="font-size:0.75rem; font-weight:normal; margin-left:2px;" class="{{ $sisaKuota > 0 ? 'text-success' : 'text-danger' }}">
+                                        (Sisa: {{ $sisaKuota }})
+                                    </span>
+                                </div>
+                                <div class="kuota-progress-bar" style="margin-top:3px; width:90px;">
+                                    <div class="kuota-progress-fill" style="width: {{ $percent }}%; background: {{ $percent >= 100 ? '#ef4444' : '#4f46e5' }};"></div>
+                                </div>
                             </td>
-                            <td style="font-size:.85rem;">{{ optional(optional($item->pembimbing)->guru)->nama_guru ?? '-' }}</td>
-                            <td style="font-size:.85rem;">{{ $item->tanggal_masuk ? \Carbon\Carbon::parse($item->tanggal_masuk)->format('d/m/Y') : '-' }}</td>
-                            <td style="font-size:.85rem;">{{ $item->tanggal_keluar ? \Carbon\Carbon::parse($item->tanggal_keluar)->format('d/m/Y') : '-' }}</td>
                             <td>
-                                @php $colors = ['aktif'=>'success','selesai'=>'info','ditarik'=>'warning','batal'=>'danger']; @endphp
-                                <span class="badge badge-{{ $colors[$item->status] ?? 'muted' }}">{{ ucfirst($item->status) }}</span>
+                                @if($penempatanList->isNotEmpty())
+                                    <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                                        @foreach($penempatanList as $p)
+                                            <span class="badge badge-secondary" style="font-size:0.72rem;" title="Status: {{ ucfirst($p->status) }}">
+                                                <i class="fa-solid fa-user-graduate"></i> {{ $p->siswa?->nama_siswa ?? $p->nis }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span style="font-size:0.78rem; color:var(--text-muted); font-style:italic;">Belum ada siswa</span>
+                                @endif
                             </td>
-                            <td class="action-cell">
-                                <button type="button" class="btn-icon btn-edit" title="Edit" onclick="editPenempatan({{ json_encode($item) }})">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button type="button" class="btn-icon btn-delete" title="Hapus"
-                                    onclick="confirmDelete('{{ route('pkl.penempatan.destroy', $item->id_penempatan) }}','Hapus data penempatan siswa ini?')">
-                                    <i class="fa-solid fa-trash"></i>
+                            <td style="text-align:center;">
+                                <button class="btn btn-primary btn-sm" onclick="openAddModal({{ json_encode(['id_dudi' => $dudi->id_dudi, 'nama_dudi' => $dudi->nama_dudi, 'sisa_kuota' => $sisaKuota, 'kuota_siswa' => $dudi->kuota_siswa]) }})"
+                                    style="font-weight:600; white-space:nowrap; padding:4px 10px; font-size:0.78rem;"
+                                    {{ $sisaKuota <= 0 ? 'disabled' : '' }}>
+                                    <i class="fa-solid fa-user-plus"></i> + Tambah Siswa
                                 </button>
                             </td>
                         </tr>
                         @empty
                         <tr>
                             <td colspan="8" class="text-center text-muted py-6">
-                                <i class="fa-solid fa-users" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
-                                Belum ada data penempatan
+                                <i class="fa-solid fa-building-circle-xmark" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
+                                Tidak ada data DUDI ditemukan.
                             </td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            @if($data->hasPages())
-            <div class="card-footer">{{ $data->links() }}</div>
-            @endif
         </div>
     </div>
 </div>

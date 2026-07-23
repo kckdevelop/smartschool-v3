@@ -81,7 +81,7 @@
                     <tr>
                         <td style="color:var(--text-muted);font-size:.8rem;">{{ $data->firstItem() + $i }}</td>
                         <td>
-                            <div style="font-weight:700; color: var(--text-primary);">{{ $item->nama_dudi }}</div>
+                            <div style="font-weight:700; color: var(--text-primary);">{{ $item->nama_dudi }}{{ $item->kecamatan ? ' (Kec. ' . $item->kecamatan . ')' : '' }}</div>
                         </td>
                         <td>
                             <span style="font-size: 0.85rem; color: var(--text-muted);">{{ $item->bidang_usaha ?? '-' }}</span>
@@ -95,7 +95,7 @@
                         <td>
                             @if($currentGuru)
                                 <div style="font-weight:600; color: var(--color-success); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                                    <i class="fa-solid fa-circle-check"></i> {{ $currentGuru->nama_guru }}
+                                    <i class="fa-solid fa-circle-check"></i> {{ $currentGuru->nama_guru }}{{ $currentGuru->kecamatan ? ' (Kec. ' . $currentGuru->kecamatan . ')' : '' }}
                                 </div>
                                 <button class="btn btn-outline-primary btn-sm" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;" onclick="openSettingModal({{ json_encode($item) }}, {{ $currentGuru->id_guru }})">
                                     <i class="fa-solid fa-pen-to-square"></i> Setting Pembimbing
@@ -159,7 +159,7 @@
                         <option value="">-- Tanpa Pembimbing --</option>
                         @foreach($guru as $g)
                         <option value="{{ $g->id_guru }}" data-original-text="{{ $g->nama_guru }}">
-                            {{ $g->nama_guru }}
+                            {{ $g->nama_guru }}{{ $g->kecamatan ? ' (Kec. ' . $g->kecamatan . ')' : '' }}
                         </option>
                         @endforeach
                     </select>
@@ -179,9 +179,10 @@
 @push('scripts')
 <script>
 function openSettingModal(dudi, currentGuruId) {
-    document.getElementById('modal-title-pembimbing').textContent = 'Setting Pembimbing — ' + dudi.nama_dudi;
+    const dudiKec = dudi.kecamatan ? ' (Kec. ' + dudi.kecamatan + ')' : '';
+    document.getElementById('modal-title-pembimbing').textContent = 'Setting Pembimbing — ' + dudi.nama_dudi + dudiKec;
     document.getElementById('pb_dudi_id').value = dudi.id_dudi;
-    document.getElementById('pb_dudi_name').value = dudi.nama_dudi;
+    document.getElementById('pb_dudi_name').value = dudi.nama_dudi + dudiKec;
     
     const selectGuru = document.getElementById('pb_guru');
     selectGuru.value = currentGuruId || '';

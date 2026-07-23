@@ -13,9 +13,6 @@ class TadarusController extends Controller
     public function index(Request $request)
     {
         $kelasList = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
-        if ($kelasList->isEmpty()) {
-            $kelasList = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
-        }
         $selectedKelasId = $request->input('id_kelas') ?: ($kelasList->first()?->id_kelas ?? null);
 
         $query = Tadarus::with(['kelas', 'guru'])

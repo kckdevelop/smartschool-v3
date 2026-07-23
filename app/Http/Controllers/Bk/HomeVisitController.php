@@ -14,7 +14,7 @@ class HomeVisitController extends Controller
 {
     public function index(Request $request)
     {
-        $kelas = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $query = HomeVisit::with(['siswa.kelas', 'guru'])->orderByDesc('tanggal_visit');
 
         if ($request->filled('id_kelas')) {

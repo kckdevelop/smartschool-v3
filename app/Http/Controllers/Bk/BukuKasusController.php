@@ -13,7 +13,7 @@ class BukuKasusController extends Controller
 {
     public function index(Request $request)
     {
-        $kelas = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $query = BukuKasus::with(['siswa.kelas', 'guru'])->orderByDesc('tanggal');
 
         // Filter hanya kelas

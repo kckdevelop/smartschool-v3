@@ -10,6 +10,7 @@ use App\Models\PklPembimbing;
 use App\Models\PklKelasGelombang;
 use App\Models\UserSiswa;
 use App\Models\Kelas;
+use App\Models\Jurusan;
 use Illuminate\Http\Request;
 
 class PenempatanController extends Controller
@@ -26,13 +27,22 @@ class PenempatanController extends Controller
 
         $idGelombang = optional($selectedGelombang)->id_gelombang;
 
-        // Ambil SEMUA DUDI aktif
-        $dudiQuery = PklDudi::where('status', 'aktif');
+        // Ambil SEMUA DUDI aktif (dengan relasi jurusan)
+        $dudiQuery = PklDudi::with('jurusan')->where('status', 'aktif');
         if ($request->filled('search_dudi')) {
-            $dudiQuery->where(function($q) use ($request) {
-                $q->where('nama_dudi', 'like', '%' . $request->search_dudi . '%')
-                  ->orWhere('kota', 'like', '%' . $request->search_dudi . '%');
+            $search = $request->search_dudi;
+            $dudiQuery->where(function($q) use ($search) {
+                $q->where('nama_dudi', 'like', '%' . $search . '%')
+                  ->orWhere('kota', 'like', '%' . $search . '%')
+                  ->orWhere('bidang_usaha', 'like', '%' . $search . '%')
+                  ->orWhereHas('jurusan', function($j) use ($search) {
+                      $j->where('nama_jurusan', 'like', '%' . $search . '%')
+                        ->orWhere('kode_jurusan', 'like', '%' . $search . '%');
+                  });
             });
+        }
+        if ($request->filled('id_jurusan')) {
+            $dudiQuery->where('id_jurusan', $request->id_jurusan);
         }
         $allDudis = $dudiQuery->orderBy('nama_dudi')->get();
 
@@ -56,13 +66,16 @@ class PenempatanController extends Controller
             ];
         });
 
-        // Kelompokkan DUDI Berdasarkan Jurusan / Bidang Keahlian
+        // Kelompokkan DUDI Berdasarkan Jurusan yang ada di tabel jurusan
         $groupedDudis = $dudisWithPenempatan->groupBy(function ($item) {
+            if ($item->dudi->jurusan) {
+                return $item->dudi->jurusan->nama_jurusan;
+            }
             return !empty($item->dudi->bidang_usaha) ? trim($item->dudi->bidang_usaha) : 'Umum / Lainnya';
         });
 
         // Ambil data penempatan flat untuk tabel alternatif
-        $queryFlat = PklPenempatan::with(['siswa.kelas', 'dudi', 'pembimbing.guru'])
+        $queryFlat = PklPenempatan::with(['siswa.kelas', 'dudi.jurusan', 'pembimbing.guru'])
             ->orderByDesc('id_penempatan');
 
         if ($idGelombang) {
@@ -74,6 +87,23 @@ class PenempatanController extends Controller
         if ($request->filled('status')) {
             $queryFlat->where('status', $request->status);
         }
+        if ($request->filled('search_dudi')) {
+            $search = $request->search_dudi;
+            $queryFlat->where(function($q) use ($search) {
+                $q->whereHas('siswa', function($s) use ($search) {
+                    $s->where('nama_siswa', 'like', '%' . $search . '%')
+                      ->orWhere('nis', 'like', '%' . $search . '%');
+                })->orWhereHas('dudi', function($d) use ($search) {
+                    $d->where('nama_dudi', 'like', '%' . $search . '%')
+                      ->orWhere('kota', 'like', '%' . $search . '%');
+                });
+            });
+        }
+        if ($request->filled('id_jurusan')) {
+            $queryFlat->whereHas('dudi', function($d) use ($request) {
+                $d->where('id_jurusan', $request->id_jurusan);
+            });
+        }
 
         $data = $queryFlat->paginate(20)->withQueryString();
 
@@ -82,9 +112,11 @@ class PenempatanController extends Controller
                 $q->where('id_gelombang', $selectedGelombang->id_gelombang)
             )->get();
 
+        $jurusanList = Jurusan::orderBy('nama_jurusan')->get();
+
         return view('pkl.penempatan.index', compact(
             'data', 'gelombangList', 'selectedGelombang', 'gelombangAktif',
-            'allDudis', 'dudisWithPenempatan', 'groupedDudis', 'pembimbingList'
+            'allDudis', 'dudisWithPenempatan', 'groupedDudis', 'pembimbingList', 'jurusanList'
         ));
     }
 
@@ -291,18 +323,18 @@ class PenempatanController extends Controller
         $idGelombang = $request->id_gelombang;
         $idJurusan   = $request->id_jurusan;
 
-        // DUDI yang relevan: bidang_usaha cocok jurusan, atau semua jika tidak ada filter
+        // DUDI yang relevan: id_jurusan cocok atau bidang_usaha cocok jurusan
         $dudis = PklDudi::where('status', 'aktif')
             ->when($idJurusan, function($q) use ($idJurusan) {
-                // Cari berdasarkan relasi jurusan jika ada, atau tampilkan semua
-                // Karena tabel pkl_dudi tidak selalu punya id_jurusan, kita cari via nama jurusan
                 $jurusan = \App\Models\Jurusan::find($idJurusan);
-                if ($jurusan) {
-                    $q->where(fn($q2) =>
-                        $q2->where('bidang_usaha', 'like', '%'.$jurusan->nama_jurusan.'%')
-                           ->orWhere('bidang_usaha', 'like', '%'.$jurusan->kode_jurusan.'%')
-                    );
-                }
+                $q->where(function($q2) use ($idJurusan, $jurusan) {
+                    $q2->where('id_jurusan', $idJurusan)
+                       ->orWhereNull('id_jurusan');
+                    if ($jurusan) {
+                        $q2->orWhere('bidang_usaha', 'like', '%'.$jurusan->nama_jurusan.'%')
+                           ->orWhere('bidang_usaha', 'like', '%'.$jurusan->kode_jurusan.'%');
+                    }
+                });
             })
             ->get()
             ->map(function($d) use ($idGelombang) {

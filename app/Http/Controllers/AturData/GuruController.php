@@ -33,6 +33,8 @@ class GuruController extends Controller
             'nama_guru'   => 'required|string|max:100',
             'jenkel'      => 'required|in:L,P',
             'no_hp'       => 'nullable|string|max:20',
+            'kecamatan'   => 'nullable|string|max:100',
+            'kabupaten'   => 'nullable|string|max:100',
             'guru_bk'     => 'required|in:ya,tidak',
             'guru_ismuba' => 'required|in:ya,tidak',
             'status'      => 'required|in:aktif,tidak',
@@ -43,6 +45,8 @@ class GuruController extends Controller
             'nama_guru'   => $request->nama_guru,
             'jenkel'      => $request->jenkel,
             'no_hp'       => $request->no_hp,
+            'kecamatan'   => $request->kecamatan,
+            'kabupaten'   => $request->kabupaten,
             'guru_bk'     => $request->guru_bk,
             'guru_ismuba' => $request->guru_ismuba,
             'status'      => $request->status,
@@ -76,11 +80,13 @@ class GuruController extends Controller
             'nama_guru'   => 'required|string|max:100',
             'jenkel'      => 'required|in:L,P',
             'no_hp'       => 'nullable|string|max:20',
+            'kecamatan'   => 'nullable|string|max:100',
+            'kabupaten'   => 'nullable|string|max:100',
             'guru_bk'     => 'required|in:ya,tidak',
             'guru_ismuba' => 'required|in:ya,tidak',
             'status'      => 'required|in:aktif,tidak',
         ]);
-        $guru->update($request->only('no_id','nama_guru','jenkel','no_hp','guru_bk','guru_ismuba','status'));
+        $guru->update($request->only('no_id','nama_guru','jenkel','no_hp','kecamatan','kabupaten','guru_bk','guru_ismuba','status'));
         return redirect()->route('atur-data.guru')->with('success','Data guru berhasil diperbarui.');
     }
 
@@ -228,11 +234,11 @@ class GuruController extends Controller
         $writer->openToFile($tmpFile);
 
         // Header Row
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['no_id', 'nama_guru', 'jenkel', 'no_hp', 'guru_bk', 'guru_ismuba']));
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['no_id', 'nama_guru', 'jenkel', 'no_hp', 'kecamatan', 'kabupaten', 'guru_bk', 'guru_ismuba']));
 
         // Sample Rows
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['1003', 'Ahmad Ridwan, S.Ag.', 'L', '081234567890', 'tidak', 'ya']));
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['1004', 'Siti Rahma, S.Pd.', 'P', '085712345678', 'ya', 'tidak']));
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['1003', 'Ahmad Ridwan, S.Ag.', 'L', '081234567890', 'Depok', 'Sleman', 'tidak', 'ya']));
+        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['1004', 'Siti Rahma, S.Pd.', 'P', '085712345678', 'Gondomanan', 'Yogyakarta', 'ya', 'tidak']));
 
         $writer->close();
 
@@ -291,6 +297,8 @@ class GuruController extends Controller
                         if ($noHpIndex === false) {
                             $noHpIndex = array_search('no_hp', $headerRow);
                         }
+                        $kecamatanIndex = array_search('kecamatan', $headerRow);
+                        $kabupatenIndex = array_search('kabupaten', $headerRow);
                         $guruBkIndex = array_search('gurubk', $headerRow);
                         $guruIsmubaIndex = array_search('guruismuba', $headerRow);
 
@@ -306,6 +314,8 @@ class GuruController extends Controller
                     $nama_guru = isset($row[$namaIndex]) ? trim((string)$row[$namaIndex]) : '';
                     $jenkel = isset($row[$jenkelIndex]) ? strtoupper(trim((string)$row[$jenkelIndex])) : 'L';
                     $no_hp = ($noHpIndex !== false && isset($row[$noHpIndex])) ? trim((string)$row[$noHpIndex]) : null;
+                    $kecamatan = ($kecamatanIndex !== false && isset($row[$kecamatanIndex])) ? trim((string)$row[$kecamatanIndex]) : null;
+                    $kabupaten = ($kabupatenIndex !== false && isset($row[$kabupatenIndex])) ? trim((string)$row[$kabupatenIndex]) : null;
                     $guru_bk = isset($row[$guruBkIndex]) ? strtolower(trim((string)$row[$guruBkIndex])) : 'tidak';
                     $guru_ismuba = isset($row[$guruIsmubaIndex]) ? strtolower(trim((string)$row[$guruIsmubaIndex])) : 'tidak';
 
@@ -342,6 +352,8 @@ class GuruController extends Controller
                         'nama_guru' => $nama_guru,
                         'jenkel' => $jenkel,
                         'no_hp' => $no_hp,
+                        'kecamatan' => $kecamatan,
+                        'kabupaten' => $kabupaten,
                         'guru_bk' => $guru_bk,
                         'guru_ismuba' => $guru_ismuba,
                         'status' => 'aktif',

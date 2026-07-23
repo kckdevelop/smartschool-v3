@@ -101,14 +101,26 @@ class GelombangController extends Controller
     public function destroy(int $id)
     {
         $gelombang = PklGelombang::findOrFail($id);
-        if ($gelombang->penempatan()->count() > 0) {
-            return back()->with('error', 'Gelombang tidak dapat dihapus karena sudah memiliki data penempatan.');
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Hapus semua data terkait gelombang
+            \Illuminate\Support\Facades\DB::table('pkl_kelas_gelombang')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_penempatan')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_pembimbing')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_persuratan')->where('id_gelombang', $id)->delete();
+            \Illuminate\Support\Facades\DB::table('pkl_riwayat_pindah')->where('id_gelombang', $id)->delete();
+
+            $gelombang->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return back()->with('error', 'Gagal menghapus gelombang: ' . $e->getMessage());
         }
-        PklKelasGelombang::where('id_gelombang', $id)->delete();
-        $gelombang->delete();
 
         return redirect()->route('pkl.gelombang.index')
-            ->with('success', 'Gelombang PKL berhasil dihapus.');
+            ->with('success', 'Gelombang PKL beserta seluruh data terkait berhasil dihapus.');
     }
 
     // API: Ambil kelas yang sudah terdaftar di gelombang

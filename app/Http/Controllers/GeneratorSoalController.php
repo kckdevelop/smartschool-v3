@@ -34,7 +34,7 @@ class GeneratorSoalController extends Controller
     {
         $gurus  = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
         $mapels = Mapel::orderBy('nama_mapel')->get();
-        $kelas  = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas  = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
 
         $history = RiwayatGenerateSoal::with(['guru', 'mapel', 'kelas'])
             ->orderBy('created_at', 'desc')
@@ -325,7 +325,7 @@ class GeneratorSoalController extends Controller
     {
         $gurus  = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
         $mapels = Mapel::orderBy('nama_mapel')->get();
-        $kelas  = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas  = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
 
         $history = RiwayatGenerateKisiKisi::with(['guru', 'mapel', 'kelas'])
             ->orderBy('created_at', 'desc')

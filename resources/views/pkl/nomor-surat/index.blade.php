@@ -45,7 +45,7 @@
                 </div>
 
                 {{-- Edit Form --}}
-                <form method="POST" action="{{ route('pkl.nomor-surat.update', $jenis) }}">
+                <form method="POST" action="{{ route('pkl.nomor-surat.update', $jenis) }}" id="form-update-{{ $jenis }}">
                     @csrf
                     <div class="form-group">
                         <label class="form-label">Format Nomor</label>
@@ -59,14 +59,27 @@
                         <input type="text" name="prefix" class="form-control form-control-sm"
                             value="{{ $record->prefix }}" placeholder="Contoh: SMKN1-WONOSOBO">
                     </div>
-                    <div class="form-actions" style="gap:8px;">
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> Simpan Format</button>
-                        <form method="POST" action="{{ route('pkl.nomor-surat.reset', $jenis) }}" style="display:inline;" onsubmit="return confirm('Reset counter {{ $labels[$jenis] }} ke 0?')">
-                            @csrf
-                            <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;"><i class="fa-solid fa-rotate-left"></i> Reset Counter</button>
-                        </form>
-                    </div>
                 </form>
+
+                {{-- Reset Counter Form (terpisah dari form update agar tidak nested) --}}
+                <form method="POST" action="{{ route('pkl.nomor-surat.reset', $jenis) }}" id="form-reset-{{ $jenis }}"
+                    onsubmit="return confirm('Reset counter {{ $labels[$jenis] }} ke 0?')">
+                    @csrf
+                </form>
+
+                {{-- Tombol aksi: berdampingan dalam satu baris --}}
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <button type="submit" form="form-update-{{ $jenis }}"
+                        class="btn btn-primary btn-sm"
+                        style="flex:1; justify-content:center;">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Format
+                    </button>
+                    <button type="submit" form="form-reset-{{ $jenis }}"
+                        class="btn btn-sm"
+                        style="flex:1; justify-content:center; background:#fef3c7; color:#92400e; border:1.5px solid #fcd34d;">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Counter
+                    </button>
+                </div>
             </div>
         </div>
         @endforeach

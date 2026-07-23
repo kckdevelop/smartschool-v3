@@ -41,7 +41,7 @@ class DashboardPklController extends Controller
         $gelombangList = PklGelombang::latest()->take(5)->get();
 
         // Statistik per DUDI untuk gelombang aktif (bisa difilter per Jurusan)
-        $statDudi = [];
+        $statDudi = collect();
         if ($gelombangAktif) {
             $statDudi = PklDudi::where('status', 'aktif')
                 ->withCount(['penempatan as jumlah_siswa' => function($q) use ($gelombangAktif, $idJurusan) {

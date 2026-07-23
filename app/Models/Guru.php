@@ -19,6 +19,8 @@ class Guru extends Authenticatable
         'nama_guru',
         'jenkel',
         'no_hp',
+        'kecamatan',
+        'kabupaten',
         'guru_bk',
         'guru_ismuba',
         'status',

@@ -14,7 +14,7 @@ class CatatRewardController extends Controller
 {
     public function index(Request $request)
     {
-        $kelas      = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelas      = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $rewardList = Reward::orderBy('detail_reward')->get();
 
         $query = RiwayatReward::with(['siswa.kelas', 'guru'])

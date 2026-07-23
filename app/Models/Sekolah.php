@@ -20,6 +20,7 @@ class Sekolah extends Model
         'kota',
         'logo',
         'kop',
+        'ttd_kepala_sekolah',
         'ijin',
         'edit_detail_siswa',
         'sync_otomatis',

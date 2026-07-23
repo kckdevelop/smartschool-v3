@@ -54,7 +54,7 @@
                         <select name="id_dudi" id="js_dudi_permohonan" class="form-control" required onchange="loadSiswaPermohonan()">
                             <option value="">-- Pilih Gelombang dulu --</option>
                             @foreach($dudis as $d)
-                            <option value="{{ $d->id_dudi }}">{{ $d->nama_dudi }}</option>
+                            <option value="{{ $d->id_dudi }}">{{ $d->nama_dudi }}{{ $d->kecamatan ? ' (Kec. ' . $d->kecamatan . ')' : '' }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -121,6 +121,18 @@
                     <div class="form-group">
                         <label class="form-label">Tanggal Surat <span class="required">*</span></label>
                         <input type="date" name="tanggal_surat" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Opsi Tanda Tangan <span class="required">*</span></label>
+                        <div style="display:flex; gap:16px; align-items:center; margin-top:4px;">
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="ttd" value="1" checked> ✍️ Dengan Tanda Tangan
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="ttd" value="0"> 📄 Tanpa Tanda Tangan
+                            </label>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-full" style="padding:10px 0; font-weight:600;">
@@ -242,13 +254,24 @@
                             <select name="id_dudi" id="js_dudi_lainnya" class="form-control" required>
                                 <option value="">-- Pilih Gelombang dulu --</option>
                                 @foreach($dudis as $d)
-                                <option value="{{ $d->id_dudi }}">{{ $d->nama_dudi }}</option>
+                                <option value="{{ $d->id_dudi }}">{{ $d->nama_dudi }}{{ $d->kecamatan ? ' (Kec. ' . $d->kecamatan . ')' : '' }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Tanggal Surat <span class="required">*</span></label>
                             <input type="date" name="tanggal_surat" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Opsi Tanda Tangan <span class="required">*</span></label>
+                            <div style="display:flex; gap:16px; align-items:center; margin-top:4px;">
+                                <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="ttd" value="1" checked> ✍️ Dengan Tanda Tangan
+                                </label>
+                                <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="ttd" value="0"> 📄 Tanpa Tanda Tangan
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-full">
                             <i class="fa-solid fa-file-signature"></i> Generate Surat & Cetak
@@ -287,6 +310,17 @@
                         <div class="form-group">
                             <label class="form-label">Tanggal Surat <span class="required">*</span></label>
                             <input type="date" name="tanggal_surat" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Opsi Tanda Tangan <span class="required">*</span></label>
+                            <div style="display:flex; gap:16px; align-items:center; margin-top:4px;">
+                                <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="ttd" value="1" checked> ✍️ Dengan Tanda Tangan
+                                </label>
+                                <label style="display:inline-flex; align-items:center; gap:6px; font-weight:normal; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="ttd" value="0"> 📄 Tanpa Tanda Tangan
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-secondary w-full" style="background:#4f46e5; color:#fff; border:none;">
                             <i class="fa-solid fa-print"></i> Generate & Cetak Masal

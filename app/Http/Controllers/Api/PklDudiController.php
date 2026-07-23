@@ -10,11 +10,14 @@ class PklDudiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PklDudi::query();
+        $query = PklDudi::with('jurusan');
 
         if ($request->filled('search')) {
             $query->where('nama_dudi', 'like', '%' . $request->search . '%')
-                  ->orWhere('pimpinan', 'like', '%' . $request->search . '%');
+                  ->orWhere('nama_pic', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('id_jurusan')) {
+            $query->where('id_jurusan', $request->id_jurusan);
         }
 
         $perPage = $request->get('per_page', 15);

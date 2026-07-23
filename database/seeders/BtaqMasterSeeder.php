@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class BtaqMasterSeeder extends Seeder
 {
@@ -13,10 +14,10 @@ class BtaqMasterSeeder extends Seeder
     public function run(): void
     {
         // Disable foreign key checks for clean seeding
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         DB::table('tabel_iqro')->truncate();
         DB::table('tabel_alquran')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // 1. Seed tabel_iqro (6 jilid, 10 halaman per jilid)
         $iqroData = [];

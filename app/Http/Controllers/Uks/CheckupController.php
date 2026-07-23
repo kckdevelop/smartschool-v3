@@ -43,7 +43,7 @@ class CheckupController extends Controller
         }
 
         $checkups     = $query->paginate(15)->withQueryString();
-        $kelases      = Kelas::orderBy('tingkat')->orderBy('rombel')->get();
+        $kelases      = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
         $siswaDaftar  = UserSiswa::with('kelas')->orderBy('nama_siswa')->get(['nis','nama_siswa','id_kelas']);
         $totalCheckup = DataCheckup::count();
         $hariIni      = DataCheckup::whereDate('tanggal', today())->count();
