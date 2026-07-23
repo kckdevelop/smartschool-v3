@@ -1,0 +1,567 @@
+@extends('layouts.app')
+
+@section('title', 'Catat Reward — SmartSchool')
+@section('header_title', 'Catat Reward')
+@section('header_subtitle', 'Rekam riwayat penghargaan dan prestasi siswa')
+
+@push('styles')
+<style>
+/* ── Autocomplete dropdown ── */
+.autocomplete-wrapper {
+    position: relative;
+}
+.autocomplete-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--card-bg, #fff);
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 999;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+}
+.autocomplete-results.open { display: block; }
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background .15s;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background: var(--color-primary-light, #ede9fe);
+}
+.autocomplete-item .item-main { font-weight: 600; font-size: 0.9rem; }
+.autocomplete-item .item-sub  { font-size: 0.78rem; color: var(--text-muted, #94a3b8); }
+.autocomplete-item .item-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--color-primary-light, #ede9fe);
+    color: var(--color-primary, #7c3aed);
+    font-size: 0.72rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+}
+.no-results-item {
+    padding: 12px 14px;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* ── Selected siswa chip ── */
+.selected-siswa-chip {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-primary-light, #ede9fe);
+    border: 1.5px solid var(--color-primary, #7c3aed);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 6px;
+}
+.selected-siswa-chip.show { display: flex; }
+.selected-siswa-chip .chip-info { flex: 1; }
+.selected-siswa-chip .chip-name { font-weight: 700; font-size: 0.92rem; }
+.selected-siswa-chip .chip-meta { font-size: 0.78rem; color: var(--text-muted); }
+.selected-siswa-chip .chip-clear {
+    background: none; border: none;
+    color: var(--color-primary); cursor: pointer;
+    font-size: 1rem; padding: 0; line-height: 1;
+}
+
+/* ── Selected reward chip ── */
+.selected-reward-chip {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #f0fdf4;
+    border: 1.5px solid #22c55e;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 6px;
+}
+.selected-reward-chip.show { display: flex; }
+.selected-reward-chip .chip-info { flex: 1; }
+.selected-reward-chip .chip-name { font-weight: 700; font-size: 0.92rem; }
+.selected-reward-chip .chip-badge {
+    background: #22c55e; color: #fff;
+    font-size: 0.82rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    white-space: nowrap;
+}
+.selected-reward-chip .chip-clear {
+    background: none; border: none;
+    color: #22c55e; cursor: pointer;
+    font-size: 1rem; padding: 0; line-height: 1;
+}
+</style>
+@endpush
+
+@section('content')
+<div class="page-content">
+    @include('partials.flash')
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fa-solid fa-star" style="color:#f59e0b;"></i> Riwayat Reward Siswa
+            </h2>
+            <div class="card-header-right">
+                <button class="btn btn-primary btn-sm" onclick="openAddReward()" id="btn-catat-reward">
+                    <i class="fa-solid fa-plus"></i> Catat Reward
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">#</th>
+                        <th style="width:110px;">Tanggal</th>
+                        <th>Nama Siswa</th>
+                        <th>Kelas</th>
+                        <th>Reward / Prestasi</th>
+                        <th style="width:130px;text-align:center;">Poin Ditambah</th>
+                        <th>Guru BK</th>
+                        <th style="width:120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($data as $i => $item)
+                    <tr>
+                        <td style="color:var(--text-muted);font-size:0.8rem;">{{ $data->firstItem() + $i }}</td>
+                        <td style="font-size:0.85rem;">{{ \Carbon\Carbon::parse($item->tgl_input)->format('d/m/Y') }}</td>
+                        <td>
+                            <div style="font-weight:600;">
+                                @if($item->siswa) {{ $item->siswa->nama_siswa }} @else {{ $item->nis }} @endif
+                            </div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);">NIS: {{ $item->nis }}</div>
+                        </td>
+                        <td>
+                            @if($item->siswa && $item->siswa->kelas)
+                                <span class="badge" style="background:var(--color-primary-light);color:var(--color-primary);">
+                                    {{ $item->siswa->kelas->nama_kelas }}
+                                </span>
+                            @else
+                                <span style="font-size:0.8rem;color:var(--text-muted);">Tingkat {{ $item->tingkat }}</span>
+                            @endif
+                        </td>
+                        <td style="font-weight:600;">{{ $item->reward }}</td>
+                        <td style="text-align:center;">
+                            <span class="badge badge-success" style="font-size:0.9rem;padding:5px 12px;">
+                                <i class="fa-solid fa-plus" style="font-size:0.7rem;"></i> {{ $item->point_reward }}
+                            </span>
+                        </td>
+                        <td style="font-size:0.8rem;color:var(--text-muted);">{{ $item->guru->nama_guru ?? '-' }}</td>
+                        <td class="action-cell">
+                            <button type="button" class="btn-icon btn-edit" title="Edit"
+                                onclick="editReward({{ json_encode($item->load('siswa.kelas')) }})">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn-icon btn-delete" title="Hapus"
+                                onclick="confirmDelete('{{ route('bk.catat-reward.destroy', $item->id_reward) }}','Yakin hapus catatan reward ini?')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-6">
+                            <i class="fa-solid fa-star" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
+                            Belum ada catatan reward
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if($data->hasPages())
+        <div class="card-footer">{{ $data->links() }}</div>
+        @endif
+    </div>
+</div>
+
+{{-- ══════════════════════ MODAL CATAT / EDIT REWARD ══════════════════════ --}}
+<div class="modal-overlay" id="modal-reward">
+    <div class="modal" style="max-width: 540px; width: 100%;">
+        <div class="modal-header">
+            <h3 id="modal-title-reward">Catat Reward Siswa</h3>
+            <button onclick="closeModal('modal-reward')" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="form-reward" method="POST" action="{{ route('bk.catat-reward.store') }}">
+            @csrf
+            <div id="method-field-reward"></div>
+            {{-- Hidden fields --}}
+            <input type="hidden" name="nis"          id="rw_nis_hidden">
+            <input type="hidden" name="tingkat"      id="rw_tingkat_hidden">
+            <input type="hidden" name="point_reward" id="rw_poin_hidden">
+
+            <div class="modal-body">
+
+                {{-- ── Tanggal ── --}}
+                <div class="form-group">
+                    <label class="form-label">Tanggal <span class="required">*</span></label>
+                    <input type="date" name="tgl_input" id="rw_tgl" class="form-control"
+                        required value="{{ date('Y-m-d') }}">
+                </div>
+
+                {{-- ── Cari Siswa ── --}}
+                <div class="form-group">
+                    <label class="form-label">Cari Siswa (Nama / NIS) <span class="required">*</span></label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="rw_siswa_search" class="form-control"
+                            placeholder="Ketik nama atau NIS siswa..."
+                            autocomplete="off">
+                        <div class="autocomplete-results" id="rw_siswa_dropdown"></div>
+                    </div>
+                    <div class="selected-siswa-chip" id="rw_siswa_chip">
+                        <i class="fa-solid fa-user-check" style="color:var(--color-primary);font-size:1.1rem;flex-shrink:0;"></i>
+                        <div class="chip-info">
+                            <div class="chip-name" id="rw_chip_nama"></div>
+                            <div class="chip-meta" id="rw_chip_meta"></div>
+                        </div>
+                        <button type="button" class="chip-clear" onclick="clearSiswa()" title="Ganti siswa">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- ── Cari Reward / Prestasi ── --}}
+                <div class="form-group">
+                    <label class="form-label">Reward / Prestasi <span class="required">*</span></label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="rw_reward_search" class="form-control"
+                            placeholder="Ketik nama reward atau prestasi..."
+                            autocomplete="off">
+                        <div class="autocomplete-results" id="rw_reward_dropdown"></div>
+                    </div>
+                    <input type="hidden" name="reward" id="rw_reward_hidden">
+                    <div class="selected-reward-chip" id="rw_reward_chip">
+                        <i class="fa-solid fa-trophy" style="color:#22c55e;font-size:1.1rem;flex-shrink:0;"></i>
+                        <div class="chip-info">
+                            <div class="chip-name" id="rw_chip_reward"></div>
+                        </div>
+                        <span class="chip-badge" id="rw_chip_poin_label"></span>
+                        <button type="button" class="chip-clear" onclick="clearReward()" title="Ganti reward">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- ── Poin Reward (readonly, auto-fill) ── --}}
+                <div class="form-group">
+                    <label class="form-label">Poin Penambahan <span class="required">*</span></label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="number" id="rw_poin_display" class="form-control"
+                            placeholder="Otomatis terisi dari kategori reward"
+                            min="1" style="background:var(--input-bg,#f8fafc);flex:1;"
+                            readonly tabindex="-1">
+                        <span style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">poin</span>
+                    </div>
+                    <div style="font-size:0.76rem;color:var(--text-muted);margin-top:4px;">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Poin terisi otomatis berdasarkan kategori reward yang dipilih.
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modal-reward')" class="btn btn-secondary">Batal</button>
+                <button type="submit" class="btn btn-primary" id="rw_submit_btn" disabled>
+                    <i class="fa-solid fa-floppy-disk"></i> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+/* ════════════════════════════════════════════════════════
+   GLOBAL STATE
+════════════════════════════════════════════════════════ */
+let selectedSiswa     = null;   // { nis, nama_siswa, nama_kelas, tingkat }
+let selectedReward    = null;   // { id, nama, skor }
+let siswaSearchTimer  = null;
+let rewardSearchTimer = null;
+
+/* ════════════════════════════════════════════════════════
+   HELPER: update Submit button state
+════════════════════════════════════════════════════════ */
+function updateSubmitState() {
+    document.getElementById('rw_submit_btn').disabled = !(selectedSiswa && selectedReward);
+}
+
+/* ════════════════════════════════════════════════════════
+   OPEN / RESET MODAL
+════════════════════════════════════════════════════════ */
+function openAddReward() {
+    document.getElementById('form-reward').action = '{{ route("bk.catat-reward.store") }}';
+    document.getElementById('method-field-reward').innerHTML = '';
+    document.getElementById('modal-title-reward').textContent = 'Catat Reward Siswa';
+    document.getElementById('rw_tgl').value = '{{ date("Y-m-d") }}';
+    resetSiswaSearch();
+    resetRewardSearch();
+    openModal('modal-reward');
+}
+
+function editReward(data) {
+    document.getElementById('form-reward').action = `/bk/catat-reward/${data.id_reward}`;
+    document.getElementById('method-field-reward').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+    document.getElementById('modal-title-reward').textContent = 'Edit Catatan Reward';
+    document.getElementById('rw_tgl').value = data.tgl_input ? data.tgl_input.substring(0, 10) : '';
+
+    // Pre-fill siswa
+    const namaKelas = data.siswa && data.siswa.kelas 
+        ? (data.siswa.kelas.nama_kelas || `${data.siswa.kelas.tingkat} ${data.siswa.kelas.rombel}`) 
+        : `Tingkat ${data.tingkat}`;
+    const namaSiswa = data.siswa ? data.siswa.nama_siswa : data.nis;
+    selectSiswa({
+        nis:        data.nis,
+        nama_siswa: namaSiswa,
+        nama_kelas: namaKelas,
+        tingkat:    data.tingkat,
+    });
+
+    // Pre-fill reward
+    selectReward({
+        id:   null,
+        nama: data.reward,
+        skor: data.point_reward,
+    });
+
+    openModal('modal-reward');
+}
+
+/* ════════════════════════════════════════════════════════
+   SISWA AUTOCOMPLETE
+════════════════════════════════════════════════════════ */
+document.getElementById('rw_siswa_search').addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(siswaSearchTimer);
+    if (q.length < 2) { closeSiswaDropdown(); return; }
+    siswaSearchTimer = setTimeout(() => fetchSiswa(q), 280);
+});
+
+document.getElementById('rw_siswa_search').addEventListener('keydown', function (e) {
+    navigateDropdown(e, 'rw_siswa_dropdown', chooseSiswaItem);
+});
+
+function fetchSiswa(q) {
+    fetch(`/bk/catat-reward/search-siswa?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(renderSiswaDropdown)
+        .catch(() => {});
+}
+
+function renderSiswaDropdown(list) {
+    const dd = document.getElementById('rw_siswa_dropdown');
+    if (!list.length) {
+        dd.innerHTML = '<div class="no-results-item"><i class="fa-solid fa-circle-xmark"></i> Siswa tidak ditemukan</div>';
+    } else {
+        dd.innerHTML = list.map((s, i) => `
+            <div class="autocomplete-item" data-index="${i}" onclick="chooseSiswaItem(${i})"
+                data-nis="${s.nis}"
+                data-nama="${s.nama_siswa.replace(/"/g, '&quot;')}"
+                data-kelas="${s.nama_kelas}"
+                data-tingkat="${s.tingkat}">
+                <span class="item-main">${s.nama_siswa}</span>
+                <span class="item-sub">
+                    NIS: ${s.nis} &nbsp;·&nbsp;
+                    <span class="item-badge"><i class="fa-solid fa-door-open" style="font-size:0.65rem;"></i> ${s.nama_kelas}</span>
+                </span>
+            </div>`).join('');
+    }
+    dd.classList.add('open');
+    dd._data = list;
+}
+
+function chooseSiswaItem(index) {
+    const dd   = document.getElementById('rw_siswa_dropdown');
+    const list = dd._data || [];
+    if (!list[index]) return;
+    selectSiswa(list[index]);
+}
+
+function selectSiswa(s) {
+    selectedSiswa = s;
+    document.getElementById('rw_nis_hidden').value     = s.nis;
+    document.getElementById('rw_tingkat_hidden').value = s.tingkat;
+    document.getElementById('rw_chip_nama').textContent = s.nama_siswa;
+    document.getElementById('rw_chip_meta').textContent = `NIS: ${s.nis}  ·  Kelas: ${s.nama_kelas}`;
+    document.getElementById('rw_siswa_chip').classList.add('show');
+    document.getElementById('rw_siswa_search').style.display = 'none';
+    closeSiswaDropdown();
+    updateSubmitState();
+}
+
+function clearSiswa() {
+    selectedSiswa = null;
+    document.getElementById('rw_nis_hidden').value     = '';
+    document.getElementById('rw_tingkat_hidden').value = '';
+    document.getElementById('rw_siswa_chip').classList.remove('show');
+    const inp = document.getElementById('rw_siswa_search');
+    inp.style.display = '';
+    inp.value = '';
+    inp.focus();
+    updateSubmitState();
+}
+
+function resetSiswaSearch() {
+    selectedSiswa = null;
+    document.getElementById('rw_nis_hidden').value     = '';
+    document.getElementById('rw_tingkat_hidden').value = '';
+    document.getElementById('rw_siswa_chip').classList.remove('show');
+    document.getElementById('rw_siswa_search').style.display = '';
+    document.getElementById('rw_siswa_search').value = '';
+    closeSiswaDropdown();
+}
+
+function closeSiswaDropdown() {
+    document.getElementById('rw_siswa_dropdown').classList.remove('open');
+}
+
+/* ════════════════════════════════════════════════════════
+   REWARD AUTOCOMPLETE
+════════════════════════════════════════════════════════ */
+document.getElementById('rw_reward_search').addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(rewardSearchTimer);
+    rewardSearchTimer = setTimeout(() => fetchRewards(q), 250);
+});
+
+document.getElementById('rw_reward_search').addEventListener('focus', function () {
+    if (!this.value.trim()) fetchRewards('');
+});
+
+document.getElementById('rw_reward_search').addEventListener('keydown', function (e) {
+    navigateDropdown(e, 'rw_reward_dropdown', chooseRewardItem);
+});
+
+function fetchRewards(q) {
+    fetch(`/bk/kategori-reward/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(renderRewardDropdown)
+        .catch(() => {});
+}
+
+function renderRewardDropdown(list) {
+    const dd = document.getElementById('rw_reward_dropdown');
+    if (!list.length) {
+        dd.innerHTML = '<div class="no-results-item"><i class="fa-solid fa-circle-xmark"></i> Kategori reward tidak ditemukan. Tambahkan terlebih dahulu di menu Kategori Reward.</div>';
+    } else {
+        dd.innerHTML = list.map((r, i) => `
+            <div class="autocomplete-item" data-index="${i}" onclick="chooseRewardItem(${i})"
+                data-id="${r.id_reward}"
+                data-nama="${r.detail_reward.replace(/"/g, '&quot;')}"
+                data-skor="${r.skor}">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                    <span class="item-main">${r.detail_reward}</span>
+                    <span style="background:#22c55e;color:#fff;font-size:0.78rem;font-weight:700;
+                                 padding:2px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;">
+                        +${r.skor} poin
+                    </span>
+                </div>
+            </div>`).join('');
+    }
+    dd.classList.add('open');
+    dd._data = list;
+}
+
+function chooseRewardItem(index) {
+    const dd   = document.getElementById('rw_reward_dropdown');
+    const list = dd._data || [];
+    if (!list[index]) return;
+    const r = list[index];
+    selectReward({ id: r.id_reward, nama: r.detail_reward, skor: r.skor });
+}
+
+function selectReward(r) {
+    selectedReward = r;
+    document.getElementById('rw_reward_hidden').value    = r.nama;
+    document.getElementById('rw_poin_hidden').value      = r.skor;
+    document.getElementById('rw_poin_display').value     = r.skor;
+    document.getElementById('rw_chip_reward').textContent = r.nama;
+    document.getElementById('rw_chip_poin_label').textContent = `+${r.skor} poin`;
+    document.getElementById('rw_reward_chip').classList.add('show');
+    document.getElementById('rw_reward_search').style.display = 'none';
+    closeRewardDropdown();
+    updateSubmitState();
+}
+
+function clearReward() {
+    selectedReward = null;
+    document.getElementById('rw_reward_hidden').value = '';
+    document.getElementById('rw_poin_hidden').value   = '';
+    document.getElementById('rw_poin_display').value  = '';
+    document.getElementById('rw_reward_chip').classList.remove('show');
+    const inp = document.getElementById('rw_reward_search');
+    inp.style.display = '';
+    inp.value = '';
+    inp.focus();
+    updateSubmitState();
+}
+
+function resetRewardSearch() {
+    selectedReward = null;
+    document.getElementById('rw_reward_hidden').value = '';
+    document.getElementById('rw_poin_hidden').value   = '';
+    document.getElementById('rw_poin_display').value  = '';
+    document.getElementById('rw_reward_chip').classList.remove('show');
+    document.getElementById('rw_reward_search').style.display = '';
+    document.getElementById('rw_reward_search').value = '';
+    closeRewardDropdown();
+}
+
+function closeRewardDropdown() {
+    document.getElementById('rw_reward_dropdown').classList.remove('open');
+}
+
+/* ════════════════════════════════════════════════════════
+   KEYBOARD NAVIGATION HELPER
+════════════════════════════════════════════════════════ */
+function navigateDropdown(e, dropdownId, selectFn) {
+    const dd    = document.getElementById(dropdownId);
+    const items = dd.querySelectorAll('.autocomplete-item');
+    let current = dd.querySelector('.autocomplete-item.active');
+    let idx     = -1;
+    if (current) {
+        idx = parseInt(current.dataset.index);
+        current.classList.remove('active');
+    }
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        idx = Math.min(idx + 1, items.length - 1);
+        if (items[idx]) { items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        idx = Math.max(idx - 1, 0);
+        if (items[idx]) { items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); }
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (idx >= 0) selectFn(idx);
+    } else if (e.key === 'Escape') {
+        dd.classList.remove('open');
+    }
+}
+
+/* ════════════════════════════════════════════════════════
+   CLOSE DROPDOWNS ON OUTSIDE CLICK
+════════════════════════════════════════════════════════ */
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.autocomplete-wrapper')) {
+        closeSiswaDropdown();
+        closeRewardDropdown();
+    }
+});
+</script>
+@endpush
+@endsection

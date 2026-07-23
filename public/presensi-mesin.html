@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Presensi Mesin - Solution Cloud | SmartSchool</title>
+  <meta name="description" content="Halaman pengambilan data presensi dari mesin absensi Solution Cloud untuk sistem SmartSchool." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-dark:       #0d1117;
+      --bg-card:       #161b22;
+      --bg-input:      #21262d;
+      --border:        #30363d;
+      --accent:        #58a6ff;
+      --accent-glow:   rgba(88, 166, 255, 0.15);
+      --accent-hover:  #79c0ff;
+      --success:       #3fb950;
+      --danger:        #f85149;
+      --warning:       #d29922;
+      --text-primary:  #e6edf3;
+      --text-secondary:#8b949e;
+      --text-muted:    #484f58;
+      --radius:        12px;
+      --shadow:        0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .header .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+    .header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #e6edf3 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    .header p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 780px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ─────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .card-header .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .card-header h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .card-body { padding: 1.5rem; }
+
+    /* ── Form ─────────────────────────────────────────────── */
+    .form-group { margin-bottom: 1.2rem; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      padding: 0.65rem 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ── Toggle Password ──────────────────────────────────── */
+    .input-wrapper { position: relative; }
+    .input-wrapper input { padding-right: 2.5rem; }
+    .toggle-pass {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .toggle-pass:hover { color: var(--text-secondary); }
+
+    /* ── Buttons ──────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 0.75rem;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1f6feb, var(--accent));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(31, 111, 235, 0.35);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #388bfd, var(--accent-hover));
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(31, 111, 235, 0.5);
+    }
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--border);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ── Spinner ──────────────────────────────────────────── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Alert ────────────────────────────────────────────── */
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 1.2rem;
+      display: none;
+    }
+    .alert.show { display: flex; align-items: center; gap: 0.5rem; }
+    .alert-error   { background: rgba(248,81,73,0.15); border: 1px solid var(--danger); color: #ffa198; }
+    .alert-success { background: rgba(63,185,80,0.15); border: 1px solid var(--success); color: #7ee787; }
+
+    /* ── Stats ────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      text-align: center;
+    }
+    .stat-box .val {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-box .lbl {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    /* ── Table ────────────────────────────────────────────── */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead tr {
+      background: var(--bg-input);
+    }
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    .idx-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .pin-badge {
+      background: rgba(63,185,80,0.12);
+      border: 1px solid var(--success);
+      color: #7ee787;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* ── Empty state ──────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── Code box ─────────────────────────────────────────── */
+    .code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #7ee787;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 1rem;
+      display: none;
+    }
+    .code-block.show { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">⚡ Solution Cloud Integration</div>
+    <h1>Data Presensi Mesin Absensi</h1>
+    <p>Ambil data presensi langsung dari mesin absensi via Solution Cloud Server</p>
+  </div>
+
+  <div class="container">
+
+    <!-- ─── Panel Kiri: Form ─────────────────────────── -->
+    <div>
+
+      <!-- Form Kredensial -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header">
+          <div class="icon">🔑</div>
+          <h2>Kredensial Mesin</h2>
+        </div>
+        <div class="card-body">
+
+          <div id="alert-box" class="alert"></div>
+
+          <div class="form-group">
+            <label for="nomor_mesin">Nomor SN Mesin</label>
+            <input type="text" id="nomor_mesin" placeholder="Contoh: BWXP233560696" value="BWXP233560696" />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" placeholder="Password cloud server" value="solution" />
+              <button class="toggle-pass" id="toggle-pass-btn" title="Tampilkan / Sembunyikan">👁</button>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-bottom:1.2rem;">
+            <div>
+              <label for="start_index">Index Awal</label>
+              <input type="number" id="start_index" value="0" min="0" />
+            </div>
+            <div>
+              <label for="end_index">Index Akhir</label>
+              <input type="number" id="end_index" value="2" min="0" />
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btn-fetch-index">
+            <div class="spinner" id="spin1"></div>
+            <span id="btn-fetch-index-text">📥 Ambil Data per Index</span>
+          </button>
+          <button class="btn btn-secondary" id="btn-fetch-all">
+            <div class="spinner" id="spin2"></div>
+            <span id="btn-fetch-all-text">📋 Ambil Semua Data</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Info Endpoint -->
+      <div class="card">
+        <div class="card-header">
+          <div class="icon">📡</div>
+          <h2>API Endpoint</h2>
+        </div>
+        <div class="card-body" style="font-size:0.82rem; color: var(--text-secondary);">
+          <p style="margin-bottom:0.5rem;"><strong style="color:var(--accent);">POST</strong> /api/presensi-mesin/fetch-by-index</p>
+          <p style="margin-bottom:1rem; color:var(--text-muted);">Ambil data berdasarkan rentang index</p>
+          <p style="margin-bottom:0.5rem;"><strong style="color:var(--success);">POST</strong> /api/presensi-mesin/fetch-all</p>
+          <p style="color:var(--text-muted);">Ambil seluruh data presensi</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── Panel Kanan: Hasil ───────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon">📊</div>
+        <h2>Hasil Data Presensi</h2>
+      </div>
+      <div class="card-body">
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid" style="display:none;">
+          <div class="stat-box">
+            <div class="val" id="stat-total">0</div>
+            <div class="lbl">Ditampilkan</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="stat-total-all">0</div>
+            <div class="lbl">Total Semua</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="stat-mesin">—</div>
+            <div class="lbl">Mesin</div>
+          </div>
+        </div>
+
+        <!-- Tabel -->
+        <div id="result-container">
+          <div class="empty-state">
+            <div class="icon">🖥️</div>
+            <p>Masukkan kredensial mesin<br>dan klik tombol untuk mengambil data.</p>
+          </div>
+        </div>
+
+        <!-- Raw JSON toggle -->
+        <div id="raw-section" style="margin-top:1rem; display:none;">
+          <button class="btn btn-secondary" id="btn-toggle-raw" onclick="toggleRaw()" style="width:auto; padding: 0.5rem 1rem; font-size:0.8rem; margin-bottom:0;">
+            🔍 Lihat Raw JSON
+          </button>
+          <div class="code-block" id="raw-json"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────
+    // Konfigurasi base URL API Laravel
+    // ─────────────────────────────────────────────────────────────
+    const API_BASE = window.location.origin + '/api';
+
+    // ─────────────────────────────────────────────────────────────
+    // Fungsi utama: fetchPresensi
+    // Parameter:
+    //   nomorMesin  - SN mesin absensi
+    //   password    - Password cloud server
+    //   startIndex  - Index awal data (0-based)
+    //   endIndex    - Index akhir data (inclusive, 0-based)
+    //                 Jika null → ambil semua data
+    // ─────────────────────────────────────────────────────────────
+    async function fetchPresensi(nomorMesin, password, startIndex = 0, endIndex = 9) {
+      const endpoint = endIndex !== null
+        ? `${API_BASE}/presensi-mesin/fetch-by-index`
+        : `${API_BASE}/presensi-mesin/fetch-all`;
+
+      const body = {
+        nomor_mesin: nomorMesin,
+        password:    password,
+      };
+
+      if (endIndex !== null) {
+        body.start_index = startIndex;
+        body.end_index   = endIndex;
+      }
+
+      const response = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP Error ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Toggle password visibility
+    // ─────────────────────────────────────────────────────────────
+    document.getElementById('toggle-pass-btn').addEventListener('click', () => {
+      const inp = document.getElementById('password');
+      const btn = document.getElementById('toggle-pass-btn');
+      if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🔒'; }
+      else                         { inp.type = 'password'; btn.textContent = '👁'; }
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // Helpers UI
+    // ─────────────────────────────────────────────────────────────
+    function setLoading(btnId, spinId, loading) {
+      document.getElementById(btnId).disabled = loading;
+      document.getElementById(spinId).style.display = loading ? 'block' : 'none';
+    }
+
+    function showAlert(type, message) {
+      const box = document.getElementById('alert-box');
+      box.className = `alert alert-${type} show`;
+      box.textContent = (type === 'error' ? '❌ ' : '✅ ') + message;
+    }
+
+    function hideAlert() {
+      document.getElementById('alert-box').className = 'alert';
+    }
+
+    function getInputs() {
+      return {
+        nomorMesin:  document.getElementById('nomor_mesin').value.trim(),
+        password:    document.getElementById('password').value.trim(),
+        startIndex:  parseInt(document.getElementById('start_index').value, 10),
+        endIndex:    parseInt(document.getElementById('end_index').value, 10),
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Render tabel
+    // ─────────────────────────────────────────────────────────────
+    function renderTable(data) {
+      if (!data || data.length === 0) {
+        document.getElementById('result-container').innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <p>Tidak ada data ditemukan untuk parameter yang diberikan.</p>
+          </div>`;
+        return;
+      }
+
+      const headers = Object.keys(data[0]);
+      const rows = data.map((row, i) => `
+        <tr>
+          <td><span class="idx-badge">${i}</span></td>
+          ${headers.map(h => {
+            if (h === 'pin') return `<td><span class="pin-badge">${row[h]}</span></td>`;
+            return `<td>${row[h] ?? '—'}</td>`;
+          }).join('')}
+        </tr>`).join('');
+
+      document.getElementById('result-container').innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                ${headers.map(h => `<th>${h.replace(/_/g,' ')}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function updateStats(result, mesin) {
+      document.getElementById('stats-grid').style.display = 'grid';
+      document.getElementById('stat-total').textContent    = result.total ?? 0;
+      document.getElementById('stat-total-all').textContent = result.total_all ?? result.total ?? 0;
+      document.getElementById('stat-mesin').textContent   = mesin.substring(0, 10);
+    }
+
+    function showRaw(data) {
+      document.getElementById('raw-section').style.display = 'block';
+      document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function toggleRaw() {
+      const el = document.getElementById('raw-json');
+      const btn = document.getElementById('btn-toggle-raw');
+      el.classList.toggle('show');
+      btn.textContent = el.classList.contains('show') ? '🔒 Sembunyikan JSON' : '🔍 Lihat Raw JSON';
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Event: Ambil per Index
+    // ─────────────────────────────────────────────────────────────
+    document.getElementById('btn-fetch-index').addEventListener('click', async () => {
+      hideAlert();
+      const { nomorMesin, password, startIndex, endIndex } = getInputs();
+
+      if (!nomorMesin || !password) {
+        showAlert('error', 'Nomor mesin dan password wajib diisi.'); return;
+      }
+      if (startIndex > endIndex) {
+        showAlert('error', 'Index awal tidak boleh lebih besar dari index akhir.'); return;
+      }
+
+      setLoading('btn-fetch-index', 'spin1', true);
+      document.getElementById('btn-fetch-index-text').textContent = 'Mengambil data...';
+
+      try {
+        const result = await fetchPresensi(nomorMesin, password, startIndex, endIndex);
+        if (result.success) {
+          showAlert('success', result.message);
+          renderTable(result.data);
+          updateStats(result, nomorMesin);
+          showRaw(result);
+        } else {
+          showAlert('error', result.message);
+        }
+      } catch (e) {
+        showAlert('error', e.message);
+      } finally {
+        setLoading('btn-fetch-index', 'spin1', false);
+        document.getElementById('btn-fetch-index-text').textContent = '📥 Ambil Data per Index';
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // Event: Ambil Semua
+    // ─────────────────────────────────────────────────────────────
+    document.getElementById('btn-fetch-all').addEventListener('click', async () => {
+      hideAlert();
+      const { nomorMesin, password } = getInputs();
+
+      if (!nomorMesin || !password) {
+        showAlert('error', 'Nomor mesin dan password wajib diisi.'); return;
+      }
+
+      setLoading('btn-fetch-all', 'spin2', true);
+      document.getElementById('btn-fetch-all-text').textContent = 'Mengambil semua data...';
+
+      try {
+        const result = await fetchPresensi(nomorMesin, password, 0, null);
+        if (result.success) {
+          showAlert('success', result.message);
+          renderTable(result.data);
+          updateStats(result, nomorMesin);
+          showRaw(result);
+        } else {
+          showAlert('error', result.message);
+        }
+      } catch (e) {
+        showAlert('error', e.message);
+      } finally {
+        setLoading('btn-fetch-all', 'spin2', false);
+        document.getElementById('btn-fetch-all-text').textContent = '📋 Ambil Semua Data';
+      }
+    });
+  </script>
+
+</body>
+</html>
