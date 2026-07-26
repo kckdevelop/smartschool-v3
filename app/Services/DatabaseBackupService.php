@@ -34,7 +34,7 @@ class DatabaseBackupService
         $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
         $sql .= "-- ========================================================\n\n";
         $sql .= "SET FOREIGN_KEY_CHECKS=0;\n";
-        $sql .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
+        $sql .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO,NO_ENGINE_SUBSTITUTION\";\n";
         $sql .= "SET time_zone = \"+00:00\";\n\n";
 
         // Get all tables in the database
@@ -96,8 +96,13 @@ class DatabaseBackupService
                                 $values[] = $value;
                             } elseif (is_bool($value)) {
                                 $values[] = $value ? '1' : '0';
+                            } elseif ($value instanceof \DateTimeInterface) {
+                                $values[] = $pdo->quote($value->format('Y-m-d H:i:s'));
                             } else {
-                                $values[] = $pdo->quote((string)$value);
+                                $strVal = (string)$value;
+                                // Clean up trailing ISO UTC timezone tags if present
+                                $cleanVal = preg_replace('/^(\d{4}-\d{2}-\d{2})[T\s]+(\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:\s*[\+\-]\d{2}:?\d{2}|\s*[\+\-]\d{4})?\s*(?:UTC|Z)?$/i', '$1 $2', $strVal);
+                                $values[] = $pdo->quote($cleanVal);
                             }
                         }
                         $valueLines[] = "(" . implode(', ', $values) . ")";
@@ -134,6 +139,35 @@ class DatabaseBackupService
     }
 
     /**
+     * Clean and sanitize SQL string content to fix non-standard datetime formats.
+     *
+     * @param string $sqlContent
+     * @return string
+     */
+    public function sanitizeSqlContent(string $sqlContent): string
+    {
+        // 1. Fix datetime formatted with +0000 UTC / ISO timezone suffixes
+        // e.g., '2026-07-13 00:00:00 +0000 UTC' => '2026-07-13 00:00:00'
+        // e.g., '2026-07-13 00:00:00+00:00' => '2026-07-13 00:00:00'
+        // e.g., '2026-07-13T00:00:00.000000Z' => '2026-07-13 00:00:00'
+        $sqlContent = preg_replace(
+            "/'(\d{4}-\d{2}-\d{2})[T\s]+(\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:\s*[\+\-]\d{2}:?\d{2}|\s*[\+\-]\d{4})?\s*(?:UTC|Z)?'/i",
+            "'$1 $2'",
+            $sqlContent
+        );
+
+        // 2. Fix date without time formatted with +0000 UTC
+        // e.g., '2026-07-13 +0000 UTC' => '2026-07-13'
+        $sqlContent = preg_replace(
+            "/'(\d{4}-\d{2}-\d{2})\s*(?:[\+\-]\d{2}:?\d{2}|[\+\-]\d{4})?\s*UTC'/i",
+            "'$1'",
+            $sqlContent
+        );
+
+        return $sqlContent;
+    }
+
+    /**
      * Restore database from a SQL string or file path.
      *
      * @param string $sqlContent Raw SQL query text
@@ -146,20 +180,82 @@ class DatabaseBackupService
             throw new Exception("File SQL kosong atau tidak memiliki kueri valid.");
         }
 
+        // Sanitize SQL content before running
+        $sqlContent = $this->sanitizeSqlContent($sqlContent);
+
         DB::beginTransaction();
         try {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            DB::unprepared($sqlContent);
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            $this->executeSqlStatements($sqlContent);
             DB::commit();
             return true;
         } catch (Exception $e) {
             DB::rollBack();
-            try {
-                DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            } catch (Exception $ex) {}
             throw new Exception("Gagal mengembalikan database: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Execute SQL statements with session settings & fallback statement splitter.
+     *
+     * @param string $sqlContent
+     * @return void
+     */
+    protected function executeSqlStatements(string $sqlContent): void
+    {
+        try {
+            DB::statement("SET SESSION sql_mode = 'NO_AUTO_VALUE_ON_ZERO,NO_ENGINE_SUBSTITUTION'");
+        } catch (Exception $e) {}
+
+        try {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            DB::statement('SET UNIQUE_CHECKS=0');
+        } catch (Exception $e) {}
+
+        try {
+            DB::unprepared($sqlContent);
+        } catch (Exception $e) {
+            // Fallback: Split statements and execute individually
+            $statements = $this->splitSqlStatements($sqlContent);
+            foreach ($statements as $statement) {
+                $trimmed = trim($statement);
+                if (!empty($trimmed)) {
+                    try {
+                        DB::unprepared($trimmed);
+                    } catch (Exception $ex) {
+                        // Rethrow if failure is critical
+                        if (!str_contains($ex->getMessage(), 'Unknown table') &&
+                            !str_contains($ex->getMessage(), 'does not exist')) {
+                            throw $ex;
+                        }
+                    }
+                }
+            }
+        } finally {
+            try {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+                DB::statement('SET UNIQUE_CHECKS=1');
+            } catch (Exception $e) {}
+        }
+    }
+
+    /**
+     * Split multi-statement SQL script cleanly.
+     *
+     * @param string $sql
+     * @return array
+     */
+    protected function splitSqlStatements(string $sql): array
+    {
+        // Strip SQL comments
+        $sql = preg_replace('/^--.*$/m', '', $sql);
+        $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+
+        $tokens = preg_split('/;\s*$/m', $sql);
+        if (!$tokens) {
+            return array_filter(explode(';', $sql));
+        }
+
+        return array_filter(array_map('trim', $tokens));
     }
 
     /**
