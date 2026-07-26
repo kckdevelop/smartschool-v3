@@ -50,4 +50,21 @@ class Sekolah extends Model
         'groq_quota'        => 'integer',
         'gemini_quota'      => 'integer',
     ];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo ? asset('storage/' . $this->logo) : null;
+    }
+
+    public function getKopUrlAttribute(): ?string
+    {
+        return $this->kop ? asset('storage/' . $this->kop) : null;
+    }
+
+    public function getTtdKepalaSekolahUrlAttribute(): ?string
+    {
+        return $this->ttd_kepala_sekolah ? asset('storage/' . $this->ttd_kepala_sekolah) : null;
+    }
+
+    protected $appends = ['logo_url', 'kop_url', 'ttd_kepala_sekolah_url'];
 }

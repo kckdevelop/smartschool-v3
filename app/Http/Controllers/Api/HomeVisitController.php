@@ -59,7 +59,6 @@ class HomeVisitController extends Controller
             'tindak_lanjut'    => 'nullable|string',
             'keterangan'       => 'nullable|string',
             'status'           => 'nullable|string',
-            'foto_bukti'       => 'nullable|image|max:2048',
         ]);
  
         $tanggalVisit = $request->input('tanggal_visit') ?? $request->input('tanggal') ?? date('Y-m-d');
@@ -71,10 +70,7 @@ class HomeVisitController extends Controller
             $status = 'dijadwalkan';
         }
  
-        $path = null;
-        if ($request->hasFile('foto_bukti')) {
-            $path = $request->file('foto_bukti')->store('home-visit', 'public');
-        }
+        $path = \App\Helpers\FileUploadHelper::storeFile($request, 'foto_bukti', 'home-visit');
  
         $user = auth()->user();
  
@@ -175,11 +171,14 @@ class HomeVisitController extends Controller
             }
         }
  
-        if ($request->hasFile('foto_bukti')) {
-            if ($visit->foto_bukti) {
-                \Storage::disk('public')->delete($visit->foto_bukti);
+        if ($request->has('foto_bukti') || $request->hasFile('foto_bukti')) {
+            $newPath = \App\Helpers\FileUploadHelper::storeFile($request, 'foto_bukti', 'home-visit');
+            if ($newPath) {
+                if ($visit->foto_bukti && \Storage::disk('public')->exists($visit->foto_bukti)) {
+                    \Storage::disk('public')->delete($visit->foto_bukti);
+                }
+                $dataUpdate['foto_bukti'] = $newPath;
             }
-            $dataUpdate['foto_bukti'] = $request->file('foto_bukti')->store('home-visit', 'public');
         }
  
         $visit->update($dataUpdate);

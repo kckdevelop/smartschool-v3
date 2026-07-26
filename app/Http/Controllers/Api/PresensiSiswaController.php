@@ -57,7 +57,6 @@ class PresensiSiswaController extends Controller
             'jam'        => 'nullable|string',
             'status'     => 'required|in:Hadir,Sakit,Izin,Alfa,hadir,sakit,izin,alfa,1,0',
             'keterangan' => 'nullable|string|max:255',
-            'file'       => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         // Cek apakah sudah ada presensi hari ini
@@ -72,13 +71,7 @@ class PresensiSiswaController extends Controller
             ], 422);
         }
 
-        $filePath = null;
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            if ($file->isValid()) {
-                $filePath = $file->store('presensi-lampiran', 'public');
-            }
-        }
+        $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'presensi-lampiran');
 
         $statusInput = $request->status;
         if ($statusInput === '1') {
@@ -239,7 +232,6 @@ class PresensiSiswaController extends Controller
             'presensi.*.nis'        => 'required|integer|exists:user_siswa,nis',
             'presensi.*.status'     => 'required|in:Hadir,Sakit,Izin,Alfa,hadir,sakit,izin,alfa',
             'presensi.*.keterangan' => 'nullable|string|max:255',
-            'presensi.*.file'       => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         $inserted = 0;
@@ -253,16 +245,19 @@ class PresensiSiswaController extends Controller
                     ->first();
 
                 $status = ucfirst(strtolower($item['status']));
+
+                $newFile = \App\Helpers\FileUploadHelper::storeFile($request, "presensi.{$index}.file", 'presensi-lampiran');
+                if (!$newFile && isset($item['file'])) {
+                    $newFile = \App\Helpers\FileUploadHelper::storeFile($item['file'], null, 'presensi-lampiran');
+                }
+
                 $filePath = $presensi ? $presensi->file : null;
 
-                if ($request->hasFile("presensi.{$index}.file")) {
-                    $file = $request->file("presensi.{$index}.file");
-                    if ($file->isValid()) {
-                        if ($presensi && $presensi->file) {
-                            \Storage::disk('public')->delete($presensi->file);
-                        }
-                        $filePath = $file->store('presensi-lampiran', 'public');
+                if ($newFile) {
+                    if ($presensi && $presensi->file && \Storage::disk('public')->exists($presensi->file)) {
+                        \Storage::disk('public')->delete($presensi->file);
                     }
+                    $filePath = $newFile;
                 }
 
                 if ($presensi) {

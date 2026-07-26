@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
 
+use App\Helpers\FileUploadHelper;
+
 class KaryawanProfilController extends Controller
 {
     /**
@@ -47,19 +49,19 @@ class KaryawanProfilController extends Controller
         }
 
         $request->validate([
-            'foto' => 'required|image|max:2048', // Maksimal 2MB
+            'foto' => 'required',
         ]);
 
         $karyawan = Karyawan::findOrFail($user->id_karyawan);
 
-        if ($request->hasFile('foto')) {
+        $path = FileUploadHelper::storeFile($request, 'foto', 'karyawan-foto');
+
+        if ($path) {
             // Hapus foto lama jika ada
-            if ($karyawan->foto) {
+            if ($karyawan->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($karyawan->foto)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($karyawan->foto);
             }
 
-            // Simpan foto baru
-            $path = $request->file('foto')->store('karyawan-foto', 'public');
             $karyawan->foto = $path;
             $karyawan->save();
 
@@ -72,7 +74,7 @@ class KaryawanProfilController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'File foto tidak ditemukan.',
+            'message' => 'File foto tidak ditemukan atau format tidak valid.',
         ], 400);
     }
 }

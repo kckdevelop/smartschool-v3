@@ -26,6 +26,13 @@ class HomeVisit extends Model
         'id_guru'       => 'integer',
     ];
 
+    public function getFotoBuktiUrlAttribute(): ?string
+    {
+        return $this->foto_bukti ? asset('storage/' . $this->foto_bukti) : null;
+    }
+
+    protected $appends = ['foto_bukti_url'];
+
     public function guru()
     {
         return $this->belongsTo(Guru::class, 'id_guru', 'id_guru');

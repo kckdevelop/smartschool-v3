@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profil Lengkap Siswa (Flutter Mobile)
     Route::get('/mobile/siswa/profil', [\App\Http\Controllers\Api\SiswaProfilController::class, 'show']);
     Route::post('/mobile/siswa/profil', [\App\Http\Controllers\Api\SiswaProfilController::class, 'update']);
+    Route::post('/mobile/siswa/foto', [\App\Http\Controllers\Api\SiswaProfilController::class, 'uploadFoto']);
     Route::get('/mobile/siswa/edit-akses', [\App\Http\Controllers\Api\SiswaProfilController::class, 'editAkses']);
     Route::get('/mobile/siswa/riwayat-kesehatan', [\App\Http\Controllers\Api\SiswaProfilController::class, 'getRiwayatKesehatan']);
     Route::post('/mobile/siswa/riwayat-kesehatan', [\App\Http\Controllers\Api\SiswaProfilController::class, 'storeRiwayatKesehatan']);

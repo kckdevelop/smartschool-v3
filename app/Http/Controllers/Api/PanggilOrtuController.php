@@ -74,12 +74,14 @@ class PanggilOrtuController extends Controller
             'id_guru'         => $guru->id_guru ?? 1,
         ];
 
-        if ($request->hasFile('bukti_pertemuan')) {
-            $data['bukti_pertemuan'] = $request->file('bukti_pertemuan')->store('pemanggilan/bukti', 'public');
+        $buktiPath = \App\Helpers\FileUploadHelper::storeFile($request, 'bukti_pertemuan', 'pemanggilan/bukti');
+        if ($buktiPath) {
+            $data['bukti_pertemuan'] = $buktiPath;
         }
 
-        if ($request->hasFile('surat_pernyataan')) {
-            $data['surat_pernyataan'] = $request->file('surat_pernyataan')->store('pemanggilan/surat', 'public');
+        $suratPath = \App\Helpers\FileUploadHelper::storeFile($request, 'surat_pernyataan', 'pemanggilan/surat');
+        if ($suratPath) {
+            $data['surat_pernyataan'] = $suratPath;
         }
 
         $panggilan = PanggilOrtu::create($data);
@@ -117,8 +119,6 @@ class PanggilOrtuController extends Controller
             'nama_ortu'       => 'nullable|string|max:100',
             'no_hp_ortu'      => 'nullable|string|max:20',
             'hasil_pertemuan' => 'nullable|string',
-            'bukti_pertemuan' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
-            'surat_pernyataan'=> 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
 
         $data = $request->only([
@@ -126,18 +126,24 @@ class PanggilOrtuController extends Controller
             'nama_ortu', 'no_hp_ortu', 'jenis_panggilan', 'alasan_panggil', 'hasil_pertemuan', 'status'
         ]);
 
-        if ($request->hasFile('bukti_pertemuan')) {
-            if ($panggilan->bukti_pertemuan) {
-                Storage::disk('public')->delete($panggilan->bukti_pertemuan);
+        if ($request->has('bukti_pertemuan') || $request->hasFile('bukti_pertemuan')) {
+            $newBukti = \App\Helpers\FileUploadHelper::storeFile($request, 'bukti_pertemuan', 'pemanggilan/bukti');
+            if ($newBukti) {
+                if ($panggilan->bukti_pertemuan && Storage::disk('public')->exists($panggilan->bukti_pertemuan)) {
+                    Storage::disk('public')->delete($panggilan->bukti_pertemuan);
+                }
+                $data['bukti_pertemuan'] = $newBukti;
             }
-            $data['bukti_pertemuan'] = $request->file('bukti_pertemuan')->store('pemanggilan/bukti', 'public');
         }
 
-        if ($request->hasFile('surat_pernyataan')) {
-            if ($panggilan->surat_pernyataan) {
-                Storage::disk('public')->delete($panggilan->surat_pernyataan);
+        if ($request->has('surat_pernyataan') || $request->hasFile('surat_pernyataan')) {
+            $newSurat = \App\Helpers\FileUploadHelper::storeFile($request, 'surat_pernyataan', 'pemanggilan/surat');
+            if ($newSurat) {
+                if ($panggilan->surat_pernyataan && Storage::disk('public')->exists($panggilan->surat_pernyataan)) {
+                    Storage::disk('public')->delete($panggilan->surat_pernyataan);
+                }
+                $data['surat_pernyataan'] = $newSurat;
             }
-            $data['surat_pernyataan'] = $request->file('surat_pernyataan')->store('pemanggilan/surat', 'public');
         }
 
         $panggilan->update($data);

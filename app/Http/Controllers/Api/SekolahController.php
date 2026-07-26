@@ -34,10 +34,7 @@ class SekolahController extends Controller
             'nip'            => 'nullable|string|max:50',
             'status'         => 'required|in:negeri,swasta',
             'alamat_sekolah' => 'nullable|string',
-            'logo'               => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'kop'                => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'ijin'               => 'nullable|in:ya,tidak',
+            'ijin'           => 'nullable|in:ya,tidak',
         ]);
 
         $data = $request->only([
@@ -45,16 +42,19 @@ class SekolahController extends Controller
             'status', 'alamat_sekolah', 'ijin',
         ]);
 
-        if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('sekolah/logo', 'public');
+        $logoPath = \App\Helpers\FileUploadHelper::storeFile($request, 'logo', 'sekolah/logo');
+        if ($logoPath) {
+            $data['logo'] = $logoPath;
         }
 
-        if ($request->hasFile('kop')) {
-            $data['kop'] = $request->file('kop')->store('sekolah/kop', 'public');
+        $kopPath = \App\Helpers\FileUploadHelper::storeFile($request, 'kop', 'sekolah/kop');
+        if ($kopPath) {
+            $data['kop'] = $kopPath;
         }
 
-        if ($request->hasFile('ttd_kepala_sekolah')) {
-            $data['ttd_kepala_sekolah'] = $request->file('ttd_kepala_sekolah')->store('sekolah/ttd', 'public');
+        $ttdPath = \App\Helpers\FileUploadHelper::storeFile($request, 'ttd_kepala_sekolah', 'sekolah/ttd');
+        if ($ttdPath) {
+            $data['ttd_kepala_sekolah'] = $ttdPath;
         }
 
         $sekolah = Sekolah::create($data);
@@ -93,9 +93,6 @@ class SekolahController extends Controller
             'nip'                => 'nullable|string|max:50',
             'status'             => 'sometimes|required|in:negeri,swasta',
             'alamat_sekolah'     => 'nullable|string',
-            'logo'               => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'kop'                => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'ijin'               => 'nullable|in:ya,tidak',
         ]);
 
@@ -104,25 +101,34 @@ class SekolahController extends Controller
             'status', 'alamat_sekolah', 'ijin',
         ]);
 
-        if ($request->hasFile('logo')) {
-            if ($sekolah->logo) {
-                Storage::disk('public')->delete($sekolah->logo);
+        if ($request->has('logo') || $request->hasFile('logo')) {
+            $newLogo = \App\Helpers\FileUploadHelper::storeFile($request, 'logo', 'sekolah/logo');
+            if ($newLogo) {
+                if ($sekolah->logo && Storage::disk('public')->exists($sekolah->logo)) {
+                    Storage::disk('public')->delete($sekolah->logo);
+                }
+                $data['logo'] = $newLogo;
             }
-            $data['logo'] = $request->file('logo')->store('sekolah/logo', 'public');
         }
 
-        if ($request->hasFile('kop')) {
-            if ($sekolah->kop) {
-                Storage::disk('public')->delete($sekolah->kop);
+        if ($request->has('kop') || $request->hasFile('kop')) {
+            $newKop = \App\Helpers\FileUploadHelper::storeFile($request, 'kop', 'sekolah/kop');
+            if ($newKop) {
+                if ($sekolah->kop && Storage::disk('public')->exists($sekolah->kop)) {
+                    Storage::disk('public')->delete($sekolah->kop);
+                }
+                $data['kop'] = $newKop;
             }
-            $data['kop'] = $request->file('kop')->store('sekolah/kop', 'public');
         }
 
-        if ($request->hasFile('ttd_kepala_sekolah')) {
-            if ($sekolah->ttd_kepala_sekolah) {
-                Storage::disk('public')->delete($sekolah->ttd_kepala_sekolah);
+        if ($request->has('ttd_kepala_sekolah') || $request->hasFile('ttd_kepala_sekolah')) {
+            $newTtd = \App\Helpers\FileUploadHelper::storeFile($request, 'ttd_kepala_sekolah', 'sekolah/ttd');
+            if ($newTtd) {
+                if ($sekolah->ttd_kepala_sekolah && Storage::disk('public')->exists($sekolah->ttd_kepala_sekolah)) {
+                    Storage::disk('public')->delete($sekolah->ttd_kepala_sekolah);
+                }
+                $data['ttd_kepala_sekolah'] = $newTtd;
             }
-            $data['ttd_kepala_sekolah'] = $request->file('ttd_kepala_sekolah')->store('sekolah/ttd', 'public');
         }
 
         $sekolah->update($data);

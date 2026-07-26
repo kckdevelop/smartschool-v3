@@ -154,6 +154,17 @@ class SiswaProfilController extends Controller
             'nama_wali', 'pekerjaan_wali', 'no_telp_wali',
             'no_wa_presensi', 'latitude', 'longitude',
         ]);
+
+        if ($request->has('foto')) {
+            $fotoPath = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'siswa/foto');
+            if ($fotoPath) {
+                if ($detail->foto && Storage::disk('public')->exists($detail->foto)) {
+                    Storage::disk('public')->delete($detail->foto);
+                }
+                $detailData['foto'] = $fotoPath;
+            }
+        }
+
         $detail->update($detailData);
 
         // Jika ada data riwayat kesehatan, simpan ke tabel riwayat_kesehatan
@@ -194,8 +205,56 @@ class SiswaProfilController extends Controller
                 'no_wa_presensi' => $detail->no_wa_presensi,
                 'latitude'       => $detail->latitude,
                 'longitude'      => $detail->longitude,
+                'foto_url'       => $detail->foto_url,
             ],
         ]);
+    }
+
+    /**
+     * Upload foto profil siswa.
+     * Endpoint: POST /api/mobile/siswa/foto
+     */
+    public function uploadFoto(Request $request)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof UserSiswa)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $sekolah = Sekolah::first();
+        if (!$sekolah?->edit_detail_siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fitur edit profil belum diaktifkan oleh admin.',
+            ], 403);
+        }
+
+        $request->validate([
+            'foto' => 'required',
+        ]);
+
+        $detail = DetailSiswa::firstOrCreate(['nis' => $user->nis]);
+        $path = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'siswa/foto');
+
+        if ($path) {
+            if ($detail->foto && Storage::disk('public')->exists($detail->foto)) {
+                Storage::disk('public')->delete($detail->foto);
+            }
+            $detail->foto = $path;
+            $detail->save();
+
+            return response()->json([
+                'success'  => true,
+                'message'  => 'Foto profil siswa berhasil diperbarui.',
+                'foto_url' => $detail->foto_url,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'File foto tidak ditemukan atau format tidak valid.',
+        ], 400);
     }
 
     /**

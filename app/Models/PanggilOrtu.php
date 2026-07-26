@@ -31,6 +31,18 @@ class PanggilOrtu extends Model
         'id_guru'         => 'integer',
     ];
 
+    public function getBuktiPertemuanUrlAttribute(): ?string
+    {
+        return $this->bukti_pertemuan ? asset('storage/' . $this->bukti_pertemuan) : null;
+    }
+
+    public function getSuratPernyataanUrlAttribute(): ?string
+    {
+        return $this->surat_pernyataan ? asset('storage/' . $this->surat_pernyataan) : null;
+    }
+
+    protected $appends = ['bukti_pertemuan_url', 'surat_pernyataan_url'];
+
     public function guru()
     {
         return $this->belongsTo(Guru::class, 'id_guru', 'id_guru');

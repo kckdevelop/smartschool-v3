@@ -35,6 +35,13 @@ class DetailSiswa extends Model
         'longitude' => 'float',
     ];
 
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? asset('storage/' . $this->foto) : null;
+    }
+
+    protected $appends = ['foto_url'];
+
     public function userSiswa()
     {
         return $this->belongsTo(UserSiswa::class, 'nis', 'nis');

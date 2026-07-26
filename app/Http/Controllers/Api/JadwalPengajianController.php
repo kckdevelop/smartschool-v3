@@ -367,8 +367,8 @@ class JadwalPengajianController extends Controller
         }
 
         $request->validate([
-            'foto' => 'required|image|max:5000',
-            'latitude' => 'required|numeric',
+            'foto'      => 'required',
+            'latitude'  => 'required|numeric',
             'longitude' => 'required|numeric',
         ]);
 
@@ -445,18 +445,17 @@ class JadwalPengajianController extends Controller
         }
 
         // Simpan foto selfie
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $filename = 'selfie_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            
-            // Simpan ke disk public
-            $file->storeAs('pengajian/selfie', $filename, 'public');
-            
+        $storedPath = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'pengajian/selfie');
+
+        if ($storedPath) {
+            // Ambil nama file dari relative path
+            $filename = basename($storedPath);
+
             // Update Kehadiran
             $kehadiran->update([
-                'status' => 'hadir',
-                'jam_absen' => \Carbon\Carbon::now()->toTimeString(),
-                'foto' => $filename,
+                'status'       => 'hadir',
+                'jam_absen'    => \Carbon\Carbon::now()->toTimeString(),
+                'foto'         => $filename,
                 'lokasi_gmaps' => $request->latitude . ',' . $request->longitude,
             ]);
 
@@ -464,9 +463,9 @@ class JadwalPengajianController extends Controller
                 'success' => true,
                 'message' => 'Absensi pengajian berhasil dikirim!',
                 'data' => [
-                    'status' => 'hadir',
-                    'jam_absen' => substr($kehadiran->jam_absen, 0, 5),
-                    'foto' => asset('storage/pengajian/selfie/' . $filename),
+                    'status'       => 'hadir',
+                    'jam_absen'    => substr($kehadiran->jam_absen, 0, 5),
+                    'foto'         => asset('storage/pengajian/selfie/' . $filename),
                     'lokasi_gmaps' => $kehadiran->lokasi_gmaps,
                 ]
             ]);
@@ -474,7 +473,7 @@ class JadwalPengajianController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'Foto selfie wajib diunggah.'
+            'message' => 'Foto selfie wajib diunggah atau format tidak valid.'
         ], 400);
     }
 }

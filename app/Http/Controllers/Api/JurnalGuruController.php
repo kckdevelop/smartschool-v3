@@ -163,54 +163,39 @@ class JurnalGuruController extends Controller
 
         $absen = $request->input('absen');
 
-        // Handle photo uploads
-        $uploaded = [];
-        if ($request->hasFile('fotos')) {
-            $fotosFiles = $request->file('fotos');
-            if (is_array($fotosFiles)) {
-                foreach ($fotosFiles as $file) {
-                    if ($file && $file->isValid()) {
-                        $uploaded[] = $file->store('jurnal-foto', 'public');
+        // Handle photo uploads (supports multipart files and base64 strings)
+        $uploaded = \App\Helpers\FileUploadHelper::storeMultipleFiles($request, 'fotos', 'jurnal-foto');
+
+        // Handle individual photo fields (foto.0, foto_0, foto_1, etc.)
+        for ($i = 0; $i < 10; $i++) {
+            foreach (["foto.$i", "foto_$i", "foto" . ($i + 1)] as $key) {
+                if ($request->has($key) || $request->hasFile($key)) {
+                    $path = \App\Helpers\FileUploadHelper::storeFile($request, $key, 'jurnal-foto');
+                    if ($path && !in_array($path, $uploaded)) {
+                        $uploaded[] = $path;
                     }
                 }
-            } else if ($fotosFiles && $fotosFiles->isValid()) {
-                $uploaded[] = $fotosFiles->store('jurnal-foto', 'public');
             }
         }
 
-        // Handle individual photo files (foto[0], foto[1], etc.)
-        for ($i = 0; $i < 10; $i++) {
-            if ($request->hasFile("foto.$i")) {
-                $file = $request->file("foto.$i");
-                if ($file && $file->isValid()) {
-                    $uploaded[] = $file->store('jurnal-foto', 'public');
-                }
-            }
-            if ($request->hasFile("foto_$i")) {
-                $file = $request->file("foto_$i");
-                if ($file && $file->isValid()) {
-                    $uploaded[] = $file->store('jurnal-foto', 'public');
-                }
-            }
-        }
-
-        // Handle existing foto URLs from mobile (append them to the list)
+        // Handle existing foto URLs from mobile
         $existingPaths = [];
         $existingFotos = $request->input('existing_fotos', []);
         if (!is_array($existingFotos)) {
             $existingFotos = [$existingFotos];
         }
         foreach ($existingFotos as $url) {
-            // Strip base URL to get relative storage path
-            $path = preg_replace('#^https?://[^/]+/storage/#', '', $url);
-            $path = preg_replace('#^/storage/#', '', $path);
-            if (!empty($path)) {
-                $existingPaths[] = $path;
+            if (is_string($url) && !empty($url)) {
+                $path = preg_replace('#^https?://[^/]+/storage/#', '', $url);
+                $path = preg_replace('#^/storage/#', '', $path);
+                if (!empty($path)) {
+                    $existingPaths[] = $path;
+                }
             }
         }
 
         // Merge: existing first, then newly uploaded
-        $allFotos = array_merge($existingPaths, $uploaded);
+        $allFotos = array_values(array_unique(array_merge($existingPaths, $uploaded)));
 
         // Upsert logic
         $jurnal = Kemajuan::where('tanggal', $request->tanggal)

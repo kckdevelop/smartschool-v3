@@ -23,6 +23,13 @@ class Presensi extends Model
         'nis' => 'integer',
     ];
 
+    public function getFileUrlAttribute(): ?string
+    {
+        return $this->file ? asset('storage/' . $this->file) : null;
+    }
+
+    protected $appends = ['file_url'];
+
     // Relations
     public function siswa()
     {

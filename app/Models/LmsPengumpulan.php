@@ -24,6 +24,13 @@ class LmsPengumpulan extends Model
         'nilai'    => 'integer',
     ];
 
+    public function getFileUrlAttribute(): ?string
+    {
+        return $this->file_path ? asset('storage/' . $this->file_path) : null;
+    }
+
+    protected $appends = ['file_url'];
+
     // Relations
     public function tugas()
     {

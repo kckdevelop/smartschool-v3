@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Guru;
 use Illuminate\Http\Request;
 
+use App\Helpers\FileUploadHelper;
+
 class GuruProfilController extends Controller
 {
     /**
@@ -86,19 +88,19 @@ class GuruProfilController extends Controller
         }
 
         $request->validate([
-            'foto' => 'required|image|max:2048', // Maksimal 2MB
+            'foto' => 'required',
         ]);
 
         $guru = Guru::findOrFail($user->id_guru);
 
-        if ($request->hasFile('foto')) {
+        $path = FileUploadHelper::storeFile($request, 'foto', 'guru-foto');
+
+        if ($path) {
             // Hapus foto lama jika ada
-            if ($guru->foto) {
+            if ($guru->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($guru->foto)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($guru->foto);
             }
 
-            // Simpan foto baru
-            $path = $request->file('foto')->store('guru-foto', 'public');
             $guru->foto = $path;
             $guru->save();
 
@@ -111,7 +113,7 @@ class GuruProfilController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'File foto tidak ditemukan.',
+            'message' => 'File foto tidak ditemukan atau format tidak valid.',
         ], 400);
     }
 }

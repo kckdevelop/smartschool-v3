@@ -249,16 +249,12 @@ class LmsController extends Controller
             'tenggat'   => 'nullable|date',
             'deadline'  => 'nullable|date',   // alias Flutter
             'tipe'      => 'nullable|in:pdf,gambar,teks',
-            'file'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         // Dukung 'deadline' sebagai alias 'tenggat'
         $tenggat = $request->tenggat ?? $request->deadline;
 
-        $filePath = null;
-        if ($request->hasFile('file')) {
-            $filePath = $request->file('file')->store('lms/assignments', 'public');
-        }
+        $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
 
         $tugas = LmsTugas::create([
             'id_kursus'    => $request->id_kursus,
@@ -290,7 +286,6 @@ class LmsController extends Controller
             'tenggat'  => 'nullable|date',
             'deadline' => 'nullable|date',   // alias Flutter
             'tipe'     => 'nullable|in:pdf,gambar,teks',
-            'file'     => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         $data = $request->only('judul', 'deskripsi', 'tipe');
@@ -305,12 +300,14 @@ class LmsController extends Controller
             $data['tenggat'] = $tenggat;
         }
 
-        if ($request->hasFile('file')) {
-            // Hapus file lama jika ada
-            if ($tugas->file_path) {
-                Storage::disk('public')->delete($tugas->file_path);
+        if ($request->has('file') || $request->hasFile('file')) {
+            $newPath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
+            if ($newPath) {
+                if ($tugas->file_path && Storage::disk('public')->exists($tugas->file_path)) {
+                    Storage::disk('public')->delete($tugas->file_path);
+                }
+                $data['file_path'] = $newPath;
             }
-            $data['file_path'] = $request->file('file')->store('lms/assignments', 'public');
         }
 
         $tugas->update($data);
@@ -330,14 +327,14 @@ class LmsController extends Controller
         $tugas = LmsTugas::findOrFail($id_tugas);
 
         // Hapus file lampiran tugas guru jika ada
-        if ($tugas->file_path) {
+        if ($tugas->file_path && Storage::disk('public')->exists($tugas->file_path)) {
             Storage::disk('public')->delete($tugas->file_path);
         }
 
         // Hapus semua file tugas di storage
         $submisiList = LmsPengumpulan::where('id_tugas', $id_tugas)->get();
         foreach ($submisiList as $submisi) {
-            if ($submisi->file_path) {
+            if ($submisi->file_path && Storage::disk('public')->exists($submisi->file_path)) {
                 Storage::disk('public')->delete($submisi->file_path);
             }
         }
@@ -369,23 +366,14 @@ class LmsController extends Controller
             ], 403);
         }
 
-        $request->validate([
-            'file'    => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Maks 5MB, opsional
-            'catatan' => 'nullable|string',
-        ]);
+        $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/submissions');
 
         // Minimal file atau catatan harus ada
-        if (!$request->hasFile('file') && empty($request->catatan)) {
+        if (!$filePath && empty($request->catatan)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Harap unggah file jawaban atau isi catatan.'
             ], 422);
-        }
-
-        // Upload file jika ada
-        $filePath = null;
-        if ($request->hasFile('file')) {
-            $filePath = $request->file('file')->store('lms/submissions', 'public');
         }
 
         // Cari atau buat record pengumpulan
@@ -395,7 +383,7 @@ class LmsController extends Controller
         ]);
 
         // Jika sebelumnya sudah mengunggah file dan ada file baru, hapus file lamanya
-        if ($filePath && $submisi->file_path) {
+        if ($filePath && $submisi->file_path && Storage::disk('public')->exists($submisi->file_path)) {
             Storage::disk('public')->delete($submisi->file_path);
         }
 
