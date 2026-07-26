@@ -92,6 +92,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\Api\SekolahController::class, 'destroy']);
     });
 
+    // 1b. Backup & Restore Database
+    Route::prefix('atur-data/backup-restore')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\BackupRestoreController::class, 'index']);
+        Route::get('/export', [\App\Http\Controllers\Api\BackupRestoreController::class, 'export']);
+        Route::post('/upload', [\App\Http\Controllers\Api\BackupRestoreController::class, 'uploadRestore']);
+    });
+
     // 2. Tahun Ajaran & Semester
     Route::prefix('atur-data/tahun-ajaran')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\TahunSemesterController::class, 'indexTahun']);

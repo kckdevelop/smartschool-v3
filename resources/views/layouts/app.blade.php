@@ -98,6 +98,7 @@
                         <li><a href="{{ route('atur-data.mesin-finger') }}" class="nav-sub-link {{ request()->routeIs('atur-data.mesin-finger') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Data Mesin Finger</a></li>
                         <li><a href="{{ route('atur-data.tarik-finger') }}" class="nav-sub-link {{ request()->routeIs('atur-data.tarik-finger') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Tarik Data Finger</a></li>
                         <li><a href="{{ route('atur-data.whatsapp-gateway') }}" class="nav-sub-link {{ request()->routeIs('atur-data.whatsapp-gateway*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> WhatsApp Gateway</a></li>
+                        <li><a href="{{ route('atur-data.backup-restore') }}" class="nav-sub-link {{ request()->routeIs('atur-data.backup-restore*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Backup & Restore DB</a></li>
                     </ul>
                 </li>
 

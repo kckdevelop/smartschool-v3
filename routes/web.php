@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AturData\SekolahController;
 use App\Http\Controllers\AturData\WhatsappGatewayController;
+use App\Http\Controllers\AturData\BackupRestoreController;
 use App\Http\Controllers\AturData\TahunSemesterController;
 use App\Http\Controllers\AturData\JurusanController;
 use App\Http\Controllers\AturData\KelasController;
@@ -55,6 +56,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/update', [WhatsappGatewayController::class, 'update'])->name('.update');
         Route::post('/test', [WhatsappGatewayController::class, 'test'])->name('.test');
         Route::get('/device-status', [WhatsappGatewayController::class, 'deviceStatus'])->name('.device-status');
+    });
+
+    // 1c. Backup & Restore Database
+    Route::prefix('atur-data/backup-restore')->name('atur-data.backup-restore')->group(function () {
+        Route::get('/', [BackupRestoreController::class, 'index'])->name('');
+        Route::get('/export', [BackupRestoreController::class, 'export'])->name('.export');
+        Route::post('/store', [BackupRestoreController::class, 'store'])->name('.store');
+        Route::post('/upload-restore', [BackupRestoreController::class, 'uploadRestore'])->name('.upload-restore');
+        Route::post('/restore-saved/{filename}', [BackupRestoreController::class, 'restoreSaved'])->name('.restore-saved');
+        Route::get('/download-saved/{filename}', [BackupRestoreController::class, 'downloadSaved'])->name('.download-saved');
+        Route::delete('/{filename}', [BackupRestoreController::class, 'destroy'])->name('.destroy');
     });
 
     // 1c. Atur User (Manajemen User & Role)
