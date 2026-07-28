@@ -12,6 +12,24 @@ use Carbon\Carbon;
 
 class BtaqController extends Controller
 {
+    /**
+     * Aturan range halaman yang valid untuk setiap jilid Iqro.
+     * Jilid 1 : hal. 1 – 10
+     * Jilid 2 : hal. 11 – 16
+     * Jilid 3 : hal. 14 – 22
+     * Jilid 4 : hal. 23 – 31
+     * Jilid 5 : hal. 32 – 41
+     * Jilid 6 : hal. 42 – 55
+     */
+    protected array $iqroJilidRules = [
+        1 => ['min' => 1,  'max' => 10],
+        2 => ['min' => 11, 'max' => 16],
+        3 => ['min' => 14, 'max' => 22],
+        4 => ['min' => 23, 'max' => 31],
+        5 => ['min' => 32, 'max' => 41],
+        6 => ['min' => 42, 'max' => 55],
+    ];
+
     public function index(Request $request)
     {
         $kelasList = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
@@ -130,6 +148,18 @@ class BtaqController extends Controller
                 return back()->withErrors(['halaman' => 'Data Iqro tidak valid atau tidak ditemukan.'])->withInput();
             }
 
+            // Validasi: halaman harus sesuai range jilid
+            $jilidInt = (int) $request->jilid;
+            if (isset($this->iqroJilidRules[$jilidInt])) {
+                $rule = $this->iqroJilidRules[$jilidInt];
+                $halamanInt = (int) $request->halaman;
+                if ($halamanInt < $rule['min'] || $halamanInt > $rule['max']) {
+                    return back()->withErrors([
+                        'halaman' => "Jilid {$jilidInt} hanya memiliki halaman {$rule['min']}–{$rule['max']}. Halaman {$halamanInt} tidak valid."
+                    ])->withInput();
+                }
+            }
+
             $recordId = $iqroRecord->id;
         } else {
             $quranRecord = \App\Models\TabelAlquran::where('surat', $request->surat)
@@ -212,6 +242,18 @@ class BtaqController extends Controller
 
             if (!$iqroRecord) {
                 return back()->withErrors(['halaman' => 'Data Iqro tidak valid atau tidak ditemukan.'])->withInput();
+            }
+
+            // Validasi: halaman harus sesuai range jilid
+            $jilidInt = (int) $request->jilid;
+            if (isset($this->iqroJilidRules[$jilidInt])) {
+                $rule = $this->iqroJilidRules[$jilidInt];
+                $halamanInt = (int) $request->halaman;
+                if ($halamanInt < $rule['min'] || $halamanInt > $rule['max']) {
+                    return back()->withErrors([
+                        'halaman' => "Jilid {$jilidInt} hanya memiliki halaman {$rule['min']}–{$rule['max']}. Halaman {$halamanInt} tidak valid."
+                    ])->withInput();
+                }
             }
 
             $recordId = $iqroRecord->id;

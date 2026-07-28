@@ -279,15 +279,14 @@
                                         <option value="{{ $j }}">Jilid {{ $j }}</option>
                                     @endforeach
                                 </select>
+                                <div id="iqro-jilid-info" class="iqro-range-info" style="display:none;"></div>
                             </div>
                             <div class="form-group mb-0">
                                 <label class="form-label">Halaman <span class="required">*</span></label>
                                 <select name="halaman" id="btaq_halaman" class="form-control">
-                                    <option value="">-- Halaman --</option>
-                                    @foreach($iqroHalamans as $h)
-                                        <option value="{{ $h }}">{{ $h }}</option>
-                                    @endforeach
+                                    <option value="">-- Pilih Jilid Dahulu --</option>
                                 </select>
+                                <div id="iqro-halaman-info" class="iqro-range-info" style="display:none;"></div>
                             </div>
                         </div>
                     </div>
@@ -549,6 +548,33 @@
 }
 
 @media(max-width:640px) { .ismuba-stats-row { grid-template-columns:1fr; } }
+
+/* Iqro range info badge */
+.iqro-range-info {
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 1px solid #6ee7b7;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #065f46;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.iqro-range-info i {
+    color: #059669;
+    font-size: 0.8rem;
+}
+.iqro-range-error {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+.iqro-range-error i {
+    color: #dc2626;
+}
 </style>
 @endpush
 
@@ -558,6 +584,25 @@ const btaqToday = '{{ now()->format("Y-m-d") }}';
 const surahAyatCounts = @json($surahAyatCounts);
 const latestBtaqMap = @json($latestBtaqMap);
 const surahOrder = @json($surahList->toArray());
+
+// ─── Aturan Halaman per Jilid Iqro ────────────────────────────────────────────
+// Jilid 1 : hal. 1–10
+// Jilid 2 : hal. 11–16
+// Jilid 3 : hal. 14–22
+// Jilid 4 : hal. 23–31
+// Jilid 5 : hal. 32–41
+// Jilid 6 : hal. 42–55
+const iqroJilidRules = {
+    1: { min: 1,  max: 10 },
+    2: { min: 11, max: 16 },
+    3: { min: 14, max: 22 },
+    4: { min: 23, max: 31 },
+    5: { min: 32, max: 41 },
+    6: { min: 42, max: 55 },
+};
+
+// Semua halaman Iqro yang tersedia dari server
+const allIqroHalamans = @json($iqroHalamans->toArray());
 
 let currentStudentLastProgress = null;
 
@@ -689,8 +734,59 @@ document.getElementById('btaq_surat').addEventListener('change', function() {
 });
 
 document.getElementById('btaq_jilid').addEventListener('change', function() {
+    filterHalamanByJilid();
     applyProgressRestrictions();
 });
+
+// ─── Filter halaman dropdown berdasarkan jilid yang dipilih ──────────────────
+function filterHalamanByJilid(preserveValue = false) {
+    const jilidVal = parseInt(document.getElementById('btaq_jilid').value);
+    const halamanSelect = document.getElementById('btaq_halaman');
+    const jilidInfo  = document.getElementById('iqro-jilid-info');
+    const halamanInfo = document.getElementById('iqro-halaman-info');
+    const prevHalaman = preserveValue ? halamanSelect.value : '';
+
+    // Clear halaman dropdown
+    halamanSelect.innerHTML = '';
+
+    if (!jilidVal || !iqroJilidRules[jilidVal]) {
+        halamanSelect.innerHTML = '<option value="">-- Pilih Jilid Dahulu --</option>';
+        jilidInfo.style.display  = 'none';
+        halamanInfo.style.display = 'none';
+        return;
+    }
+
+    const rule = iqroJilidRules[jilidVal];
+
+    // Tampilkan info range jilid
+    jilidInfo.style.display = 'flex';
+    jilidInfo.className = 'iqro-range-info';
+    jilidInfo.innerHTML = `<i class="fa-solid fa-circle-info"></i> Jilid ${jilidVal}: Halaman ${rule.min} – ${rule.max}`;
+
+    // Populate halaman sesuai rule
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '-- Pilih Halaman --';
+    halamanSelect.appendChild(defaultOpt);
+
+    let addedCount = 0;
+    allIqroHalamans.forEach(h => {
+        const hNum = parseInt(h);
+        if (hNum >= rule.min && hNum <= rule.max) {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = h;
+            if (String(h) === String(prevHalaman)) opt.selected = true;
+            halamanSelect.appendChild(opt);
+            addedCount++;
+        }
+    });
+
+    // Info halaman
+    halamanInfo.style.display = 'flex';
+    halamanInfo.className = 'iqro-range-info';
+    halamanInfo.innerHTML = `<i class="fa-solid fa-book-open"></i> ${addedCount} halaman tersedia (${rule.min}–${rule.max})`;
+}
 
 // Update restrictions when selected student changes
 function updateStudentProgress() {
@@ -845,7 +941,7 @@ function resetBtaqModal() {
     document.getElementById('btaq_id_guru').value = '';
     
     document.getElementById('btaq_jilid').value = '';
-    document.getElementById('btaq_halaman').value = '';
+    filterHalamanByJilid(); // reset halaman dropdown & info
     
     document.getElementById('btaq_surat').value = '';
     document.getElementById('btaq_ayat').innerHTML = '<option value="">-- Pilih Ayat --</option>';
@@ -874,6 +970,7 @@ function editBtaq(data) {
 
     if (data.iqro_awal) {
         document.getElementById('btaq_jilid').value = data.iqro_awal.jilid;
+        filterHalamanByJilid(true); // filter halaman dulu, baru set value
         document.getElementById('btaq_halaman').value = data.iqro_awal.halaman;
     }
     if (data.alquran_awal) {
