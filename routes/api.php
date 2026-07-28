@@ -5,6 +5,11 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PresensiMesinController;
 
+// ─── Health Check (Railway Deployment) ───────────────────────────────────────
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]);
+});
+
 // ─── Public Routes ────────────────────────────────────────────────────────────
 Route::post('/auth/login', [AuthController::class, 'login']);
 
