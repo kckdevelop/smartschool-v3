@@ -80,7 +80,29 @@ class BtaqController extends Controller
         // Master BTAQ data
         $surahList = \App\Models\TabelAlquran::select('surat')->distinct()->orderBy('id')->pluck('surat');
         $iqroJilids = \App\Models\TabelIqro::select('jilid')->distinct()->orderBy('jilid')->pluck('jilid');
-        $iqroHalamans = \App\Models\TabelIqro::select('halaman')->distinct()->orderBy('halaman')->pluck('halaman');
+
+        // Halaman per jilid: { 1: [1,2,...,10], 2: [11,...,16], ... }
+        // Menggunakan aturan range karena TabelIqro mungkin tidak punya semua entri halaman
+        $iqroHalamansByJilid = [];
+        foreach ($this->iqroJilidRules as $jilid => $rule) {
+            $halamans = [];
+            for ($h = $rule['min']; $h <= $rule['max']; $h++) {
+                $halamans[] = $h;
+            }
+            $iqroHalamansByJilid[$jilid] = $halamans;
+        }
+
+        // Fallback: juga ambil dari DB untuk jilid yang ada tapi tidak di rules
+        \App\Models\TabelIqro::select('jilid', 'halaman')
+            ->orderBy('jilid')->orderBy('halaman')
+            ->get()
+            ->groupBy('jilid')
+            ->each(function ($rows, $jilid) use (&$iqroHalamansByJilid) {
+                if (!isset($iqroHalamansByJilid[$jilid])) {
+                    $iqroHalamansByJilid[$jilid] = $rows->pluck('halaman')->unique()->sort()->values()->toArray();
+                }
+            });
+
         $surahAyatCounts = \App\Models\TabelAlquran::select('surat', \DB::raw('count(*) as total_ayat'))
             ->groupBy('surat')
             ->orderBy(\DB::raw('min(id)'))
@@ -110,7 +132,7 @@ class BtaqController extends Controller
         return view('ismuba.btaq.index', compact(
             'totalHariIni', 'totalBulanIni', 'totalAll',
             'kelasList', 'selectedKelasId', 'calendarDates', 'siswaList', 'btaqEntries',
-            'guruIsmuba', 'siswaDaftar', 'surahList', 'iqroJilids', 'iqroHalamans', 'surahAyatCounts', 'latestBtaqMap'
+            'guruIsmuba', 'siswaDaftar', 'surahList', 'iqroJilids', 'iqroHalamansByJilid', 'surahAyatCounts', 'latestBtaqMap'
         ));
     }
 

@@ -601,8 +601,8 @@ const iqroJilidRules = {
     6: { min: 42, max: 55 },
 };
 
-// Semua halaman Iqro yang tersedia dari server
-const allIqroHalamans = @json($iqroHalamans->toArray());
+// Semua halaman Iqro per jilid dari server: { 1: [1,2,...,10], 2: [11,...,16], ... }
+const iqroHalamansByJilid = @json($iqroHalamansByJilid);
 
 let currentStudentLastProgress = null;
 
@@ -742,20 +742,21 @@ document.getElementById('btaq_jilid').addEventListener('change', function() {
 function filterHalamanByJilid(preserveValue = false) {
     const jilidVal = parseInt(document.getElementById('btaq_jilid').value);
     const halamanSelect = document.getElementById('btaq_halaman');
-    const jilidInfo  = document.getElementById('iqro-jilid-info');
+    const jilidInfo   = document.getElementById('iqro-jilid-info');
     const halamanInfo = document.getElementById('iqro-halaman-info');
     const prevHalaman = preserveValue ? halamanSelect.value : '';
 
-    // Clear halaman dropdown
+    // Reset dropdown
     halamanSelect.innerHTML = '';
 
-    if (!jilidVal || !iqroJilidRules[jilidVal]) {
+    if (!jilidVal || !iqroHalamansByJilid[jilidVal]) {
         halamanSelect.innerHTML = '<option value="">-- Pilih Jilid Dahulu --</option>';
         jilidInfo.style.display  = 'none';
         halamanInfo.style.display = 'none';
         return;
     }
 
+    const halamans = iqroHalamansByJilid[jilidVal]; // array angka [11,12,...,16]
     const rule = iqroJilidRules[jilidVal];
 
     // Tampilkan info range jilid
@@ -763,29 +764,25 @@ function filterHalamanByJilid(preserveValue = false) {
     jilidInfo.className = 'iqro-range-info';
     jilidInfo.innerHTML = `<i class="fa-solid fa-circle-info"></i> Jilid ${jilidVal}: Halaman ${rule.min} – ${rule.max}`;
 
-    // Populate halaman sesuai rule
+    // Default option
     const defaultOpt = document.createElement('option');
     defaultOpt.value = '';
     defaultOpt.textContent = '-- Pilih Halaman --';
     halamanSelect.appendChild(defaultOpt);
 
-    let addedCount = 0;
-    allIqroHalamans.forEach(h => {
-        const hNum = parseInt(h);
-        if (hNum >= rule.min && hNum <= rule.max) {
-            const opt = document.createElement('option');
-            opt.value = h;
-            opt.textContent = h;
-            if (String(h) === String(prevHalaman)) opt.selected = true;
-            halamanSelect.appendChild(opt);
-            addedCount++;
-        }
+    // Populate dari data server
+    halamans.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        if (String(h) === String(prevHalaman)) opt.selected = true;
+        halamanSelect.appendChild(opt);
     });
 
-    // Info halaman
+    // Info jumlah halaman tersedia
     halamanInfo.style.display = 'flex';
     halamanInfo.className = 'iqro-range-info';
-    halamanInfo.innerHTML = `<i class="fa-solid fa-book-open"></i> ${addedCount} halaman tersedia (${rule.min}–${rule.max})`;
+    halamanInfo.innerHTML = `<i class="fa-solid fa-book-open"></i> ${halamans.length} halaman tersedia (${rule.min}–${rule.max})`;
 }
 
 // Update restrictions when selected student changes
