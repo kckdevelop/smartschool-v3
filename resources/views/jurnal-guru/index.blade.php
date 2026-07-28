@@ -962,8 +962,8 @@
                 {{-- ── Foto Dokumentasi ── --}}
                 <div class="modal-section">
                     <div class="section-label" style="color:#d97706;">
-                        <span><i class="fa-solid fa-camera"></i> &nbsp;Foto Dokumentasi <span class="required" style="color:#ef4444;">*</span></span>
-                        <span style="font-size:0.7rem; font-weight:400; text-transform:none; color:var(--text-muted);">Wajib diisi minimal 3 foto • maks. 5 MB per foto • JPG/PNG/WEBP</span>
+                        <span><i class="fa-solid fa-camera"></i> &nbsp;Foto Dokumentasi <span style="font-size:0.75rem; font-weight:400; color:#64748b;">(Opsional)</span></span>
+                        <span style="font-size:0.7rem; font-weight:400; text-transform:none; color:var(--text-muted);">Maks. 5 MB per foto &bull; JPG/PNG/WEBP</span>
                     </div>
                     <div class="photo-upload-grid" id="photo-upload-container">
                         <!-- Dynamic photo slots will be rendered here by JS -->
@@ -1427,12 +1427,7 @@ function closeLightbox() {
 async function submitJurnalForm(e) {
     e.preventDefault();
 
-    // ── Validate minimum 3 photos ──
-    const filledPhotos = journalPhotos.filter(p => p.url || p.file);
-    if (filledPhotos.length < MIN_PHOTOS) {
-        alert(`Foto dokumentasi wajib diisi minimal ${MIN_PHOTOS} foto. Baru ada ${filledPhotos.length} foto.`);
-        return;
-    }
+    // ── Foto opsional, tidak ada validasi minimum ──
 
     // ── Sync CKEditor data to textarea before validation & submission ──
     if (materiEditor) {

@@ -173,13 +173,7 @@ class JurnalGuruController extends Controller
             }
         }
 
-        // Validate count (frontend already checks, but double-check server-side)
-        if (count($uploaded) < 3) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => 'Wajib mengunggah minimal 3 foto dokumentasi.'], 422);
-            }
-            return redirect()->back()->withErrors(['foto' => 'Wajib mengunggah minimal 3 foto dokumentasi.']);
-        }
+        // Foto opsional — tidak ada validasi minimum
 
         $data['fotos'] = $uploaded;
         $data['foto_1'] = $uploaded[0] ?? null;
@@ -263,13 +257,7 @@ class JurnalGuruController extends Controller
         // Merge: existing kept photos + new uploads
         $finalPhotos = array_values(array_merge($existingCleaned, $newUploads));
 
-        // Validate count: must be at least 3
-        if (count($finalPhotos) < 3) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => 'Wajib menyertakan minimal 3 foto dokumentasi.'], 422);
-            }
-            return redirect()->back()->withErrors(['foto' => 'Wajib menyertakan minimal 3 foto dokumentasi.']);
-        }
+        // Foto opsional — tidak ada validasi minimum
 
         // Delete old photos that are no longer kept
         $oldPhotos = $jurnal->fotos ?: [];
