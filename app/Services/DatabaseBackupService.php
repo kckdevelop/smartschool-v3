@@ -259,13 +259,164 @@ class DatabaseBackupService
     }
 
     /**
-     * Restore database from a saved backup filename.
+     * Zip all files and folders in storage/app/public into a temporary file.
      *
-     * @param string $filename
-     * @return bool
+     * @return string Path to temporary zip file
      * @throws Exception
      */
-    public function restoreFromSavedBackup(string $filename): bool
+    public function exportMediaZip(): string
+    {
+        $publicStoragePath = storage_path('app/public');
+
+        if (!file_exists($publicStoragePath)) {
+            mkdir($publicStoragePath, 0755, true);
+        }
+
+        $filename = 'backup_media_smartschool_' . date('Y-m-d_His') . '.zip';
+        $tempDir = storage_path('app/backups/temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        $tempZipPath = $tempDir . '/' . $filename;
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new Exception("Gagal membuat file ZIP media.");
+        }
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($publicStoragePath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        $fileCount = 0;
+        foreach ($files as $file) {
+            if (!$file->isDir()) {
+                $filePath = $file->getRealPath();
+                $relativePath = substr($filePath, strlen($publicStoragePath) + 1);
+                $relativePath = str_replace('\\', '/', $relativePath);
+
+                $zip->addFile($filePath, $relativePath);
+                $fileCount++;
+            }
+        }
+
+        $zip->close();
+
+        return $tempZipPath;
+    }
+
+    /**
+     * Create media backup file and save directly in server storage (storage/app/backups/).
+     *
+     * @return array Metadata
+     * @throws Exception
+     */
+    public function createMediaBackup(): array
+    {
+        $filename = 'backup_media_smartschool_' . date('Y-m-d_His') . '.zip';
+        $targetPath = storage_path('app/backups/' . $filename);
+
+        if (!file_exists(dirname($targetPath))) {
+            mkdir(dirname($targetPath), 0755, true);
+        }
+
+        $publicStoragePath = storage_path('app/public');
+        if (!file_exists($publicStoragePath)) {
+            mkdir($publicStoragePath, 0755, true);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($targetPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new Exception("Gagal membuat file ZIP media.");
+        }
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($publicStoragePath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        $fileCount = 0;
+        foreach ($files as $file) {
+            if (!$file->isDir()) {
+                $filePath = $file->getRealPath();
+                $relativePath = substr($filePath, strlen($publicStoragePath) + 1);
+                $relativePath = str_replace('\\', '/', $relativePath);
+
+                $zip->addFile($filePath, $relativePath);
+                $fileCount++;
+            }
+        }
+
+        $zip->close();
+
+        return [
+            'filename'   => $filename,
+            'path'       => 'backups/' . $filename,
+            'type'       => 'media',
+            'size'       => Storage::disk('local')->size('backups/' . $filename),
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
+     * Restore media files & folders from a ZIP file path.
+     *
+     * @param string $zipFilePath Absolute path to ZIP file
+     * @return int Restored files count
+     * @throws Exception
+     */
+    public function restoreMediaFromZip(string $zipFilePath): int
+    {
+        if (!file_exists($zipFilePath)) {
+            throw new Exception("File ZIP tidak ditemukan.");
+        }
+
+        $publicStoragePath = storage_path('app/public');
+        if (!file_exists($publicStoragePath)) {
+            mkdir($publicStoragePath, 0755, true);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFilePath) !== true) {
+            throw new Exception("File ZIP tidak dapat dibuka atau korup.");
+        }
+
+        $restoredCount = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entryName = $zip->getNameIndex($i);
+
+            if (str_ends_with($entryName, '/') || str_ends_with($entryName, '\\')) {
+                continue;
+            }
+
+            if (str_contains($entryName, '..')) {
+                continue;
+            }
+
+            $targetPath = $publicStoragePath . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $entryName);
+            $targetDir  = dirname($targetPath);
+
+            if (!file_exists($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
+            copy("zip://{$zipFilePath}#{$entryName}", $targetPath);
+            $restoredCount++;
+        }
+
+        $zip->close();
+        return $restoredCount;
+    }
+
+    /**
+     * Restore database or media from a saved backup filename.
+     *
+     * @param string $filename
+     * @return bool|int
+     * @throws Exception
+     */
+    public function restoreFromSavedBackup(string $filename)
     {
         $cleanFilename = basename($filename);
         $path = $this->storagePath . '/' . $cleanFilename;
@@ -274,12 +425,17 @@ class DatabaseBackupService
             throw new Exception("File backup '{$cleanFilename}' tidak ditemukan.");
         }
 
+        if (str_ends_with($cleanFilename, '.zip')) {
+            $fullPath = Storage::disk('local')->path($path);
+            return $this->restoreMediaFromZip($fullPath);
+        }
+
         $sqlContent = Storage::disk('local')->get($path);
         return $this->restoreFromSql($sqlContent);
     }
 
     /**
-     * Get list of all saved backup files.
+     * Get list of all saved backup files (.sql and .zip).
      *
      * @return array
      */
@@ -289,13 +445,17 @@ class DatabaseBackupService
         $backups = [];
 
         foreach ($files as $file) {
-            if (str_ends_with($file, '.sql')) {
+            $isSql = str_ends_with($file, '.sql');
+            $isZip = str_ends_with($file, '.zip');
+
+            if ($isSql || $isZip) {
                 $filename = basename($file);
                 $size = Storage::disk('local')->size($file);
                 $time = Storage::disk('local')->lastModified($file);
 
                 $backups[] = [
                     'filename'      => $filename,
+                    'type'          => $isZip ? 'media' : 'sql',
                     'size'          => $size,
                     'size_formatted'=> $this->formatBytes($size),
                     'created_at'    => date('Y-m-d H:i:s', $time),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DataCheckupGukar;
+use App\Models\KunjunganUksGukar;
 use App\Models\Guru;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
@@ -121,22 +122,53 @@ class GukarLogKesehatanController extends Controller
         // ── Analisis & Rekomendasi Kesehatan ──────────────────────────────
         $analisis = $this->generateAnalisis($terakhir);
 
+        // ── Riwayat Kunjungan UKS (with obat) ─────────────────────────────
+        $kunjunganQuery = KunjunganUksGukar::with('riwayatObat');
+        if ($idGuru) {
+            $kunjunganQuery->where('id_guru', $idGuru);
+        } else {
+            $kunjunganQuery->where('id_karyawan', $idKaryawan);
+        }
+        $riwayatKunjungan = $kunjunganQuery
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id_kunjungan')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id_kunjungan' => $item->id_kunjungan,
+                    'tanggal'      => $item->tanggal ? $item->tanggal->format('Y-m-d') : null,
+                    'jam'          => $item->jam ?? '',
+                    'keluhan'      => $item->keluhan ?? '',
+                    'diagnosa'     => $item->diagnosa ?? '',
+                    'tindakan'     => $item->tindakan ?? '',
+                    'daftar_obat'  => $item->riwayatObat->map(function ($o) {
+                        return [
+                            'id_riwayat' => $o->id_riwayat,
+                            'nama_obat'  => $o->nama_obat,
+                            'dosis'      => $o->dosis,
+                            'jumlah'     => $o->jumlah,
+                        ];
+                    })->values()->all(),
+                ];
+            });
+
         return response()->json([
-            'success' => true,
-            'nama'    => $namaUser,
-            'terakhir'=> $terakhir,
-            'riwayat' => $riwayatDesc,
-            'tren'    => [
-                'tanggal_list'   => $tanggalList,
-                'sistolik_list'  => $sistolikList,
-                'diastolik_list' => $diastolikList,
+            'success'           => true,
+            'nama'              => $namaUser,
+            'terakhir'          => $terakhir,
+            'riwayat'           => $riwayatDesc,
+            'riwayat_kunjungan' => $riwayatKunjungan,
+            'tren'              => [
+                'tanggal_list'    => $tanggalList,
+                'sistolik_list'   => $sistolikList,
+                'diastolik_list'  => $diastolikList,
                 'gula_darah_list' => $gulaDarahList,
-                'kolesterol_list'=> $kolesterolList,
+                'kolesterol_list' => $kolesterolList,
                 'asam_urat_list'  => $asamUratList,
                 'berat_badan_list'=> $beratBadanList,
-                'imt_list'       => $imtList,
+                'imt_list'        => $imtList,
             ],
-            'analisis'=> $analisis,
+            'analisis'          => $analisis,
         ]);
     }
 

@@ -142,6 +142,102 @@ class BkDashboardController extends Controller
             ->pluck('total', 'gaya_belajar')
             ->toArray();
 
+        // 11. Siswa dengan ketidakhadiran >= 3 hari minggu ini (dengan fallback 14 hari)
+        $startOfWeek = Carbon::now()->startOfWeek()->toDateString();
+        $endOfWeek   = Carbon::now()->endOfWeek()->toDateString();
+
+        $absenceRecordsThisWeek = Presensi::with(['siswa.kelas'])
+            ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+            ->whereIn('status', ['2', '3', '4', 'Sakit', 'Izin', 'Alfa', 'Alpa'])
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        $groupedBySiswa = $absenceRecordsThisWeek->groupBy('nis');
+        $siswaAbsen = [];
+
+        foreach ($groupedBySiswa as $nis => $records) {
+            $distinctDates = $records->pluck('tanggal')->map(fn($d) => is_string($d) ? substr($d, 0, 10) : $d->format('Y-m-d'))->unique()->values();
+            if ($distinctDates->count() >= 3) {
+                $firstRecord = $records->first();
+                $siswa = $firstRecord->siswa;
+
+                $details = $records->map(function ($r) {
+                    $st = strtolower((string)$r->status);
+                    $statusLabel = 'Alfa';
+                    if ($st === '2' || $st === 'sakit') $statusLabel = 'Sakit';
+                    else if ($st === '3' || $st === 'izin') $statusLabel = 'Izin';
+                    
+                    return [
+                        'tanggal' => is_string($r->tanggal) ? substr($r->tanggal, 0, 10) : $r->tanggal->format('Y-m-d'),
+                        'status' => $statusLabel,
+                        'keterangan' => $r->keterangan ?? '-',
+                    ];
+                })->values()->toArray();
+
+                $sakitCount = count(array_filter($details, fn($d) => $d['status'] === 'Sakit'));
+                $izinCount  = count(array_filter($details, fn($d) => $d['status'] === 'Izin'));
+                $alfaCount  = count(array_filter($details, fn($d) => $d['status'] === 'Alfa'));
+
+                $siswaAbsen[] = [
+                    'nis' => (string)$nis,
+                    'nama_siswa' => $siswa->nama_siswa ?? 'Siswa (NIS: '.$nis.')',
+                    'kelas' => $siswa->kelas->nama_kelas ?? '-',
+                    'total_tidak_hadir' => $distinctDates->count(),
+                    'sakit' => $sakitCount,
+                    'izin' => $izinCount,
+                    'alfa' => $alfaCount,
+                    'detail' => $details,
+                ];
+            }
+        }
+
+        // Fallback ke 14 hari jika minggu ini belum ada yang >= 3 hari
+        if (empty($siswaAbsen)) {
+            $startFallback = Carbon::now()->subDays(14)->toDateString();
+            $absenceRecordsFallback = Presensi::with(['siswa.kelas'])
+                ->whereBetween('tanggal', [$startFallback, Carbon::today()->toDateString()])
+                ->whereIn('status', ['2', '3', '4', 'Sakit', 'Izin', 'Alfa', 'Alpa'])
+                ->orderBy('tanggal', 'desc')
+                ->get();
+
+            $groupedFallback = $absenceRecordsFallback->groupBy('nis');
+            foreach ($groupedFallback as $nis => $records) {
+                $distinctDates = $records->pluck('tanggal')->map(fn($d) => is_string($d) ? substr($d, 0, 10) : $d->format('Y-m-d'))->unique()->values();
+                if ($distinctDates->count() >= 3) {
+                    $firstRecord = $records->first();
+                    $siswa = $firstRecord->siswa;
+
+                    $details = $records->map(function ($r) {
+                        $st = strtolower((string)$r->status);
+                        $statusLabel = 'Alfa';
+                        if ($st === '2' || $st === 'sakit') $statusLabel = 'Sakit';
+                        else if ($st === '3' || $st === 'izin') $statusLabel = 'Izin';
+                        
+                        return [
+                            'tanggal' => is_string($r->tanggal) ? substr($r->tanggal, 0, 10) : $r->tanggal->format('Y-m-d'),
+                            'status' => $statusLabel,
+                            'keterangan' => $r->keterangan ?? '-',
+                        ];
+                    })->values()->toArray();
+
+                    $sakitCount = count(array_filter($details, fn($d) => $d['status'] === 'Sakit'));
+                    $izinCount  = count(array_filter($details, fn($d) => $d['status'] === 'Izin'));
+                    $alfaCount  = count(array_filter($details, fn($d) => $d['status'] === 'Alfa'));
+
+                    $siswaAbsen[] = [
+                        'nis' => (string)$nis,
+                        'nama_siswa' => $siswa->nama_siswa ?? 'Siswa (NIS: '.$nis.')',
+                        'kelas' => $siswa->kelas->nama_kelas ?? '-',
+                        'total_tidak_hadir' => $distinctDates->count(),
+                        'sakit' => $sakitCount,
+                        'izin' => $izinCount,
+                        'alfa' => $alfaCount,
+                        'detail' => $details,
+                    ];
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -172,6 +268,7 @@ class BkDashboardController extends Controller
                 ],
                 'pelanggaran_terbaru' => $pelanggaranTerbaru,
                 'konsultasi_terbaru' => $konsultasiTerbaru,
+                'siswa_absen_bermasalah' => array_values($siswaAbsen),
             ]
         ]);
     }

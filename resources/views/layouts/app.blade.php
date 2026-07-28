@@ -234,7 +234,8 @@
                         <li><a href="{{ route('uks.dashboard') }}" class="nav-sub-link {{ request()->routeIs('uks.dashboard') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Dashboard UKS</a></li>
                         <li><a href="{{ route('uks.checkup.index') }}" class="nav-sub-link {{ request()->routeIs('uks.checkup.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Data Check-Up Siswa</a></li>
                         <li><a href="{{ route('uks.checkup-gukar.index') }}" class="nav-sub-link {{ request()->routeIs('uks.checkup-gukar.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Data Check-Up Gukar</a></li>
-                        <li><a href="{{ route('uks.kunjungan.index') }}" class="nav-sub-link {{ request()->routeIs('uks.kunjungan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Kunjungan UKS</a></li>
+                        <li><a href="{{ route('uks.kunjungan.index') }}" class="nav-sub-link {{ request()->routeIs('uks.kunjungan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Kunjungan UKS Siswa</a></li>
+                        <li><a href="{{ route('uks.kunjungan-gukar.index') }}" class="nav-sub-link {{ request()->routeIs('uks.kunjungan-gukar.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Kunjungan UKS Gukar</a></li>
                         <li><a href="{{ route('uks.laporan.index') }}" class="nav-sub-link {{ request()->routeIs('uks.laporan.index') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Laporan UKS</a></li>
                     </ul>
                 </li>

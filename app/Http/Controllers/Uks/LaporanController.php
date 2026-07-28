@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Uks;
 
 use App\Http\Controllers\Controller;
 use App\Models\KunjunganUks;
+use App\Models\KunjunganUksGukar;
 use App\Models\DataCheckup;
 use App\Models\UserSiswa;
 use App\Models\Kelas;
@@ -130,11 +131,19 @@ class LaporanController extends Controller
         // ── IMT per Kelas ──────────────────────────────────────────────────
         $imtPerKelas = $this->buildImtPerKelas($periodeAwal, $periodeAkhir, $semesterObj);
 
-        // ── Gukar Checkups ─────────────────────────────────────────────────
+        // ── Gukar Checkups (Check-Up) ──────────────────────────────────────
         $gukarCheckupList = DataCheckupGukar::with(['guru', 'karyawan'])
             ->whereBetween('tanggal', [$periodeAwal->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
             ->orderByDesc('tanggal')
             ->get();
+
+        // ── Kunjungan UKS Gukar (Guru & Karyawan) ─────────────────────────
+        $kunjunganGukarList = KunjunganUksGukar::with(['guru', 'karyawan', 'riwayatObat'])
+            ->whereBetween('tanggal', [$periodeAwal->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
+            ->orderByDesc('tanggal')
+            ->orderByDesc('jam')
+            ->paginate(20, ['*'], 'page_gukar')
+            ->withQueryString();
 
         return view('uks.laporan.index', compact(
             'idTahun', 'idSemester', 'tahunAjaran', 'semesterObj',
@@ -142,7 +151,7 @@ class LaporanController extends Controller
             'kunjunganList', 'topKeluhan', 'totalKunjungan', 'uniqueSiswa',
             'tahunList', 'namaBulan', 'semesterLabel',
             'periodeAwal', 'periodeAkhir',
-            'imtPerKelas', 'gukarCheckupList'
+            'imtPerKelas', 'gukarCheckupList', 'kunjunganGukarList'
         ));
     }
 
@@ -210,6 +219,33 @@ class LaporanController extends Controller
 
         return view('uks.laporan.print-gukar', compact(
             'semesterObj', 'semesterLabel', 'gukarCheckupList', 'sekolah',
+            'periodeAwal', 'periodeAkhir'
+        ));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  PRINT – Kunjungan UKS Guru & Karyawan (Gukar)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function printKunjunganGukar(Request $request)
+    {
+        [$periodeAwal, $periodeAkhir, $semesterObj, $semesterLabel] = $this->resolvePeriod($request);
+
+        $kunjunganGukarList = KunjunganUksGukar::with(['guru', 'karyawan', 'riwayatObat'])
+            ->whereBetween('tanggal', [$periodeAwal->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
+            ->orderByDesc('tanggal')
+            ->orderByDesc('jam')
+            ->get();
+
+        $sekolah = \App\Models\Sekolah::where('id_sekolah', 1)->first();
+
+        $namaBulan = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret',    4=>'April',
+            5=>'Mei',     6=>'Juni',     7=>'Juli',      8=>'Agustus',
+            9=>'September',10=>'Oktober',11=>'November', 12=>'Desember',
+        ];
+
+        return view('uks.laporan.print-kunjungan-gukar', compact(
+            'semesterObj', 'kunjunganGukarList', 'sekolah', 'namaBulan', 'semesterLabel',
             'periodeAwal', 'periodeAkhir'
         ));
     }

@@ -92,17 +92,85 @@ class BackupRestoreController extends Controller
     }
 
     /**
-     * Restore database dari riwayat file backup yang tersimpan di server.
+     * Buat backup file media (gambar & folder) lalu unduh langsung sebagai file ZIP.
+     */
+    public function exportMedia()
+    {
+        try {
+            $zipPath = $this->backupService->exportMediaZip();
+            $filename = basename($zipPath);
+
+            return response()->download($zipPath, $filename, [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
+        } catch (Exception $e) {
+            return redirect()->route('atur-data.backup-restore')
+                ->with('error', 'Gagal membuat file backup media/gambar: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Buat backup file media (gambar & folder) dan simpan di server (storage/app/backups/).
+     */
+    public function storeMedia()
+    {
+        try {
+            $backup = $this->backupService->createMediaBackup();
+            return redirect()->route('atur-data.backup-restore')
+                ->with('success', "File backup media/gambar '{$backup['filename']}' berhasil dibuat dan disimpan di server.");
+        } catch (Exception $e) {
+            return redirect()->route('atur-data.backup-restore')
+                ->with('error', 'Gagal menyimpan backup media: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Unggah file ZIP media eksternal dan lakukan restore folder & file gambar.
+     */
+    public function uploadRestoreMedia(Request $request)
+    {
+        $request->validate([
+            'media_file' => 'required|file|max:524288', // Maks 500MB
+        ], [
+            'media_file.required' => 'Harap pilih file ZIP media untuk diunggah.',
+            'media_file.max'      => 'Ukuran file ZIP maksimal 500MB.',
+        ]);
+
+        try {
+            $file = $request->file('media_file');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if ($extension !== 'zip') {
+                return redirect()->route('atur-data.backup-restore')
+                    ->with('error', 'File yang diunggah harus berformat ZIP (.zip).');
+            }
+
+            $restoredCount = $this->backupService->restoreMediaFromZip($file->getRealPath());
+
+            return redirect()->route('atur-data.backup-restore')
+                ->with('success', "Berhasil merestore {$restoredCount} file gambar & folder media dari file ZIP!");
+        } catch (Exception $e) {
+            return redirect()->route('atur-data.backup-restore')
+                ->with('error', 'Gagal melakukan restore media/gambar: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Restore database / media dari riwayat file backup yang tersimpan di server.
      */
     public function restoreSaved($filename)
     {
         try {
-            $this->backupService->restoreFromSavedBackup($filename);
+            $result = $this->backupService->restoreFromSavedBackup($filename);
+            $message = str_ends_with($filename, '.zip')
+                ? "Media/gambar berhasil direstore dari file '{$filename}' ({$result} file dipulihkan)!"
+                : "Database berhasil direstore dari file '{$filename}'!";
+
             return redirect()->route('atur-data.backup-restore')
-                ->with('success', "Database berhasil direstore dari file '{$filename}'!");
+                ->with('success', $message);
         } catch (Exception $e) {
             return redirect()->route('atur-data.backup-restore')
-                ->with('error', 'Gagal mengembalikan database: ' . $e->getMessage());
+                ->with('error', 'Gagal mengembalikan data: ' . $e->getMessage());
         }
     }
 
@@ -119,8 +187,10 @@ class BackupRestoreController extends Controller
                 ->with('error', 'File backup tidak ditemukan.');
         }
 
+        $mimeType = str_ends_with($cleanFilename, '.zip') ? 'application/zip' : 'application/sql';
+
         return Storage::disk('local')->download($path, $cleanFilename, [
-            'Content-Type' => 'application/sql',
+            'Content-Type' => $mimeType,
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BimbinganKonseling;
 use App\Models\UserSiswa;
 use App\Models\Kelas;
+use App\Models\Guru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -23,7 +24,9 @@ class BukuKonsulasiController extends Controller
         }
 
         $data = $query->paginate(15)->withQueryString();
-        return view('bk.buku-konsultasi.index', compact('data', 'kelas'));
+        $guruBkList = Guru::where('guru_bk', 'ya')->where('status', 'aktif')->orderBy('nama_guru')->get();
+
+        return view('bk.buku-konsultasi.index', compact('data', 'kelas', 'guruBkList'));
     }
 
     public function store(Request $request)
@@ -31,19 +34,19 @@ class BukuKonsulasiController extends Controller
         $request->validate([
             'tanggal'      => 'required|date',
             'nis'          => 'required|string|max:20',
+            'id_guru'      => 'required|exists:guru,id_guru',
             'jenis_masalah'=> 'required|string|max:100',
             'uraian'       => 'required|string',
         ]);
 
-        $guru = Auth::user();
         BimbinganKonseling::create([
             'tanggal'       => $request->tanggal,
             'nis'           => $request->nis,
+            'id_guru'       => $request->id_guru,
             'jenis_masalah' => $request->jenis_masalah,
             'uraian'        => $request->uraian,
             'tindak_lanjut' => $request->tindak_lanjut,
             'status'        => $request->status ?? 'proses',
-            'id_guru'       => $guru->id_guru ?? 1,
         ]);
 
         return redirect()->route('bk.buku-konsultasi.index')
@@ -55,13 +58,15 @@ class BukuKonsulasiController extends Controller
         $request->validate([
             'tanggal'      => 'required|date',
             'nis'          => 'required|string|max:20',
+            'id_guru'      => 'required|exists:guru,id_guru',
             'jenis_masalah'=> 'required|string|max:100',
             'uraian'       => 'required|string',
             'status'       => 'required|in:proses,selesai',
         ]);
 
-        BimbinganKonseling::findOrFail($id)->update($request->only([
-            'tanggal', 'nis', 'jenis_masalah', 'uraian', 'tindak_lanjut', 'status'
+        $item = $id instanceof BimbinganKonseling ? $id : BimbinganKonseling::findOrFail($id);
+        $item->update($request->only([
+            'tanggal', 'nis', 'id_guru', 'jenis_masalah', 'uraian', 'tindak_lanjut', 'status'
         ]));
 
         return redirect()->route('bk.buku-konsultasi.index')
@@ -70,7 +75,9 @@ class BukuKonsulasiController extends Controller
 
     public function destroy($id)
     {
-        BimbinganKonseling::findOrFail($id)->delete();
+        $item = $id instanceof BimbinganKonseling ? $id : BimbinganKonseling::findOrFail($id);
+        $item->delete();
+
         return redirect()->route('bk.buku-konsultasi.index')
             ->with('success', 'Data konsultasi berhasil dihapus.');
     }

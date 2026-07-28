@@ -48,4 +48,9 @@ class Karyawan extends Authenticatable
     {
         return $this->hasMany(DataCheckupGukar::class, 'id_karyawan', 'id_karyawan');
     }
+
+    public function kunjunganUks()
+    {
+        return $this->hasMany(KunjunganUksGukar::class, 'id_karyawan', 'id_karyawan');
+    }
 }

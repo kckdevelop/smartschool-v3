@@ -388,6 +388,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/kunjungan_uks/siswa', [\App\Http\Controllers\Api\UksKunjunganController::class, 'getKunjunganSiswaHistory']);
+    Route::get('/kunjungan_uks/gukar', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'getKunjunganGukarHistory']);
 
     // 18. UKS
     Route::prefix('uks')->group(function () {
@@ -397,12 +398,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/jenis-checkup/{id}', [\App\Http\Controllers\Api\UksJenisCheckupController::class, 'update']);
         Route::delete('/jenis-checkup/{id}', [\App\Http\Controllers\Api\UksJenisCheckupController::class, 'destroy']);
 
-        // Kunjungan
+        // Kunjungan Siswa
         Route::get('/kunjungan', [\App\Http\Controllers\Api\UksKunjunganController::class, 'index']);
         Route::post('/kunjungan', [\App\Http\Controllers\Api\UksKunjunganController::class, 'store']);
         Route::get('/kunjungan/{id}', [\App\Http\Controllers\Api\UksKunjunganController::class, 'show']);
         Route::put('/kunjungan/{id}', [\App\Http\Controllers\Api\UksKunjunganController::class, 'update']);
         Route::delete('/kunjungan/{id}', [\App\Http\Controllers\Api\UksKunjunganController::class, 'destroy']);
+
+        // Kunjungan Gukar (Guru & Karyawan)
+        Route::get('/kunjungan-gukar', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'index']);
+        Route::post('/kunjungan-gukar', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'store']);
+        Route::get('/kunjungan-gukar/{id}', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'show']);
+        Route::put('/kunjungan-gukar/{id}', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'update']);
+        Route::delete('/kunjungan-gukar/{id}', [\App\Http\Controllers\Api\UksKunjunganGukarController::class, 'destroy']);
 
         // Checkup
         Route::get('/checkup', [\App\Http\Controllers\Api\UksCheckupController::class, 'index']);

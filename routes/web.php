@@ -58,12 +58,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/device-status', [WhatsappGatewayController::class, 'deviceStatus'])->name('.device-status');
     });
 
-    // 1c. Backup & Restore Database
+    // 1c. Backup & Restore Database & Media
     Route::prefix('atur-data/backup-restore')->name('atur-data.backup-restore')->group(function () {
         Route::get('/', [BackupRestoreController::class, 'index'])->name('');
         Route::get('/export', [BackupRestoreController::class, 'export'])->name('.export');
+        Route::get('/export-media', [BackupRestoreController::class, 'exportMedia'])->name('.export-media');
         Route::post('/store', [BackupRestoreController::class, 'store'])->name('.store');
+        Route::post('/store-media', [BackupRestoreController::class, 'storeMedia'])->name('.store-media');
         Route::post('/upload-restore', [BackupRestoreController::class, 'uploadRestore'])->name('.upload-restore');
+        Route::post('/upload-restore-media', [BackupRestoreController::class, 'uploadRestoreMedia'])->name('.upload-restore-media');
         Route::post('/restore-saved/{filename}', [BackupRestoreController::class, 'restoreSaved'])->name('.restore-saved');
         Route::get('/download-saved/{filename}', [BackupRestoreController::class, 'downloadSaved'])->name('.download-saved');
         Route::delete('/{filename}', [BackupRestoreController::class, 'destroy'])->name('.destroy');
@@ -254,6 +257,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('uks')->name('uks.')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Uks\DashboardController::class, 'index'])->name('dashboard');
         Route::resource('kunjungan', \App\Http\Controllers\Uks\KunjunganController::class)->except(['create','edit']);
+        Route::resource('kunjungan-gukar', \App\Http\Controllers\Uks\KunjunganGukarController::class)->except(['create','edit']);
         Route::get('checkup/template/{id_kelas}', [\App\Http\Controllers\Uks\CheckupController::class, 'downloadTemplate'])->name('checkup.template');
         Route::post('checkup/import', [\App\Http\Controllers\Uks\CheckupController::class, 'importExcel'])->name('checkup.import');
         Route::resource('checkup', \App\Http\Controllers\Uks\CheckupController::class)->except(['create','edit']);
@@ -261,6 +265,7 @@ Route::middleware('auth')->group(function () {
         Route::post('checkup-gukar/import', [\App\Http\Controllers\Uks\CheckupGukarController::class, 'importExcel'])->name('checkup-gukar.import');
         Route::resource('checkup-gukar', \App\Http\Controllers\Uks\CheckupGukarController::class)->except(['create','edit']);
         Route::get('laporan/print', [\App\Http\Controllers\Uks\LaporanController::class, 'print'])->name('laporan.print');
+        Route::get('laporan/print-kunjungan-gukar', [\App\Http\Controllers\Uks\LaporanController::class, 'printKunjunganGukar'])->name('laporan.print-kunjungan-gukar');
         Route::get('laporan/print-imt', [\App\Http\Controllers\Uks\LaporanController::class, 'printImt'])->name('laporan.print-imt');
         Route::get('laporan/print-gukar', [\App\Http\Controllers\Uks\LaporanController::class, 'printGukar'])->name('laporan.print-gukar');
         Route::get('laporan/semester-by-tahun', [\App\Http\Controllers\Uks\LaporanController::class, 'getSemesterByTahun'])->name('laporan.semester-by-tahun');

@@ -94,4 +94,9 @@ class Guru extends Authenticatable
     {
         return $this->hasMany(DataCheckupGukar::class, 'id_guru', 'id_guru');
     }
+
+    public function kunjunganUks()
+    {
+        return $this->hasMany(KunjunganUksGukar::class, 'id_guru', 'id_guru');
+    }
 }

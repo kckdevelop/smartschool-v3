@@ -162,7 +162,7 @@
                                 <i class="fa-solid fa-pen"></i>
                             </button>
                             <button type="button" class="btn-icon btn-delete" title="Hapus"
-                                onclick="confirmDelete('{{ route('bk.buku-konsultasi.destroy', $item->id_bimbingan) }}','Yakin hapus data konsultasi ini?')">
+                                onclick="confirmDelete('{{ route('bk.buku-konsultasi.destroy', $item->id_bk) }}','Yakin hapus data konsultasi ini?')">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -199,6 +199,17 @@
                 <div class="form-group">
                     <label class="form-label">Tanggal Konsultasi <span class="required">*</span></label>
                     <input type="date" name="tanggal" id="kon_tgl" class="form-control" required value="{{ date('Y-m-d') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Guru BK <span class="required">*</span></label>
+                    <select name="id_guru" id="kon_id_guru" class="form-control" required>
+                        <option value="">-- Pilih Guru BK --</option>
+                        @foreach($guruBkList as $g)
+                            <option value="{{ $g->id_guru }}" {{ (Auth::user() && Auth::user()->id_guru == $g->id_guru) ? 'selected' : '' }}>
+                                {{ $g->nama_guru }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 {{-- ── Cari Siswa Autocomplete ── --}}
                 <div class="form-group">
@@ -268,6 +279,7 @@ function openAddModal() {
     document.getElementById('method-field-konsultasi').innerHTML = '';
     document.getElementById('modal-title-konsultasi').textContent = 'Sesi Konsultasi Baru';
     document.getElementById('kon_tgl').value = '{{ date("Y-m-d") }}';
+    document.getElementById('kon_id_guru').value = '{{ Auth::user()->id_guru ?? "" }}';
     resetSiswaSearch();
     document.getElementById('kon_jenis').value = '';
     document.getElementById('kon_uraian').value = '';
@@ -277,12 +289,13 @@ function openAddModal() {
 }
 
 function editKonsultasi(data) {
-    document.getElementById('form-konsultasi').action = `/bk/buku-konsultasi/${data.id_bimbingan}`;
+    document.getElementById('form-konsultasi').action = `/bk/buku-konsultasi/${data.id_bk}`;
     document.getElementById('method-field-konsultasi').innerHTML = '<input type="hidden" name="_method" value="PUT">';
     document.getElementById('modal-title-konsultasi').textContent = 'Edit Buku Konsultasi';
     
     const dateVal = data.tanggal ? data.tanggal.substring(0, 10) : '';
     document.getElementById('kon_tgl').value = dateVal;
+    document.getElementById('kon_id_guru').value = data.id_guru || '';
     
     // Pre-fill student autocomplete
     const namaKelas = data.siswa && data.siswa.kelas 

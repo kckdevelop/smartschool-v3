@@ -62,7 +62,10 @@
     {{-- Report Tabs Navigation --}}
     <div class="report-tabs-nav">
         <button type="button" class="report-tab-btn active" data-target="tab-kunjungan">
-            <i class="fa-solid fa-notes-medical"></i> Kunjungan UKS
+            <i class="fa-solid fa-notes-medical"></i> Kunjungan UKS Siswa
+        </button>
+        <button type="button" class="report-tab-btn" data-target="tab-kunjungan-gukar">
+            <i class="fa-solid fa-user-nurse"></i> Kunjungan UKS Gukar
         </button>
         <button type="button" class="report-tab-btn" data-target="tab-imt">
             <i class="fa-solid fa-weight-scale"></i> IMT Siswa per Kelas
@@ -147,7 +150,89 @@
         </div>
     </div>
 
-    {{-- TAB 2: IMT Siswa per Kelas --}}
+    {{-- TAB 2: Kunjungan UKS Gukar --}}
+    <div class="tab-content-pane" id="tab-kunjungan-gukar">
+        <div class="card" style="margin-top:20px;">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fa-solid fa-user-nurse"></i> Rincian Kunjungan UKS Guru &amp; Karyawan</h2>
+                <div class="card-header-right">
+                    <a href="{{ route('uks.laporan.print-kunjungan-gukar', ['id_semester' => $idSemester]) }}"
+                       target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-file-pdf"></i> Cetak PDF Kunjungan Gukar
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px;">#</th>
+                            <th>Tanggal &amp; Jam</th>
+                            <th style="width:110px; text-align:center;">Peran</th>
+                            <th>Nama</th>
+                            <th>NIP / No. ID</th>
+                            <th>Keluhan</th>
+                            <th>Diagnosa</th>
+                            <th>Tindakan</th>
+                            <th>Obat Diberikan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($kunjunganGukarList as $idx => $kg)
+                        @php
+                            $isGuru  = !is_null($kg->id_guru);
+                            $namaGK  = $isGuru ? ($kg->guru?->nama_guru ?? '-') : ($kg->karyawan?->nama_karyawan ?? '-');
+                            $noIdGK  = $isGuru ? ($kg->guru?->no_id ?? '-') : ($kg->karyawan?->no_id ?? '-');
+                            $peranGK = $isGuru ? 'Guru' : 'Karyawan';
+                        @endphp
+                        <tr>
+                            <td style="color:var(--text-muted);font-size:0.8rem;">{{ $kunjunganGukarList->firstItem() + $loop->index }}</td>
+                            <td>
+                                <div style="font-weight:700;font-size:0.85rem;">
+                                    {{ \Carbon\Carbon::parse($kg->tanggal)->translatedFormat('d M Y') }}
+                                </div>
+                                <div style="font-size:0.75rem;color:var(--text-muted);">
+                                    {{ \Carbon\Carbon::parse($kg->jam)->format('H:i') }} WIB
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {{ $isGuru ? 'badge-info' : 'badge-warning' }}">
+                                    {{ $peranGK }}
+                                </span>
+                            </td>
+                            <td style="font-weight:600;">{{ $namaGK }}</td>
+                            <td><span class="badge badge-muted">{{ $noIdGK }}</span></td>
+                            <td>{{ $kg->keluhan }}</td>
+                            <td><span class="badge badge-warning">{{ $kg->diagnosa }}</span></td>
+                            <td><span class="badge badge-success">{{ $kg->tindakan }}</span></td>
+                            <td>
+                                @if($kg->riwayatObat && $kg->riwayatObat->isNotEmpty())
+                                    <div style="display:flex; flex-direction:column; gap:4px;">
+                                        @foreach($kg->riwayatObat as $o)
+                                            <span class="badge badge-muted" style="font-size:0.75rem; justify-content:flex-start;">
+                                                <i class="fa-solid fa-pills" style="color:var(--color-primary); margin-right:4px;"></i>
+                                                {{ $o->nama_obat }} ({{ $o->jumlah }} - {{ $o->dosis }})
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-6">Tidak ada data kunjungan guru &amp; karyawan pada periode ini</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+                {{ $kunjunganGukarList->links('pagination.presensi') }}
+            </div>
+        </div>
+    </div>
+
+    {{-- TAB 3: IMT Siswa per Kelas --}}
     <div class="tab-content-pane" id="tab-imt">
         <div style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
             <a href="{{ route('uks.laporan.print-imt', ['id_semester' => $idSemester]) }}"
