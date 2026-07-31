@@ -86,19 +86,26 @@ class UksKunjunganGukarController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'gukar_id' => 'required|string',
-            'tanggal'  => 'required|date',
-            'jam'      => 'nullable|string|max:10',
-            'keluhan'  => 'required|string|max:500',
-            'diagnosa' => 'nullable|string|max:200',
-            'tindakan' => 'required|string|max:200',
-            'obat'     => 'nullable|array',
+            'gukar_id'    => 'nullable|string',
+            'id_guru'     => 'nullable|integer',
+            'id_karyawan' => 'nullable|integer',
+            'tanggal'     => 'required|date',
+            'jam'         => 'nullable|string|max:10',
+            'keluhan'     => 'required|string|max:500',
+            'diagnosa'    => 'nullable|string|max:200',
+            'tindakan'    => 'required|string|max:200',
+            'obat'        => 'nullable',
         ]);
 
-        [$id_guru, $id_karyawan] = $this->parseGukarId($request->gukar_id);
+        $id_guru = $request->id_guru;
+        $id_karyawan = $request->id_karyawan;
+
+        if (!$id_guru && !$id_karyawan && $request->filled('gukar_id')) {
+            [$id_guru, $id_karyawan] = $this->parseGukarId($request->gukar_id);
+        }
 
         if (!$id_guru && !$id_karyawan) {
-            return response()->json(['success' => false, 'message' => 'gukar_id tidak valid.'], 422);
+            return response()->json(['success' => false, 'message' => 'Pilih guru atau karyawan terlebih dahulu.'], 422);
         }
 
         $kunjungan = KunjunganUksGukar::create([
@@ -111,16 +118,32 @@ class UksKunjunganGukarController extends Controller
             'tindakan'    => $request->tindakan,
         ]);
 
-        if ($request->filled('obat') && is_array($request->obat)) {
-            foreach ($request->obat as $o) {
-                $nama = is_array($o) ? ($o['nama_obat'] ?? '') : (string) $o;
-                if (!empty($nama)) {
-                    RiwayatObatGukar::create([
-                        'id_kunjungan' => $kunjungan->id_kunjungan,
-                        'nama_obat'    => $nama,
-                        'dosis'        => is_array($o) ? ($o['dosis'] ?? '-') : '-',
-                        'jumlah'       => is_array($o) ? ($o['jumlah'] ?? 1) : 1,
-                    ]);
+        if ($request->filled('obat')) {
+            $obatData = $request->obat;
+            if (is_string($obatData)) {
+                $lines = explode("\n", $obatData);
+                foreach ($lines as $line) {
+                    $nama = trim($line);
+                    if (!empty($nama)) {
+                        RiwayatObatGukar::create([
+                            'id_kunjungan' => $kunjungan->id_kunjungan,
+                            'nama_obat'    => $nama,
+                            'dosis'        => '-',
+                            'jumlah'       => 1,
+                        ]);
+                    }
+                }
+            } elseif (is_array($obatData)) {
+                foreach ($obatData as $o) {
+                    $nama = is_array($o) ? ($o['nama_obat'] ?? '') : (string) $o;
+                    if (!empty($nama)) {
+                        RiwayatObatGukar::create([
+                            'id_kunjungan' => $kunjungan->id_kunjungan,
+                            'nama_obat'    => $nama,
+                            'dosis'        => is_array($o) ? ($o['dosis'] ?? '-') : '-',
+                            'jumlah'       => is_array($o) ? ($o['jumlah'] ?? 1) : 1,
+                        ]);
+                    }
                 }
             }
         }
@@ -154,27 +177,46 @@ class UksKunjunganGukarController extends Controller
         $kunjungan = KunjunganUksGukar::findOrFail($id);
 
         $request->validate([
-            'gukar_id' => 'nullable|string',
-            'tanggal'  => 'sometimes|required|date',
-            'jam'      => 'nullable|string|max:10',
-            'keluhan'  => 'sometimes|required|string|max:500',
-            'diagnosa' => 'nullable|string|max:200',
-            'tindakan' => 'sometimes|required|string|max:200',
-            'obat'     => 'nullable|array',
+            'gukar_id'    => 'nullable|string',
+            'id_guru'     => 'nullable|integer',
+            'id_karyawan' => 'nullable|integer',
+            'tanggal'     => 'sometimes|required|date',
+            'jam'         => 'nullable|string|max:10',
+            'keluhan'     => 'sometimes|required|string|max:500',
+            'diagnosa'    => 'nullable|string|max:200',
+            'tindakan'    => 'sometimes|required|string|max:200',
+            'obat'        => 'nullable',
         ]);
 
         if ($request->filled('gukar_id')) {
             [$id_guru, $id_karyawan] = $this->parseGukarId($request->gukar_id);
             $kunjungan->id_guru     = $id_guru;
             $kunjungan->id_karyawan = $id_karyawan;
+        } elseif ($request->filled('id_guru') || $request->filled('id_karyawan')) {
+            $kunjungan->id_guru     = $request->id_guru;
+            $kunjungan->id_karyawan = $request->id_karyawan;
         }
 
         $kunjungan->update($request->only('tanggal', 'jam', 'keluhan', 'diagnosa', 'tindakan'));
 
         if ($request->has('obat')) {
             $kunjungan->riwayatObat()->delete();
-            if (is_array($request->obat)) {
-                foreach ($request->obat as $o) {
+            $obatData = $request->obat;
+            if (is_string($obatData)) {
+                $lines = explode("\n", $obatData);
+                foreach ($lines as $line) {
+                    $nama = trim($line);
+                    if (!empty($nama)) {
+                        RiwayatObatGukar::create([
+                            'id_kunjungan' => $kunjungan->id_kunjungan,
+                            'nama_obat'    => $nama,
+                            'dosis'        => '-',
+                            'jumlah'       => 1,
+                        ]);
+                    }
+                }
+            } elseif (is_array($obatData)) {
+                foreach ($obatData as $o) {
                     $nama = is_array($o) ? ($o['nama_obat'] ?? '') : (string) $o;
                     if (!empty($nama)) {
                         RiwayatObatGukar::create([
@@ -330,6 +372,12 @@ class UksKunjunganGukarController extends Controller
                     'jumlah'     => (int) ($o->jumlah ?? 1),
                 ];
             })->values()->all(),
+            'obat'         => $item->riwayatObat->map(function ($o) {
+                $str = $o->nama_obat;
+                if (!empty($o->dosis) && $o->dosis !== '-') $str .= " ({$o->dosis})";
+                if (!empty($o->jumlah) && (int)$o->jumlah > 1) $str .= " - {$o->jumlah} Pcs";
+                return $str;
+            })->implode("\n"),
         ];
     }
 }

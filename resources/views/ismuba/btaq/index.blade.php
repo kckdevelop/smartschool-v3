@@ -585,21 +585,8 @@ const surahAyatCounts = @json($surahAyatCounts);
 const latestBtaqMap = @json($latestBtaqMap);
 const surahOrder = @json($surahList->toArray());
 
-// ─── Aturan Halaman per Jilid Iqro ────────────────────────────────────────────
-// Jilid 1 : hal. 1–10
-// Jilid 2 : hal. 11–16
-// Jilid 3 : hal. 14–22
-// Jilid 4 : hal. 23–31
-// Jilid 5 : hal. 32–41
-// Jilid 6 : hal. 42–55
-const iqroJilidRules = {
-    1: { min: 1,  max: 10 },
-    2: { min: 11, max: 16 },
-    3: { min: 14, max: 22 },
-    4: { min: 23, max: 31 },
-    5: { min: 32, max: 41 },
-    6: { min: 42, max: 55 },
-};
+// ─── Aturan Halaman per Jilid Iqro (dinamis dari server) ───────────────────────
+const iqroJilidRules = @json($iqroJilidRules);
 
 // Semua halaman Iqro per jilid dari server: { 1: [1,2,...,10], 2: [11,...,16], ... }
 const iqroHalamansByJilid = @json($iqroHalamansByJilid);
@@ -756,8 +743,8 @@ function filterHalamanByJilid(preserveValue = false) {
         return;
     }
 
-    const halamans = iqroHalamansByJilid[jilidVal]; // array angka [11,12,...,16]
-    const rule = iqroJilidRules[jilidVal];
+    const halamans = iqroHalamansByJilid[jilidVal] || [];
+    const rule = iqroJilidRules[jilidVal] || { min: 1, max: halamans.length ? Math.max(...halamans) : 30 };
 
     // Tampilkan info range jilid
     jilidInfo.style.display = 'flex';

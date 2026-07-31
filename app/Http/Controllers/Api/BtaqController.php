@@ -99,16 +99,10 @@ class BtaqController extends Controller
         $recordId = null;
 
         if ($isIqro) {
-            $iqroRecord = TabelIqro::where('jilid', $request->jilid)
-                ->where('halaman', $request->halaman)
-                ->first();
-
-            if (!$iqroRecord) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data Iqro tidak valid atau tidak ditemukan.'
-                ], 422);
-            }
+            $iqroRecord = TabelIqro::firstOrCreate([
+                'jilid' => (int) $request->jilid,
+                'halaman' => (int) $request->halaman,
+            ]);
 
             $recordId = $iqroRecord->id;
         } else {
@@ -262,16 +256,10 @@ class BtaqController extends Controller
         $recordId = null;
 
         if ($isIqro) {
-            $iqroRecord = TabelIqro::where('jilid', $request->jilid)
-                ->where('halaman', $request->halaman)
-                ->first();
-
-            if (!$iqroRecord) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data Iqro tidak valid atau tidak ditemukan.'
-                ], 422);
-            }
+            $iqroRecord = TabelIqro::firstOrCreate([
+                'jilid' => (int) $request->jilid,
+                'halaman' => (int) $request->halaman,
+            ]);
 
             $recordId = $iqroRecord->id;
         } else {

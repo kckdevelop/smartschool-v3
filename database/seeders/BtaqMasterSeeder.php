@@ -19,10 +19,10 @@ class BtaqMasterSeeder extends Seeder
         DB::table('tabel_alquran')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        // 1. Seed tabel_iqro (6 jilid, 10 halaman per jilid)
+        // 1. Seed tabel_iqro (6 jilid, 30 halaman per jilid)
         $iqroData = [];
         for ($jilid = 1; $jilid <= 6; $jilid++) {
-            for ($halaman = 1; $halaman <= 10; $halaman++) {
+            for ($halaman = 1; $halaman <= 30; $halaman++) {
                 $iqroData[] = [
                     'jilid' => $jilid,
                     'halaman' => $halaman,
