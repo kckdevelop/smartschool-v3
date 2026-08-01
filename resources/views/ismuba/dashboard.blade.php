@@ -463,7 +463,7 @@
                             </td>
                             <td style="font-weight:600;">
                                 @if(stripos($item->level, 'iqro') !== false && $item->iqroAwal)
-                                    Jilid {{ $item->iqroAwal->jilid }}, Halaman {{ $item->iqroAwal->halaman }}
+                                    Jilid {{ $item->iqroAwal->jilid }}, Halaman {{ $item->iqroAwal->halaman }}{{ !empty($item->iqroAwal->baris) ? ', Baris ' . $item->iqroAwal->baris : '' }}
                                 @elseif($item->alquranAwal)
                                     QS. {{ $item->alquranAwal->surat }}: {{ $item->alquranAwal->ayat }}
                                 @else

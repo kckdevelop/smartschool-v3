@@ -159,7 +159,8 @@
                                                     $isIqro = (stripos($entry->level, 'Iqra') !== false || stripos($entry->level, 'Iqro') !== false);
                                                     if ($isIqro) {
                                                         if ($entry->iqroAwal) {
-                                                            $displayRange = "Jilid {$entry->iqroAwal->jilid}: Hal. {$entry->iqroAwal->halaman}";
+                                                            $barisText = !empty($entry->iqroAwal->baris) ? ", Baris {$entry->iqroAwal->baris}" : '';
+                                                            $displayRange = "Jilid {$entry->iqroAwal->jilid}: Hal. {$entry->iqroAwal->halaman}{$barisText}";
                                                         } else {
                                                             $displayRange = $entry->awal;
                                                         }
