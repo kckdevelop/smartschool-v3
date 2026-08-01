@@ -12,10 +12,12 @@ class TabelIqro extends Model
     protected $fillable = [
         'jilid',
         'halaman',
+        'baris',
     ];
 
     protected $casts = [
-        'jilid' => 'integer',
+        'jilid'   => 'integer',
         'halaman' => 'integer',
+        'baris'   => 'integer',
     ];
 }

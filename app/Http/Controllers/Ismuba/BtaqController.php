@@ -13,26 +13,33 @@ use Carbon\Carbon;
 class BtaqController extends Controller
 {
     /**
-     * Aturan range halaman yang valid untuk setiap jilid Iqro.
-     * secara dinamis dihitung dari database (TabelIqro).
+     * Aturan range halaman global (1–55) per jilid Iqro.
+     * Jilid ditentukan otomatis dari nomor halaman.
+     * Jilid 1 : hal. 1  – 16
+     * Jilid 2 : hal. 17 – 24
+     * Jilid 3 : hal. 25 – 32
+     * Jilid 4 : hal. 33 – 40
+     * Jilid 5 : hal. 41 – 48
+     * Jilid 6 : hal. 49 – 55
      */
-    protected function getIqroJilidRules(): array
-    {
-        $records = \App\Models\TabelIqro::select('jilid', 'halaman')
-            ->orderBy('jilid')
-            ->orderBy('halaman')
-            ->get()
-            ->groupBy('jilid');
+    protected array $jilidRanges = [
+        1 => ['min' => 1,  'max' => 16],
+        2 => ['min' => 17, 'max' => 24],
+        3 => ['min' => 25, 'max' => 32],
+        4 => ['min' => 33, 'max' => 40],
+        5 => ['min' => 41, 'max' => 48],
+        6 => ['min' => 49, 'max' => 55],
+    ];
 
-        $rules = [];
-        foreach ($records as $jilid => $rows) {
-            $halamans = $rows->pluck('halaman')->toArray();
-            $rules[$jilid] = [
-                'min' => !empty($halamans) ? (int) min($halamans) : 1,
-                'max' => !empty($halamans) ? (int) max($halamans) : 30,
-            ];
+    /** Tentukan jilid berdasarkan nomor halaman global */
+    protected function jilidFromHalaman(int $halaman): int
+    {
+        foreach ($this->jilidRanges as $jilid => $range) {
+            if ($halaman >= $range['min'] && $halaman <= $range['max']) {
+                return $jilid;
+            }
         }
-        return $rules;
+        return 6; // default jilid terakhir
     }
 
     public function index(Request $request)
@@ -51,7 +58,6 @@ class BtaqController extends Controller
         $btaqEntries = collect();
 
         if ($selectedKelasId) {
-            // Fetch students for the selected class
             $siswaQuery = UserSiswa::where('id_kelas', $selectedKelasId)
                 ->where('status', 'aktif');
             if ($request->filled('search')) {
@@ -63,7 +69,6 @@ class BtaqController extends Controller
             }
             $siswaList = $siswaQuery->orderBy('nama_siswa')->get();
 
-            // Load BTAQ entries for students × kalender dates matrix
             if ($siswaList->count() > 0) {
                 $btaqEntries = Btaq::with(['guru', 'iqroAwal', 'iqroAkhir', 'alquranAwal', 'alquranAkhir'])
                     ->where('id_kelas', $selectedKelasId)
@@ -79,53 +84,56 @@ class BtaqController extends Controller
         $totalBulanIni = Btaq::whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year)->count();
         $totalAll      = Btaq::count();
 
-        $guruIsmuba   = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
-        $siswaDaftar  = UserSiswa::where('status', 'aktif')->with('kelas')->orderBy('nama_siswa')->get(['nis', 'nama_siswa', 'id_kelas']);
+        $guruIsmuba  = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
+        $siswaDaftar = UserSiswa::where('status', 'aktif')->with('kelas')->orderBy('nama_siswa')->get(['nis', 'nama_siswa', 'id_kelas']);
 
-        // Master BTAQ data
-        $surahList = \App\Models\TabelAlquran::select('surat')->distinct()->orderBy('id')->pluck('surat');
-        $iqroJilids = \App\Models\TabelIqro::select('jilid')->distinct()->orderBy('jilid')->pluck('jilid');
-
-        $iqroJilidRules = $this->getIqroJilidRules();
-        $iqroHalamansByJilid = [];
-        \App\Models\TabelIqro::select('jilid', 'halaman')
-            ->orderBy('jilid')->orderBy('halaman')
-            ->get()
-            ->groupBy('jilid')
-            ->each(function ($rows, $jilid) use (&$iqroHalamansByJilid) {
-                $iqroHalamansByJilid[$jilid] = $rows->pluck('halaman')->unique()->sort()->values()->toArray();
-            });
-
+        // Master BTAQ: Al-Qur'an
+        $surahList      = \App\Models\TabelAlquran::select('surat')->distinct()->orderBy('id')->pluck('surat');
         $surahAyatCounts = \App\Models\TabelAlquran::select('surat', \DB::raw('count(*) as total_ayat'))
             ->groupBy('surat')
             ->orderBy(\DB::raw('min(id)'))
             ->get()
             ->pluck('total_ayat', 'surat');
 
+        // Master BTAQ: Iqro — halaman global 1–55, baris per halaman
+        $jilidRanges = $this->jilidRanges; // pass ke view
+        $maxHalamanIqro = 55;
+
+        // baris list per halaman dari DB: { 3: [1,2,...,15], ... }
+        $iqroBarisByHalaman = [];
+        \App\Models\TabelIqro::select('halaman', 'baris')
+            ->distinct()
+            ->orderBy('halaman')->orderBy('baris')
+            ->get()
+            ->groupBy('halaman')
+            ->each(function ($rows, $halaman) use (&$iqroBarisByHalaman) {
+                $iqroBarisByHalaman[$halaman] = $rows->pluck('baris')->sort()->values()->toArray();
+            });
+
         // Fetch latest progress per student
         $latestBtaqPerSiswa = Btaq::with(['iqroAwal', 'alquranAwal'])
             ->whereIn('nis', $siswaDaftar->pluck('nis'))
             ->get()
             ->groupBy('nis')
-            ->map(function($entries) {
-                return $entries->sortByDesc('tanggal')->first();
-            });
+            ->map(fn($entries) => $entries->sortByDesc('tanggal')->first());
 
         $latestBtaqMap = $latestBtaqPerSiswa->map(function($btaq) {
             return [
-                'level' => $btaq->level,
+                'level'   => $btaq->level,
                 'is_iqro' => (stripos($btaq->level, 'Iqra') !== false || stripos($btaq->level, 'Iqro') !== false),
-                'jilid' => $btaq->iqroAwal?->jilid ?? null,
+                'jilid'   => $btaq->iqroAwal?->jilid ?? null,
                 'halaman' => $btaq->iqroAwal?->halaman ?? null,
-                'surat' => $btaq->alquranAwal?->surat ?? null,
-                'ayat' => $btaq->alquranAwal?->ayat ?? null,
+                'baris'   => $btaq->iqroAwal?->baris ?? null,
+                'surat'   => $btaq->alquranAwal?->surat ?? null,
+                'ayat'    => $btaq->alquranAwal?->ayat ?? null,
             ];
         });
 
         return view('ismuba.btaq.index', compact(
             'totalHariIni', 'totalBulanIni', 'totalAll',
             'kelasList', 'selectedKelasId', 'calendarDates', 'siswaList', 'btaqEntries',
-            'guruIsmuba', 'siswaDaftar', 'surahList', 'iqroJilids', 'iqroHalamansByJilid', 'iqroJilidRules', 'surahAyatCounts', 'latestBtaqMap'
+            'guruIsmuba', 'siswaDaftar', 'surahList', 'surahAyatCounts',
+            'jilidRanges', 'maxHalamanIqro', 'iqroBarisByHalaman', 'latestBtaqMap'
         ));
     }
 
@@ -139,15 +147,15 @@ class BtaqController extends Controller
             'id_guru'  => 'required|integer|exists:guru,id_guru',
         ];
 
-        $level = $request->input('level');
+        $level  = $request->input('level');
         $isIqro = (stripos($level, 'Iqra') !== false || stripos($level, 'Iqro') !== false);
 
         if ($isIqro) {
-            $rules['jilid'] = 'required|integer';
-            $rules['halaman'] = 'required|integer';
+            $rules['halaman'] = 'required|integer|min:1|max:55';
+            $rules['baris']   = 'required|integer|min:1|max:15';
         } else {
             $rules['surat'] = 'required|string';
-            $rules['ayat'] = 'required|integer';
+            $rules['ayat']  = 'required|integer';
         }
 
         $request->validate($rules);
@@ -155,23 +163,14 @@ class BtaqController extends Controller
         $recordId = null;
 
         if ($isIqro) {
-            $jilidInt = (int) $request->jilid;
             $halamanInt = (int) $request->halaman;
-
-            // Validasi range jilid
-            $iqroRules = $this->getIqroJilidRules();
-            if (isset($iqroRules[$jilidInt])) {
-                $rule = $iqroRules[$jilidInt];
-                if ($halamanInt < $rule['min'] || $halamanInt > $rule['max']) {
-                    return back()->withErrors([
-                        'halaman' => "Jilid {$jilidInt} hanya memiliki halaman {$rule['min']}–{$rule['max']}. Halaman {$halamanInt} tidak valid."
-                    ])->withInput();
-                }
-            }
+            $barisInt   = (int) $request->baris;
+            $jilidInt   = $this->jilidFromHalaman($halamanInt);
 
             $iqroRecord = \App\Models\TabelIqro::firstOrCreate([
-                'jilid' => $jilidInt,
+                'jilid'   => $jilidInt,
                 'halaman' => $halamanInt,
+                'baris'   => $barisInt,
             ]);
 
             $recordId = $iqroRecord->id;
@@ -197,13 +196,16 @@ class BtaqController extends Controller
 
         if ($lastBtaq) {
             $lastIsIqro = (stripos($lastBtaq->level, 'Iqra') !== false || stripos($lastBtaq->level, 'Iqro') !== false);
-            
+
             if ($isIqro && $lastIsIqro && $lastBtaq->iqroAwal) {
-                if ($request->jilid < $lastBtaq->iqroAwal->jilid) {
-                    return back()->withErrors(['jilid' => 'Jilid tidak boleh lebih kecil dari jilid sebelumnya (Jilid ' . $lastBtaq->iqroAwal->jilid . ').'])->withInput();
+                $lastHalaman = (int) $lastBtaq->iqroAwal->halaman;
+                $lastBaris   = (int) $lastBtaq->iqroAwal->baris;
+                // Halaman baru harus > halaman lama, atau halaman sama & baris lebih besar
+                if ($halamanInt < $lastHalaman) {
+                    return back()->withErrors(['halaman' => "Halaman tidak boleh mundur dari halaman {$lastHalaman}."])->withInput();
                 }
-                if ($request->jilid == $lastBtaq->iqroAwal->jilid && $request->halaman <= $lastBtaq->iqroAwal->halaman) {
-                    return back()->withErrors(['halaman' => 'Halaman harus lebih besar dari halaman sebelumnya (Hal. ' . $lastBtaq->iqroAwal->halaman . ').'])->withInput();
+                if ($halamanInt === $lastHalaman && $barisInt <= $lastBaris) {
+                    return back()->withErrors(['baris' => "Baris harus lebih besar dari baris sebelumnya (Baris {$lastBaris})."])->withInput();
                 }
             } elseif (!$isIqro && !$lastIsIqro && $lastBtaq->alquranAwal) {
                 if ($recordId <= $lastBtaq->awal) {
@@ -215,7 +217,7 @@ class BtaqController extends Controller
         }
 
         $btaqData = $request->only(['tanggal', 'nis', 'id_kelas', 'level', 'id_guru']);
-        $btaqData['awal'] = $recordId;
+        $btaqData['awal']  = $recordId;
         $btaqData['akhir'] = $recordId;
 
         Btaq::create($btaqData);
@@ -234,15 +236,15 @@ class BtaqController extends Controller
             'id_guru'  => 'required|integer|exists:guru,id_guru',
         ];
 
-        $level = $request->input('level');
+        $level  = $request->input('level');
         $isIqro = (stripos($level, 'Iqra') !== false || stripos($level, 'Iqro') !== false);
 
         if ($isIqro) {
-            $rules['jilid'] = 'required|integer';
-            $rules['halaman'] = 'required|integer';
+            $rules['halaman'] = 'required|integer|min:1|max:55';
+            $rules['baris']   = 'required|integer|min:1|max:15';
         } else {
             $rules['surat'] = 'required|string';
-            $rules['ayat'] = 'required|integer';
+            $rules['ayat']  = 'required|integer';
         }
 
         $request->validate($rules);
@@ -250,23 +252,14 @@ class BtaqController extends Controller
         $recordId = null;
 
         if ($isIqro) {
-            $jilidInt = (int) $request->jilid;
             $halamanInt = (int) $request->halaman;
-
-            // Validasi range jilid
-            $iqroRules = $this->getIqroJilidRules();
-            if (isset($iqroRules[$jilidInt])) {
-                $rule = $iqroRules[$jilidInt];
-                if ($halamanInt < $rule['min'] || $halamanInt > $rule['max']) {
-                    return back()->withErrors([
-                        'halaman' => "Jilid {$jilidInt} hanya memiliki halaman {$rule['min']}–{$rule['max']}. Halaman {$halamanInt} tidak valid."
-                    ])->withInput();
-                }
-            }
+            $barisInt   = (int) $request->baris;
+            $jilidInt   = $this->jilidFromHalaman($halamanInt);
 
             $iqroRecord = \App\Models\TabelIqro::firstOrCreate([
-                'jilid' => $jilidInt,
+                'jilid'   => $jilidInt,
                 'halaman' => $halamanInt,
+                'baris'   => $barisInt,
             ]);
 
             $recordId = $iqroRecord->id;
@@ -282,7 +275,7 @@ class BtaqController extends Controller
             $recordId = $quranRecord->id;
         }
 
-        // Progression validation (excluding the current record)
+        // Progression validation (excluding current record)
         $lastBtaq = Btaq::with(['iqroAwal', 'alquranAwal'])
             ->where('nis', $request->nis)
             ->where('tanggal', '<=', $request->tanggal)
@@ -293,13 +286,15 @@ class BtaqController extends Controller
 
         if ($lastBtaq) {
             $lastIsIqro = (stripos($lastBtaq->level, 'Iqra') !== false || stripos($lastBtaq->level, 'Iqro') !== false);
-            
+
             if ($isIqro && $lastIsIqro && $lastBtaq->iqroAwal) {
-                if ($request->jilid < $lastBtaq->iqroAwal->jilid) {
-                    return back()->withErrors(['jilid' => 'Jilid tidak boleh lebih kecil dari jilid sebelumnya (Jilid ' . $lastBtaq->iqroAwal->jilid . ').'])->withInput();
+                $lastHalaman = (int) $lastBtaq->iqroAwal->halaman;
+                $lastBaris   = (int) $lastBtaq->iqroAwal->baris;
+                if ($halamanInt < $lastHalaman) {
+                    return back()->withErrors(['halaman' => "Halaman tidak boleh mundur dari halaman {$lastHalaman}."])->withInput();
                 }
-                if ($request->jilid == $lastBtaq->iqroAwal->jilid && $request->halaman <= $lastBtaq->iqroAwal->halaman) {
-                    return back()->withErrors(['halaman' => 'Halaman harus lebih besar dari halaman sebelumnya (Hal. ' . $lastBtaq->iqroAwal->halaman . ').'])->withInput();
+                if ($halamanInt === $lastHalaman && $barisInt <= $lastBaris) {
+                    return back()->withErrors(['baris' => "Baris harus lebih besar dari baris sebelumnya (Baris {$lastBaris})."])->withInput();
                 }
             } elseif (!$isIqro && !$lastIsIqro && $lastBtaq->alquranAwal) {
                 if ($recordId <= $lastBtaq->awal) {
@@ -312,7 +307,7 @@ class BtaqController extends Controller
 
         $btaq = Btaq::findOrFail($id);
         $btaqData = $request->only(['tanggal', 'nis', 'id_kelas', 'level', 'id_guru']);
-        $btaqData['awal'] = $recordId;
+        $btaqData['awal']  = $recordId;
         $btaqData['akhir'] = $recordId;
 
         $btaq->update($btaqData);

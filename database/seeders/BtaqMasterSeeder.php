@@ -19,19 +19,41 @@ class BtaqMasterSeeder extends Seeder
         DB::table('tabel_alquran')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        // 1. Seed tabel_iqro (6 jilid, 30 halaman per jilid)
+        /**
+         * Aturan Jilid Iqro berdasarkan nomor halaman global (1–55):
+         * Jilid 1 : hal. 1  – 16
+         * Jilid 2 : hal. 17 – 24
+         * Jilid 3 : hal. 25 – 32
+         * Jilid 4 : hal. 33 – 40
+         * Jilid 5 : hal. 41 – 48
+         * Jilid 6 : hal. 49 – 55
+         * Setiap halaman memiliki baris 1–15
+         */
+        $jilidRanges = [
+            1 => ['min' => 1,  'max' => 16],
+            2 => ['min' => 17, 'max' => 24],
+            3 => ['min' => 25, 'max' => 32],
+            4 => ['min' => 33, 'max' => 40],
+            5 => ['min' => 41, 'max' => 48],
+            6 => ['min' => 49, 'max' => 55],
+        ];
+        $maxBaris = 15;
+
         $iqroData = [];
-        for ($jilid = 1; $jilid <= 6; $jilid++) {
-            for ($halaman = 1; $halaman <= 30; $halaman++) {
-                $iqroData[] = [
-                    'jilid' => $jilid,
-                    'halaman' => $halaman,
-                ];
+        foreach ($jilidRanges as $jilid => $range) {
+            for ($halaman = $range['min']; $halaman <= $range['max']; $halaman++) {
+                for ($baris = 1; $baris <= $maxBaris; $baris++) {
+                    $iqroData[] = [
+                        'jilid'   => $jilid,
+                        'halaman' => $halaman,
+                        'baris'   => $baris,
+                    ];
+                }
             }
         }
-        
+
         // Chunk insert to be safe and efficient
-        foreach (array_chunk($iqroData, 100) as $chunk) {
+        foreach (array_chunk($iqroData, 200) as $chunk) {
             DB::table('tabel_iqro')->insert($chunk);
         }
 

@@ -270,23 +270,30 @@
                     </div>
                     {{-- Dynamic Iqro / Al-Qur'an inputs based on level category --}}
                     <div id="container-iqro-inputs" class="form-group" style="grid-column: 1/-1; display: none;">
-                        <div class="form-grid-2" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0; padding: 0;">
+                        {{-- Auto-jilid badge --}}
+                        <div id="iqro-jilid-badge" style="display:none; margin-bottom:10px;" class="iqro-range-info">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span id="iqro-jilid-badge-text"></span>
+                        </div>
+                        <div class="form-grid-2" style="display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0; padding:0;">
                             <div class="form-group mb-0">
-                                <label class="form-label">Jilid <span class="required">*</span></label>
-                                <select name="jilid" id="btaq_jilid" class="form-control">
-                                    <option value="">-- Pilih Jilid --</option>
-                                    @foreach($iqroJilids as $j)
-                                        <option value="{{ $j }}">Jilid {{ $j }}</option>
-                                    @endforeach
-                                </select>
-                                <div id="iqro-jilid-info" class="iqro-range-info" style="display:none;"></div>
-                            </div>
-                            <div class="form-group mb-0">
-                                <label class="form-label">Halaman <span class="required">*</span></label>
+                                <label class="form-label">Halaman <span class="required">*</span>
+                                    <small style="font-weight:400; color:var(--text-muted);">(1–55)</small>
+                                </label>
                                 <select name="halaman" id="btaq_halaman" class="form-control">
-                                    <option value="">-- Pilih Jilid Dahulu --</option>
+                                    <option value="">-- Pilih Halaman --</option>
+                                    @for($h = 1; $h <= 55; $h++)
+                                        <option value="{{ $h }}">Halaman {{ $h }}</option>
+                                    @endfor
                                 </select>
                                 <div id="iqro-halaman-info" class="iqro-range-info" style="display:none;"></div>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="form-label">Baris <span class="required">*</span></label>
+                                <select name="baris" id="btaq_baris" class="form-control">
+                                    <option value="">-- Pilih Halaman Dulu --</option>
+                                </select>
+                                <div id="iqro-baris-info" class="iqro-range-info" style="display:none;"></div>
                             </div>
                         </div>
                     </div>
@@ -585,11 +592,17 @@ const surahAyatCounts = @json($surahAyatCounts);
 const latestBtaqMap = @json($latestBtaqMap);
 const surahOrder = @json($surahList->toArray());
 
-// ─── Aturan Halaman per Jilid Iqro (dinamis dari server) ───────────────────────
-const iqroJilidRules = @json($iqroJilidRules);
+// ─── Data Iqro: range jilid & baris per halaman (dari server) ──────────────────
+const jilidRanges      = @json($jilidRanges);        // { 1:{min:1,max:16}, ... }
+const iqroBarisByHalaman = @json($iqroBarisByHalaman); // { 1:[1,2,...,15], 2:[...], ... }
+const maxHalamanIqro   = {{ $maxHalamanIqro }};      // 55
 
-// Semua halaman Iqro per jilid dari server: { 1: [1,2,...,10], 2: [11,...,16], ... }
-const iqroHalamansByJilid = @json($iqroHalamansByJilid);
+function getJilidFromHalaman(halaman) {
+    for (const [jilid, range] of Object.entries(jilidRanges)) {
+        if (halaman >= range.min && halaman <= range.max) return parseInt(jilid);
+    }
+    return 6;
+}
 
 let currentStudentLastProgress = null;
 
@@ -662,25 +675,23 @@ document.getElementById('btn-tambah-btaq').addEventListener('click', function() 
 // Dynamic field showing and validations
 function handleLevelChange() {
     const levelVal = document.getElementById('btaq_level').value;
-    const iqroContainer = document.getElementById('container-iqro-inputs');
+    const iqroContainer    = document.getElementById('container-iqro-inputs');
     const alquranContainer = document.getElementById('container-alquran-inputs');
 
-    const isIqro = levelVal.toLowerCase().includes('iqra') || levelVal.toLowerCase().includes('iqro');
+    const isIqro   = levelVal.toLowerCase().includes('iqra') || levelVal.toLowerCase().includes('iqro');
     const isAlquran = levelVal === "Al-Qur'an" || levelVal === "Hafalan";
 
-    const iqroSelects = iqroContainer.querySelectorAll('select');
+    const iqroSelects    = iqroContainer.querySelectorAll('select');
     const alquranSelects = alquranContainer.querySelectorAll('select');
 
     if (isIqro) {
         iqroContainer.style.display = 'block';
         alquranContainer.style.display = 'none';
-
         iqroSelects.forEach(s => s.setAttribute('required', 'required'));
         alquranSelects.forEach(s => s.removeAttribute('required'));
     } else if (isAlquran) {
         iqroContainer.style.display = 'none';
         alquranContainer.style.display = 'block';
-
         iqroSelects.forEach(s => s.removeAttribute('required'));
         alquranSelects.forEach(s => s.setAttribute('required', 'required'));
     } else {
@@ -689,8 +700,7 @@ function handleLevelChange() {
         iqroSelects.forEach(s => s.removeAttribute('required'));
         alquranSelects.forEach(s => s.removeAttribute('required'));
     }
-    
-    // Apply constraints on level change
+
     applyProgressRestrictions();
 }
 
@@ -720,56 +730,72 @@ document.getElementById('btaq_surat').addEventListener('change', function() {
     applyProgressRestrictions();
 });
 
-document.getElementById('btaq_jilid').addEventListener('change', function() {
-    filterHalamanByJilid();
+document.getElementById('btaq_halaman').addEventListener('change', function() {
+    populateBarisDropdown();
+    updateJilidBadge();
     applyProgressRestrictions();
 });
 
-// ─── Filter halaman dropdown berdasarkan jilid yang dipilih ──────────────────
-function filterHalamanByJilid(preserveValue = false) {
-    const jilidVal = parseInt(document.getElementById('btaq_jilid').value);
-    const halamanSelect = document.getElementById('btaq_halaman');
-    const jilidInfo   = document.getElementById('iqro-jilid-info');
+document.getElementById('btaq_baris').addEventListener('change', function() {
+    applyProgressRestrictions();
+});
+
+// ─── Update badge jilid otomatis ─────────────────────────────────────────────
+function updateJilidBadge() {
+    const halamanVal = parseInt(document.getElementById('btaq_halaman').value);
+    const badge      = document.getElementById('iqro-jilid-badge');
+    const badgeText  = document.getElementById('iqro-jilid-badge-text');
     const halamanInfo = document.getElementById('iqro-halaman-info');
-    const prevHalaman = preserveValue ? halamanSelect.value : '';
 
-    // Reset dropdown
-    halamanSelect.innerHTML = '';
-
-    if (!jilidVal || !iqroHalamansByJilid[jilidVal]) {
-        halamanSelect.innerHTML = '<option value="">-- Pilih Jilid Dahulu --</option>';
-        jilidInfo.style.display  = 'none';
+    if (!halamanVal) {
+        badge.style.display = 'none';
         halamanInfo.style.display = 'none';
         return;
     }
 
-    const halamans = iqroHalamansByJilid[jilidVal] || [];
-    const rule = iqroJilidRules[jilidVal] || { min: 1, max: halamans.length ? Math.max(...halamans) : 30 };
+    const jilid = getJilidFromHalaman(halamanVal);
+    const range = jilidRanges[jilid];
+    badge.style.display = 'flex';
+    badgeText.textContent = `Jilid ${jilid}  •  Halaman ${range.min}–${range.max}`;
 
-    // Tampilkan info range jilid
-    jilidInfo.style.display = 'flex';
-    jilidInfo.className = 'iqro-range-info';
-    jilidInfo.innerHTML = `<i class="fa-solid fa-circle-info"></i> Jilid ${jilidVal}: Halaman ${rule.min} – ${rule.max}`;
-
-    // Default option
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.textContent = '-- Pilih Halaman --';
-    halamanSelect.appendChild(defaultOpt);
-
-    // Populate dari data server
-    halamans.forEach(h => {
-        const opt = document.createElement('option');
-        opt.value = h;
-        opt.textContent = h;
-        if (String(h) === String(prevHalaman)) opt.selected = true;
-        halamanSelect.appendChild(opt);
-    });
-
-    // Info jumlah halaman tersedia
     halamanInfo.style.display = 'flex';
     halamanInfo.className = 'iqro-range-info';
-    halamanInfo.innerHTML = `<i class="fa-solid fa-book-open"></i> ${halamans.length} halaman tersedia (${rule.min}–${rule.max})`;
+    halamanInfo.innerHTML = `<i class="fa-solid fa-circle-info"></i> Jilid ${jilid}: Halaman ${range.min}–${range.max}`;
+}
+
+// ─── Isi dropdown baris berdasarkan halaman yang dipilih ─────────────────────
+function populateBarisDropdown(preserveValue = false) {
+    const halamanVal = parseInt(document.getElementById('btaq_halaman').value);
+    const barisSelect = document.getElementById('btaq_baris');
+    const barisInfo   = document.getElementById('iqro-baris-info');
+    const prevBaris   = preserveValue ? barisSelect.value : '';
+
+    barisSelect.innerHTML = '';
+
+    if (!halamanVal) {
+        barisSelect.innerHTML = '<option value="">-- Pilih Halaman Dulu --</option>';
+        barisInfo.style.display = 'none';
+        return;
+    }
+
+    const barisList = iqroBarisByHalaman[halamanVal] || Array.from({length: 15}, (_, i) => i + 1);
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '-- Pilih Baris --';
+    barisSelect.appendChild(defaultOpt);
+
+    barisList.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = `Baris ${b}`;
+        if (String(b) === String(prevBaris)) opt.selected = true;
+        barisSelect.appendChild(opt);
+    });
+
+    barisInfo.style.display = 'flex';
+    barisInfo.className = 'iqro-range-info';
+    barisInfo.innerHTML = `<i class="fa-solid fa-list"></i> ${barisList.length} baris tersedia`;
 }
 
 // Update restrictions when selected student changes
@@ -802,77 +828,73 @@ function enableOption(opt, suffix = ' (Terlewati)') {
 }
 
 function resetRestrictions() {
-    document.querySelectorAll('#btaq_jilid option').forEach(opt => enableOption(opt));
     document.querySelectorAll('#btaq_halaman option').forEach(opt => enableOption(opt));
+    document.querySelectorAll('#btaq_baris option').forEach(opt => enableOption(opt));
     document.querySelectorAll('#btaq_surat option').forEach(opt => enableOption(opt));
     document.querySelectorAll('#btaq_ayat option').forEach(opt => enableOption(opt));
 }
 
 function applyProgressRestrictions() {
     resetRestrictions();
-    
+
     if (!currentStudentLastProgress) return;
 
-    const levelVal = document.getElementById('btaq_level').value;
-    const isIqro = levelVal.toLowerCase().includes('iqra') || levelVal.toLowerCase().includes('iqro');
+    const levelVal  = document.getElementById('btaq_level').value;
+    const isIqro    = levelVal.toLowerCase().includes('iqra') || levelVal.toLowerCase().includes('iqro');
     const isAlquran = levelVal === "Al-Qur'an" || levelVal === "Hafalan";
 
     if (isIqro && currentStudentLastProgress.is_iqro) {
-        const lastJilid = parseInt(currentStudentLastProgress.jilid);
         const lastHalaman = parseInt(currentStudentLastProgress.halaman);
+        const lastBaris   = parseInt(currentStudentLastProgress.baris) || 0;
 
-        // 1. Disable Jilids less than lastJilid
-        document.querySelectorAll('#btaq_jilid option').forEach(opt => {
+        // Disable halaman < lastHalaman
+        document.querySelectorAll('#btaq_halaman option').forEach(opt => {
             if (opt.value) {
-                const j = parseInt(opt.value);
-                if (j < lastJilid) {
-                    disableOption(opt);
-                }
+                const h = parseInt(opt.value);
+                if (h < lastHalaman) disableOption(opt);
             }
         });
 
-        // If currently selected Jilid is disabled, reset it
-        const selectedJilidVal = document.getElementById('btaq_jilid').value;
-        const selectedJilidOpt = document.querySelector(`#btaq_jilid option[value="${selectedJilidVal}"]`);
-        if (selectedJilidOpt && selectedJilidOpt.disabled) {
-            document.getElementById('btaq_jilid').value = '';
-        }
-
-        // 2. Disable Halamans if selected Jilid is equal to lastJilid
-        const selectedJilid = parseInt(document.getElementById('btaq_jilid').value);
-        if (selectedJilid === lastJilid) {
-            document.querySelectorAll('#btaq_halaman option').forEach(opt => {
+        // Jika halaman yang dipilih = lastHalaman, disable baris <= lastBaris
+        const selectedHalaman = parseInt(document.getElementById('btaq_halaman').value);
+        if (selectedHalaman === lastHalaman) {
+            document.querySelectorAll('#btaq_baris option').forEach(opt => {
                 if (opt.value) {
-                    const h = parseInt(opt.value);
-                    if (h <= lastHalaman) {
-                        disableOption(opt);
-                    }
+                    const b = parseInt(opt.value);
+                    if (b <= lastBaris) disableOption(opt);
                 }
             });
-            
-            // If currently selected Halaman is disabled, reset it
-            const selectedHalamanVal = document.getElementById('btaq_halaman').value;
-            const selectedHalamanOpt = document.querySelector(`#btaq_halaman option[value="${selectedHalamanVal}"]`);
-            if (selectedHalamanOpt && selectedHalamanOpt.disabled) {
-                document.getElementById('btaq_halaman').value = '';
-            }
+            const selectedBarisVal = document.getElementById('btaq_baris').value;
+            const selectedBarisOpt = document.querySelector(`#btaq_baris option[value="${selectedBarisVal}"]`);
+            if (selectedBarisOpt && selectedBarisOpt.disabled) document.getElementById('btaq_baris').value = '';
         }
+
+        // Reset invalid halaman pilihan
+        const selectedHalamanVal = document.getElementById('btaq_halaman').value;
+        const selectedHalamanOpt = document.querySelector(`#btaq_halaman option[value="${selectedHalamanVal}"]`);
+        if (selectedHalamanOpt && selectedHalamanOpt.disabled) {
+            document.getElementById('btaq_halaman').value = '';
+            document.getElementById('btaq_baris').innerHTML = '<option value="">-- Pilih Halaman Dulu --</option>';
+        }
+    } else if (isIqro && !currentStudentLastProgress.is_iqro) {
+        // Siswa sudah Al-Qur'an, semua halaman Iqro dinonaktifkan
+        document.querySelectorAll('#btaq_halaman option').forEach(opt => {
+            if (opt.value) disableOption(opt, " (Siswa sudah Al-Qur'an)");
+        });
+        document.getElementById('btaq_halaman').value = '';
+        document.getElementById('btaq_baris').innerHTML = '<option value="">-- Pilih Halaman Dulu --</option>';
     } else if (isAlquran && !currentStudentLastProgress.is_iqro) {
-        const lastSurat = currentStudentLastProgress.surat;
-        const lastAyat = parseInt(currentStudentLastProgress.ayat);
+        const lastSurat      = currentStudentLastProgress.surat;
+        const lastAyat       = parseInt(currentStudentLastProgress.ayat);
         const lastSuratIndex = surahOrder.indexOf(lastSurat);
 
-        // 1. Disable Surahs before lastSurat
         document.querySelectorAll('#btaq_surat option').forEach(opt => {
             if (opt.value) {
                 const sIdx = surahOrder.indexOf(opt.value);
-                if (sIdx < lastSuratIndex) {
-                    disableOption(opt);
-                }
+                if (sIdx < lastSuratIndex) disableOption(opt);
             }
         });
 
-        // If currently selected Surat is disabled, reset it
         const selectedSuratVal = document.getElementById('btaq_surat').value;
         const selectedSuratOpt = document.querySelector(`#btaq_surat option[value="${selectedSuratVal}"]`);
         if (selectedSuratOpt && selectedSuratOpt.disabled) {
@@ -880,35 +902,18 @@ function applyProgressRestrictions() {
             document.getElementById('btaq_ayat').innerHTML = '<option value="">-- Pilih Ayat --</option>';
         }
 
-        // 2. Disable Ayats if selected Surat is equal to lastSurat
         const selectedSurat = document.getElementById('btaq_surat').value;
         if (selectedSurat === lastSurat) {
             document.querySelectorAll('#btaq_ayat option').forEach(opt => {
                 if (opt.value) {
                     const a = parseInt(opt.value);
-                    if (a <= lastAyat) {
-                        disableOption(opt);
-                    }
+                    if (a <= lastAyat) disableOption(opt);
                 }
             });
-
-            // If currently selected Ayat is disabled, reset it
             const selectedAyatVal = document.getElementById('btaq_ayat').value;
             const selectedAyatOpt = document.querySelector(`#btaq_ayat option[value="${selectedAyatVal}"]`);
-            if (selectedAyatOpt && selectedAyatOpt.disabled) {
-                document.getElementById('btaq_ayat').value = '';
-            }
+            if (selectedAyatOpt && selectedAyatOpt.disabled) document.getElementById('btaq_ayat').value = '';
         }
-    } else if (isIqro && !currentStudentLastProgress.is_iqro) {
-        // Already at Al-Qur'an level, cannot go back to Iqro
-        document.querySelectorAll('#btaq_jilid option').forEach(opt => {
-            if (opt.value) disableOption(opt, ' (Siswa sudah Al-Qur\'an)');
-        });
-        document.querySelectorAll('#btaq_halaman option').forEach(opt => {
-            if (opt.value) disableOption(opt, ' (Siswa sudah Al-Qur\'an)');
-        });
-        document.getElementById('btaq_jilid').value = '';
-        document.getElementById('btaq_halaman').value = '';
     }
 }
 
@@ -916,20 +921,25 @@ function resetBtaqModal() {
     document.getElementById('form-btaq').action = '{{ route("ismuba.btaq.store") }}';
     document.getElementById('btaq-method-field').innerHTML = '';
     document.getElementById('modal-title-btaq').innerHTML = '<i class="fa-solid fa-book-quran" style="color:var(--color-primary);"></i> Tambah Data BTAQ';
-    
+
     document.getElementById('btaq_id_kelas').value = '';
     updateSiswaDropdown('');
-    
+
     document.getElementById('btaq_tanggal').value = btaqToday;
-    document.getElementById('btaq_level').value = '';
-    document.getElementById('btaq_id_guru').value = '';
-    
-    document.getElementById('btaq_jilid').value = '';
-    filterHalamanByJilid(); // reset halaman dropdown & info
-    
+    document.getElementById('btaq_level').value   = '';
+    document.getElementById('btaq_id_guru').value  = '';
+
+    // Reset Iqro fields
+    document.getElementById('btaq_halaman').value = '';
+    document.getElementById('btaq_baris').innerHTML = '<option value="">-- Pilih Halaman Dulu --</option>';
+    document.getElementById('iqro-jilid-badge').style.display = 'none';
+    document.getElementById('iqro-halaman-info').style.display = 'none';
+    document.getElementById('iqro-baris-info').style.display = 'none';
+
+    // Reset Al-Qur'an fields
     document.getElementById('btaq_surat').value = '';
     document.getElementById('btaq_ayat').innerHTML = '<option value="">-- Pilih Ayat --</option>';
-    
+
     currentStudentLastProgress = null;
     resetRestrictions();
     handleLevelChange();
@@ -953,9 +963,10 @@ function editBtaq(data) {
     handleLevelChange();
 
     if (data.iqro_awal) {
-        document.getElementById('btaq_jilid').value = data.iqro_awal.jilid;
-        filterHalamanByJilid(true); // filter halaman dulu, baru set value
         document.getElementById('btaq_halaman').value = data.iqro_awal.halaman;
+        populateBarisDropdown(true);
+        updateJilidBadge();
+        document.getElementById('btaq_baris').value = data.iqro_awal.baris;
     }
     if (data.alquran_awal) {
         document.getElementById('btaq_surat').value = data.alquran_awal.surat;
