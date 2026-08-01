@@ -63,14 +63,12 @@ class BtaqController extends Controller
     public function masterData()
     {
         $surahList  = TabelAlquran::select('surat')->distinct()->orderBy('id')->pluck('surat');
-        // Halaman Iqro: global 1–55, jilid otomatis dari range
-        $iqroHalamans = TabelIqro::select('halaman')->distinct()->orderBy('halaman')->pluck('halaman');
+        // Halaman Iqro: global 1–55, 10 baris per halaman
+        $iqroHalamans = range(1, 55);
         $iqroBarisPerHalaman = [];
-        TabelIqro::select('halaman', 'baris')->distinct()->orderBy('halaman')->orderBy('baris')
-            ->get()->groupBy('halaman')
-            ->each(function ($rows, $halaman) use (&$iqroBarisPerHalaman) {
-                $iqroBarisPerHalaman[$halaman] = $rows->pluck('baris')->sort()->values()->toArray();
-            });
+        for ($h = 1; $h <= 55; $h++) {
+            $iqroBarisPerHalaman[$h] = range(1, 10);
+        }
 
         return response()->json([
             'success' => true,
@@ -113,7 +111,7 @@ class BtaqController extends Controller
 
         if ($isIqro) {
             $rules['halaman'] = 'required|integer|min:1|max:55';
-            $rules['baris']   = 'required|integer|min:1|max:15';
+            $rules['baris']   = 'required|integer|min:1|max:10';
         } else {
             $rules['surat'] = 'required|string';
             $rules['ayat']  = 'required|integer';

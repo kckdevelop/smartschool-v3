@@ -606,6 +606,7 @@ function getJilidFromHalaman(halaman) {
 }
 
 let currentStudentLastProgress = null;
+let currentEditingBtaqId = null;
 
 // Store all student options for filtering
 const originalSiswaOptions = [];
@@ -779,7 +780,9 @@ function populateBarisDropdown(preserveValue = false) {
         return;
     }
 
-    const barisList = iqroBarisByHalaman[halamanVal] || Array.from({length: 15}, (_, i) => i + 1);
+    const barisList = (iqroBarisByHalaman && iqroBarisByHalaman[halamanVal])
+        ? iqroBarisByHalaman[halamanVal]
+        : Array.from({length: 10}, (_, i) => i + 1);
 
     const defaultOpt = document.createElement('option');
     defaultOpt.value = '';
@@ -862,7 +865,13 @@ function applyProgressRestrictions() {
             document.querySelectorAll('#btaq_baris option').forEach(opt => {
                 if (opt.value) {
                     const b = parseInt(opt.value);
-                    if (b <= lastBaris) disableOption(opt);
+                    if (b <= lastBaris) {
+                        if (currentEditingBtaqId && currentStudentLastProgress.id_btaq == currentEditingBtaqId && b == lastBaris) {
+                            enableOption(opt);
+                        } else {
+                            disableOption(opt);
+                        }
+                    }
                 }
             });
             const selectedBarisVal = document.getElementById('btaq_baris').value;
@@ -942,11 +951,13 @@ function resetBtaqModal() {
     document.getElementById('btaq_ayat').innerHTML = '<option value="">-- Pilih Ayat --</option>';
 
     currentStudentLastProgress = null;
+    currentEditingBtaqId = null;
     resetRestrictions();
     handleLevelChange();
 }
 
 function editBtaq(data) {
+    currentEditingBtaqId = data.id_btaq;
     document.getElementById('form-btaq').action = `/ismuba/btaq/${data.id_btaq}`;
     document.getElementById('btaq-method-field').innerHTML = '<input type="hidden" name="_method" value="PUT">';
     document.getElementById('modal-title-btaq').innerHTML = '<i class="fa-solid fa-pen" style="color:var(--color-primary);"></i> Edit Data BTAQ';

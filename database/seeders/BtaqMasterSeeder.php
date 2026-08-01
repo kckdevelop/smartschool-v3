@@ -37,7 +37,7 @@ class BtaqMasterSeeder extends Seeder
             5 => ['min' => 41, 'max' => 48],
             6 => ['min' => 49, 'max' => 55],
         ];
-        $maxBaris = 15;
+        $maxBaris = 10;
 
         $iqroData = [];
         foreach ($jilidRanges as $jilid => $range) {

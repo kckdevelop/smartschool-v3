@@ -95,20 +95,15 @@ class BtaqController extends Controller
             ->get()
             ->pluck('total_ayat', 'surat');
 
-        // Master BTAQ: Iqro — halaman global 1–55, baris per halaman
+        // Master BTAQ: Iqro — halaman global 1–55, 10 baris per halaman
         $jilidRanges = $this->jilidRanges; // pass ke view
         $maxHalamanIqro = 55;
 
-        // baris list per halaman dari DB: { 3: [1,2,...,15], ... }
+        // 10 baris per halaman (1–10) untuk setiap halaman 1–55
         $iqroBarisByHalaman = [];
-        \App\Models\TabelIqro::select('halaman', 'baris')
-            ->distinct()
-            ->orderBy('halaman')->orderBy('baris')
-            ->get()
-            ->groupBy('halaman')
-            ->each(function ($rows, $halaman) use (&$iqroBarisByHalaman) {
-                $iqroBarisByHalaman[$halaman] = $rows->pluck('baris')->sort()->values()->toArray();
-            });
+        for ($h = 1; $h <= $maxHalamanIqro; $h++) {
+            $iqroBarisByHalaman[$h] = range(1, 10);
+        }
 
         // Fetch latest progress per student
         $latestBtaqPerSiswa = Btaq::with(['iqroAwal', 'alquranAwal'])
@@ -119,6 +114,7 @@ class BtaqController extends Controller
 
         $latestBtaqMap = $latestBtaqPerSiswa->map(function($btaq) {
             return [
+                'id_btaq' => $btaq->id_btaq,
                 'level'   => $btaq->level,
                 'is_iqro' => (stripos($btaq->level, 'Iqra') !== false || stripos($btaq->level, 'Iqro') !== false),
                 'jilid'   => $btaq->iqroAwal?->jilid ?? null,
@@ -152,7 +148,7 @@ class BtaqController extends Controller
 
         if ($isIqro) {
             $rules['halaman'] = 'required|integer|min:1|max:55';
-            $rules['baris']   = 'required|integer|min:1|max:15';
+            $rules['baris']   = 'required|integer|min:1|max:10';
         } else {
             $rules['surat'] = 'required|string';
             $rules['ayat']  = 'required|integer';
@@ -241,7 +237,7 @@ class BtaqController extends Controller
 
         if ($isIqro) {
             $rules['halaman'] = 'required|integer|min:1|max:55';
-            $rules['baris']   = 'required|integer|min:1|max:15';
+            $rules['baris']   = 'required|integer|min:1|max:10';
         } else {
             $rules['surat'] = 'required|string';
             $rules['ayat']  = 'required|integer';
