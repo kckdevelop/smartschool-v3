@@ -14,7 +14,8 @@ use App\Models\UserSiswa;
 use App\Services\DocxQuizParserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 
 class TugasController extends Controller
 {
@@ -59,10 +60,17 @@ class TugasController extends Controller
 
     public function downloadTemplate()
     {
-        $filePath = public_path('templates/template_kuis_smartschool.docx');
-        if (!file_exists($filePath)) {
-            Artisan::call('quiz:generate-template');
+        $templateDir = public_path('templates');
+        if (!File::exists($templateDir)) {
+            File::makeDirectory($templateDir, 0755, true);
         }
+
+        $filePath = $templateDir . '/template_kuis_smartschool.docx';
+        if (!File::exists($filePath)) {
+            $cmd = new \App\Console\Commands\GenerateQuizTemplateCommand();
+            $cmd->handle();
+        }
+
         return response()->download($filePath, 'template_kuis_smartschool.docx');
     }
 
@@ -74,8 +82,16 @@ class TugasController extends Controller
             'id_guru'     => 'required|integer|exists:guru,id_guru',
             'tenggat'      => 'required|date',
             'status'      => 'required|in:aktif,tidak',
-            'file_word'   => 'required|file|mimes:docx|max:20480',
+            'file_word'   => 'required|file|max:20480',
         ]);
+
+        $file = $request->file('file_word');
+        $ext = strtolower($file->getClientOriginalExtension());
+        if ($ext !== 'docx') {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'File yang diunggah harus berformat Microsoft Word (.docx). File Anda berekstensi .' . $ext);
+        }
 
         $kelas = Kelas::findOrFail($request->id_kelas);
 
@@ -84,12 +100,13 @@ class TugasController extends Controller
             ['nama_kursus' => 'Kursus ' . $kelas->tingkat . ' ' . $kelas->rombel]
         );
 
-        $docxPath = $request->file('file_word')->store('kuis_word_files', 'public');
+        $docxPath = $file->store('kuis_word_files', 'public');
         $fullPath = storage_path('app/public/' . $docxPath);
 
         try {
             $parsedQuestions = $parser->parseDocx($fullPath);
         } catch (\Exception $e) {
+            Log::error('Error parsing docx quiz: ' . $e->getMessage());
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Gagal memproses file Word: ' . $e->getMessage());
@@ -98,41 +115,48 @@ class TugasController extends Controller
         if (empty($parsedQuestions)) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Tidak ada soal yang ditemukan dalam file Word. Pastikan format tabel sesuai dengan template.');
+                ->with('error', 'Tidak ada soal yang ditemukan dalam file Word. Pastikan format tabel sesuai dengan template yang disediakan.');
         }
 
-        $tugas = LmsTugas::create([
-            'id_kursus'    => $kursus->id_kursus,
-            'judul'        => $request->judul_tugas,
-            'deskripsi'    => $request->deskripsi ?? 'Kuis Online',
-            'tenggat'      => $request->tenggat,
-            'tipe'         => 'kuis',
-            'file_path'    => $docxPath,
-            'is_published' => $request->status === 'aktif',
-        ]);
-
-        foreach ($parsedQuestions as $qData) {
-            $soal = LmsSoal::create([
-                'id_tugas'      => $tugas->id_tugas,
-                'nomor_soal'    => $qData['nomor_soal'],
-                'jenis_soal'    => $qData['jenis_soal'],
-                'pertanyaan'    => $qData['pertanyaan'],
-                'gambar'        => $qData['gambar'],
-                'kunci_jawaban' => $qData['kunci_jawaban'],
+        try {
+            $tugas = LmsTugas::create([
+                'id_kursus'    => $kursus->id_kursus,
+                'judul'        => $request->judul_tugas,
+                'deskripsi'    => $request->deskripsi ?? 'Kuis Online',
+                'tenggat'      => $request->tenggat,
+                'tipe'         => 'kuis',
+                'file_path'    => $docxPath,
+                'is_published' => $request->status === 'aktif',
             ]);
 
-            $kunciList = array_map('trim', explode(',', strtoupper($qData['kunci_jawaban'])));
-
-            foreach ($qData['pilihan'] as $pData) {
-                $isKunci = in_array(strtoupper(trim($pData['kunci'])), $kunciList);
-                LmsSoalPilihan::create([
-                    'id_soal'  => $soal->id_soal,
-                    'kunci'    => $pData['kunci'],
-                    'teks'     => $pData['teks'],
-                    'gambar'   => $pData['gambar'],
-                    'is_kunci' => $isKunci,
+            foreach ($parsedQuestions as $qData) {
+                $soal = LmsSoal::create([
+                    'id_tugas'      => $tugas->id_tugas,
+                    'nomor_soal'    => $qData['nomor_soal'],
+                    'jenis_soal'    => $qData['jenis_soal'],
+                    'pertanyaan'    => $qData['pertanyaan'],
+                    'gambar'        => $qData['gambar'],
+                    'kunci_jawaban' => $qData['kunci_jawaban'],
                 ]);
+
+                $kunciList = array_map('trim', explode(',', strtoupper($qData['kunci_jawaban'])));
+
+                foreach ($qData['pilihan'] as $pData) {
+                    $isKunci = in_array(strtoupper(trim($pData['kunci'])), $kunciList);
+                    LmsSoalPilihan::create([
+                        'id_soal'  => $soal->id_soal,
+                        'kunci'    => $pData['kunci'],
+                        'teks'     => $pData['teks'],
+                        'gambar'   => $pData['gambar'],
+                        'is_kunci' => $isKunci,
+                    ]);
+                }
             }
+        } catch (\Exception $e) {
+            Log::error('Error saving quiz to database: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menyimpan data kuis ke database: ' . $e->getMessage());
         }
 
         return redirect()->route('lms.tugas.show', $tugas->id_tugas)
