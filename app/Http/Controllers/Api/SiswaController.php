@@ -15,7 +15,7 @@ class SiswaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = UserSiswa::with(['kelas.jurusan']);
+        $query = UserSiswa::with(['kelas.jurusan', 'detail']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -74,7 +74,7 @@ class SiswaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data siswa berhasil ditambahkan.',
-            'data'    => $siswa->load('kelas.jurusan'),
+            'data'    => $siswa->load(['kelas.jurusan', 'detail']),
         ], 201);
     }
 
@@ -99,28 +99,73 @@ class SiswaController extends Controller
         $siswa = UserSiswa::findOrFail($nis);
 
         $request->validate([
-            'id_kelas'     => 'sometimes|required|integer|exists:kelas,id_kelas',
-            'nama_siswa'   => 'sometimes|required|string|max:100',
-            'nisn'         => 'nullable|string|max:20',
-            'nik'          => 'nullable|string|max:20',
-            'jenkel'       => 'sometimes|required|in:L,P',
-            'tempat_lahir' => 'nullable|string|max:30',
-            'tgl_lahir'    => 'nullable|date',
-            'kelengkapan'  => 'nullable|integer',
-            'status'       => 'sometimes|required|in:aktif,tidak',
+            'id_kelas'       => 'sometimes|required|integer|exists:kelas,id_kelas',
+            'nama_siswa'     => 'sometimes|required|string|max:100',
+            'nisn'           => 'nullable|string|max:20',
+            'nik'            => 'nullable|string|max:20',
+            'jenkel'         => 'sometimes|required|in:L,P',
+            'tempat_lahir'   => 'sometimes|nullable|string|max:30',
+            'tgl_lahir'      => 'sometimes|nullable|date',
+            'kelengkapan'    => 'nullable|integer',
+            'status'         => 'sometimes|required|in:aktif,tidak',
+            'no_wa_presensi' => 'nullable|string|max:25',
+            'no_telp_wali'   => 'nullable|string|max:25',
+            'no_hp_ortu'     => 'nullable|string|max:25',
+            'hp_ortu'        => 'nullable|string|max:25',
         ]);
 
-        $data = $request->only([
-            'id_kelas', 'nama_siswa', 'nisn', 'nik', 'jenkel',
-            'tempat_lahir', 'tgl_lahir', 'kelengkapan', 'status',
-        ]);
+        $data = array_filter(
+            $request->only([
+                'id_kelas', 'nama_siswa', 'nisn', 'nik', 'jenkel',
+                'tempat_lahir', 'tgl_lahir', 'kelengkapan', 'status',
+            ]),
+            fn ($value) => $value !== null
+        );
 
-        $siswa->update($data);
+        if (!empty($data)) {
+            $siswa->update($data);
+        }
+
+        // Process detail_siswa fields
+        $detailData = [];
+        if ($request->has('no_wa_presensi')) {
+            $detailData['no_wa_presensi'] = $request->input('no_wa_presensi');
+        }
+        if ($request->has('no_telp_wali')) {
+            $detailData['no_telp_wali'] = $request->input('no_telp_wali');
+        }
+        if ($request->has('no_hp_ortu')) {
+            $detailData['no_telp_wali'] = $request->input('no_hp_ortu');
+            if (!isset($detailData['no_wa_presensi'])) {
+                $detailData['no_wa_presensi'] = $request->input('no_hp_ortu');
+            }
+        }
+        if ($request->has('hp_ortu')) {
+            $detailData['no_telp_wali'] = $request->input('hp_ortu');
+            if (!isset($detailData['no_wa_presensi'])) {
+                $detailData['no_wa_presensi'] = $request->input('hp_ortu');
+            }
+        }
+
+        // Support nested detail array
+        if ($request->has('detail') && is_array($request->input('detail'))) {
+            $reqDetail = $request->input('detail');
+            foreach (['no_wa_presensi', 'no_telp_wali', 'no_telp_ayah', 'no_telp_ibu', 'alamat', 'agama'] as $key) {
+                if (isset($reqDetail[$key])) {
+                    $detailData[$key] = $reqDetail[$key];
+                }
+            }
+        }
+
+        if (!empty($detailData)) {
+            $detail = $siswa->detail()->firstOrCreate(['nis' => $nis]);
+            $detail->update($detailData);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Data siswa berhasil diperbarui.',
-            'data'    => $siswa->load('kelas.jurusan'),
+            'data'    => $siswa->load(['kelas.jurusan', 'detail']),
         ]);
     }
 
