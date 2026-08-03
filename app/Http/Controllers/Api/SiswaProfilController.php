@@ -399,5 +399,58 @@ class SiswaProfilController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Update nomor WA presensi siswa oleh guru/wali kelas.
+     * Endpoint: POST /api/mobile/guru/update-wa-siswa/{nis}
+     *
+     * Dapat dipanggil oleh guru, wali kelas, atau admin yang login.
+     * Body (JSON):
+     *   - no_wa_presensi  : string, required, max 25 char
+     *
+     * Response:
+     *   {
+     *     "success": true,
+     *     "message": "...",
+     *     "data": { "nis": "...", "no_wa_presensi": "..." }
+     *   }
+     */
+    public function updateWaByGuru(Request $request, $nis)
+    {
+        $siswa = UserSiswa::find($nis);
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => "Siswa dengan NIS {$nis} tidak ditemukan.",
+            ], 404);
+        }
+
+        $request->validate([
+            'no_wa_presensi' => 'required|string|max:25',
+        ], [
+            'no_wa_presensi.required' => 'Nomor WhatsApp wajib diisi.',
+            'no_wa_presensi.max'      => 'Nomor WhatsApp maksimal 25 karakter.',
+        ]);
+
+        // Normalisasi: hapus spasi dan tanda hubung berlebih
+        $noWaBaru = preg_replace('/[\s\-]+/', '', $request->no_wa_presensi);
+
+        $detail = DetailSiswa::firstOrCreate(['nis' => $nis]);
+        $detail->update([
+            'no_wa_presensi' => $noWaBaru,
+            'no_telp_wali'   => $noWaBaru,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Nomor WA ortu {$siswa->nama_siswa} berhasil disimpan.",
+            'data'    => [
+                'nis'            => $nis,
+                'nama_siswa'     => $siswa->nama_siswa,
+                'no_wa_presensi' => $detail->fresh()->no_wa_presensi,
+            ],
+        ]);
+    }
 }
 

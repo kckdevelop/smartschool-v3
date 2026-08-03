@@ -70,6 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mobile/guru/profil', [\App\Http\Controllers\Api\GuruProfilController::class, 'show']);
     Route::post('/mobile/guru/profil', [\App\Http\Controllers\Api\GuruProfilController::class, 'update']);
     Route::post('/mobile/guru/foto', [\App\Http\Controllers\Api\GuruProfilController::class, 'uploadFoto']);
+    // Update nomor WA presensi siswa oleh guru/wali kelas
+    Route::post('/mobile/guru/update-wa-siswa/{nis}', [\App\Http\Controllers\Api\SiswaProfilController::class, 'updateWaByGuru']);
+
 
     // Profil Karyawan (Flutter Mobile) — untuk foto_url
     Route::get('/mobile/karyawan/profil', [\App\Http\Controllers\Api\KaryawanProfilController::class, 'show']);
