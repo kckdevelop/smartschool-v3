@@ -338,4 +338,66 @@ class SiswaProfilController extends Controller
             'data'    => $riwayat
         ], 201);
     }
+
+    /**
+     * Ubah nomor HP/WA penerima notifikasi presensi siswa.
+     * Bisa dipanggil oleh siswa maupun orang_tua (guard UserSiswa).
+     * Endpoint: POST /api/mobile/siswa/update-wa-presensi
+     *
+     * Body (JSON/form):
+     *   - no_wa_presensi  : string, required, max 25 char
+     *
+     * Response:
+     *   {
+     *     "success": true,
+     *     "message": "Nomor WA presensi berhasil diperbarui.",
+     *     "data": {
+     *       "nis": "...",
+     *       "nama_siswa": "...",
+     *       "no_wa_presensi": "08xxxxxxxxxx"
+     *     }
+     *   }
+     */
+    public function updateNoWaPresensi(Request $request)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof UserSiswa)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya siswa yang dapat menggunakan endpoint ini.'], 403);
+        }
+
+        $request->validate([
+            'no_wa_presensi' => [
+                'required',
+                'string',
+                'max:25',
+                // Format dasar: hanya angka, +, -, spasi (termasuk kode negara)
+                'regex:/^[\d\+\-\s]{8,25}$/',
+            ],
+        ], [
+            'no_wa_presensi.required' => 'Nomor WhatsApp penerima presensi wajib diisi.',
+            'no_wa_presensi.max'      => 'Nomor WhatsApp maksimal 25 karakter.',
+            'no_wa_presensi.regex'    => 'Format nomor WhatsApp tidak valid. Gunakan format: 08xxxxxxxxxx atau +628xxxxxxxxxx.',
+        ]);
+
+        $detail = DetailSiswa::firstOrCreate(['nis' => $user->nis]);
+        $noWaLama = $detail->no_wa_presensi;
+
+        // Normalisasi: hapus spasi dan tanda hubung berlebih
+        $noWaBaru = preg_replace('/[\s\-]+/', '', $request->no_wa_presensi);
+
+        $detail->update(['no_wa_presensi' => $noWaBaru]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nomor WA presensi berhasil diperbarui.',
+            'data'    => [
+                'nis'              => $user->nis,
+                'nama_siswa'       => $user->nama_siswa,
+                'no_wa_presensi'   => $detail->fresh()->no_wa_presensi,
+                'no_wa_presensi_lama' => $noWaLama,
+            ],
+        ]);
+    }
 }
+

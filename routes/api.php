@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mobile/siswa/edit-akses', [\App\Http\Controllers\Api\SiswaProfilController::class, 'editAkses']);
     Route::get('/mobile/siswa/riwayat-kesehatan', [\App\Http\Controllers\Api\SiswaProfilController::class, 'getRiwayatKesehatan']);
     Route::post('/mobile/siswa/riwayat-kesehatan', [\App\Http\Controllers\Api\SiswaProfilController::class, 'storeRiwayatKesehatan']);
+    Route::post('/mobile/siswa/update-wa-presensi', [\App\Http\Controllers\Api\SiswaProfilController::class, 'updateNoWaPresensi']);
     Route::get('/siswa/log-kesehatan', [\App\Http\Controllers\Api\SiswaLogKesehatanController::class, 'index']);
 
     // Profil Guru (Flutter Mobile) — untuk foto_url & update no_hp
