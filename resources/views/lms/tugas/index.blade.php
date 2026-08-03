@@ -34,6 +34,9 @@
                     @endif
                 </form>
                 
+                <a href="{{ route('lms.tugas.upload-kuis') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fa-solid fa-file-word"></i> Upload Kuis (.docx)
+                </a>
                 <button class="btn btn-primary btn-sm" onclick="openAddModal()">
                     <i class="fa-solid fa-plus"></i> Tambah Tugas
                 </button>
@@ -112,6 +115,26 @@
         <form id="form-tugas" action="{{ route('lms.tugas.store') }}" method="POST">
             @csrf
             <div class="modal-body">
+                <div class="alert alert-info mb-4" style="background: rgba(13, 148, 136, 0.08); border: 1px solid rgba(13, 148, 136, 0.2); color: #0f766e; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div>
+                            <strong><i class="fa-solid fa-lightbulb"></i> Ingin membuat Kuis Interaktif?</strong>
+                            <p class="mb-0" style="font-size: 0.85rem;">Unggah kuis lengkap dengan gambar & pilihan ganda melalui file Template Word (.docx).</p>
+                        </div>
+                        <a href="{{ route('lms.tugas.upload-kuis') }}" class="btn btn-sm btn-primary" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-word"></i> Buat Kuis Word
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="form-label">Jenis Konten <span class="required">*</span></label>
+                    <select name="tipe_konten" id="tipe_konten" class="form-control" onchange="toggleContentTipe(this.value)">
+                        <option value="tugas">Tugas / Instruksi Manual</option>
+                        <option value="kuis">Kuis Online (Template Word)</option>
+                    </select>
+                </div>
+
                 <div class="form-group mb-4">
                     <label class="form-label">Judul Tugas <span class="required">*</span></label>
                     <input type="text" name="judul_tugas" id="judul_tugas" class="form-control" placeholder="Contoh: Tugas Mandiri Bab 1 Aljabar" required max="50">

@@ -447,9 +447,12 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{id}', [\App\Http\Controllers\Lms\KursusController::class, 'destroy'])->name('destroy');
         });
 
-        // 1. Tugas
+        // 1. Tugas & Kuis
         Route::prefix('tugas')->name('tugas.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Lms\TugasController::class, 'index'])->name('index');
+            Route::get('/upload-kuis', [\App\Http\Controllers\Lms\TugasController::class, 'uploadKuisForm'])->name('upload-kuis');
+            Route::get('/download-template', [\App\Http\Controllers\Lms\TugasController::class, 'downloadTemplate'])->name('download-template');
+            Route::post('/upload-kuis', [\App\Http\Controllers\Lms\TugasController::class, 'processUploadKuis'])->name('process-upload-kuis');
             Route::post('/', [\App\Http\Controllers\Lms\TugasController::class, 'store'])->name('store');
             Route::get('/{id}', [\App\Http\Controllers\Lms\TugasController::class, 'show'])->name('show');
             Route::post('/{id}', [\App\Http\Controllers\Lms\TugasController::class, 'update'])->name('update');

@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\LmsTugas;
 use App\Models\LmsKursus;
 use App\Models\LmsPengumpulan;
+use App\Models\LmsSoal;
+use App\Models\LmsSoalPilihan;
 use App\Models\Kelas;
 use App\Models\Guru;
 use App\Models\UserSiswa;
+use App\Services\DocxQuizParserService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Artisan;
 
 class TugasController extends Controller
 {
@@ -45,6 +50,95 @@ class TugasController extends Controller
         return view('lms.tugas.index', compact('tugasList', 'kelas', 'gurus'));
     }
 
+    public function uploadKuisForm()
+    {
+        $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
+        $gurus = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
+        return view('lms.tugas.upload_kuis', compact('kelas', 'gurus'));
+    }
+
+    public function downloadTemplate()
+    {
+        $filePath = public_path('templates/template_kuis_smartschool.docx');
+        if (!file_exists($filePath)) {
+            Artisan::call('quiz:generate-template');
+        }
+        return response()->download($filePath, 'template_kuis_smartschool.docx');
+    }
+
+    public function processUploadKuis(Request $request, DocxQuizParserService $parser)
+    {
+        $request->validate([
+            'judul_tugas' => 'required|string|max:150',
+            'id_kelas'    => 'required|integer|exists:kelas,id_kelas',
+            'id_guru'     => 'required|integer|exists:guru,id_guru',
+            'tenggat'      => 'required|date',
+            'status'      => 'required|in:aktif,tidak',
+            'file_word'   => 'required|file|mimes:docx|max:20480',
+        ]);
+
+        $kelas = Kelas::findOrFail($request->id_kelas);
+
+        $kursus = LmsKursus::firstOrCreate(
+            ['id_kelas' => $request->id_kelas, 'id_guru' => $request->id_guru],
+            ['nama_kursus' => 'Kursus ' . $kelas->tingkat . ' ' . $kelas->rombel]
+        );
+
+        $docxPath = $request->file('file_word')->store('kuis_word_files', 'public');
+        $fullPath = storage_path('app/public/' . $docxPath);
+
+        try {
+            $parsedQuestions = $parser->parseDocx($fullPath);
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memproses file Word: ' . $e->getMessage());
+        }
+
+        if (empty($parsedQuestions)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Tidak ada soal yang ditemukan dalam file Word. Pastikan format tabel sesuai dengan template.');
+        }
+
+        $tugas = LmsTugas::create([
+            'id_kursus'    => $kursus->id_kursus,
+            'judul'        => $request->judul_tugas,
+            'deskripsi'    => $request->deskripsi ?? 'Kuis Online',
+            'tenggat'      => $request->tenggat,
+            'tipe'         => 'kuis',
+            'file_path'    => $docxPath,
+            'is_published' => $request->status === 'aktif',
+        ]);
+
+        foreach ($parsedQuestions as $qData) {
+            $soal = LmsSoal::create([
+                'id_tugas'      => $tugas->id_tugas,
+                'nomor_soal'    => $qData['nomor_soal'],
+                'jenis_soal'    => $qData['jenis_soal'],
+                'pertanyaan'    => $qData['pertanyaan'],
+                'gambar'        => $qData['gambar'],
+                'kunci_jawaban' => $qData['kunci_jawaban'],
+            ]);
+
+            $kunciList = array_map('trim', explode(',', strtoupper($qData['kunci_jawaban'])));
+
+            foreach ($qData['pilihan'] as $pData) {
+                $isKunci = in_array(strtoupper(trim($pData['kunci'])), $kunciList);
+                LmsSoalPilihan::create([
+                    'id_soal'  => $soal->id_soal,
+                    'kunci'    => $pData['kunci'],
+                    'teks'     => $pData['teks'],
+                    'gambar'   => $pData['gambar'],
+                    'is_kunci' => $isKunci,
+                ]);
+            }
+        }
+
+        return redirect()->route('lms.tugas.show', $tugas->id_tugas)
+            ->with('success', 'Kuis berhasil dibuat dari file Word! Total ' . count($parsedQuestions) . ' soal berhasil diimpor.');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -57,7 +151,6 @@ class TugasController extends Controller
 
         $kelas = Kelas::findOrFail($request->id_kelas);
 
-        // Cari atau buat LmsKursus yang sesuai
         $kursus = LmsKursus::firstOrCreate(
             ['id_kelas' => $request->id_kelas, 'id_guru' => $request->id_guru],
             ['nama_kursus' => 'Kursus ' . $kelas->tingkat . ' ' . $kelas->rombel]
@@ -67,7 +160,7 @@ class TugasController extends Controller
             'id_kursus'    => $kursus->id_kursus,
             'judul'        => $request->judul_tugas,
             'deskripsi'    => $request->deskripsi,
-            'tenggat'      => now()->addDays(7), // Default tenggat 7 hari
+            'tenggat'      => now()->addDays(7),
             'tipe'         => 'pdf',
             'file_path'    => null,
             'is_published' => $request->status === 'aktif',
@@ -79,18 +172,15 @@ class TugasController extends Controller
 
     public function show($id)
     {
-        $tugas = LmsTugas::with(['kursus.kelas.jurusan', 'kursus.guru'])->findOrFail($id);
+        $tugas = LmsTugas::with(['kursus.kelas.jurusan', 'kursus.guru', 'soal.pilihan'])->findOrFail($id);
         
-        // Ambil semua siswa di kelas tersebut
         $students = UserSiswa::where('id_kelas', $tugas->kursus->id_kelas)
             ->where('status', 'aktif')
             ->orderBy('nama_siswa')
             ->get();
 
-        // Ambil semua pengumpulan yang ada untuk tugas ini
         $submissions = LmsPengumpulan::where('id_tugas', $id)->get()->keyBy('nis');
 
-        // Petakan ke array data tagihan
         $tagihanList = $students->map(function ($s) use ($submissions) {
             $sub = $submissions->get($s->nis);
             return (object) [
@@ -122,7 +212,6 @@ class TugasController extends Controller
 
         $kelas = Kelas::findOrFail($request->id_kelas);
 
-        // Cari atau buat LmsKursus yang sesuai
         $kursus = LmsKursus::firstOrCreate(
             ['id_kelas' => $request->id_kelas, 'id_guru' => $request->id_guru],
             ['nama_kursus' => 'Kursus ' . $kelas->tingkat . ' ' . $kelas->rombel]
@@ -144,21 +233,27 @@ class TugasController extends Controller
         $tugas = LmsTugas::findOrFail($id);
         
         if ($tugas->file_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($tugas->file_path);
+            Storage::disk('public')->delete($tugas->file_path);
         }
 
-        // Hapus pengumpulan terkait
         $submisiList = LmsPengumpulan::where('id_tugas', $id)->get();
         foreach ($submisiList as $submisi) {
             if ($submisi->file_path) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($submisi->file_path);
+                Storage::disk('public')->delete($submisi->file_path);
             }
         }
         LmsPengumpulan::where('id_tugas', $id)->delete();
 
+        // Delete soal & pilihan
+        $soalList = LmsSoal::where('id_tugas', $id)->get();
+        foreach ($soalList as $s) {
+            LmsSoalPilihan::where('id_soal', $s->id_soal)->delete();
+        }
+        LmsSoal::where('id_tugas', $id)->delete();
+
         $tugas->delete();
 
         return redirect()->route('lms.tugas.index')
-            ->with('success', 'Tugas berhasil dihapus.');
+            ->with('success', 'Tugas/Kuis berhasil dihapus.');
     }
 }

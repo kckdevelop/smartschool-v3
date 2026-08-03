@@ -42,4 +42,9 @@ class LmsTugas extends Model
     {
         return $this->hasMany(LmsPengumpulan::class, 'id_tugas', 'id_tugas');
     }
+
+    public function soal()
+    {
+        return $this->hasMany(LmsSoal::class, 'id_tugas', 'id_tugas')->orderBy('nomor_soal', 'asc');
+    }
 }
