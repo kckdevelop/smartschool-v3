@@ -77,18 +77,18 @@ class DashboardController extends Controller
 
         // ── Presensi per bulan (Hadir/Sakit/Izin/Alfa) ─────────────
         $statusMapping = [
-            'Hadir' => 1,
-            'Sakit' => 2,
-            'Izin' => 3,
-            'Alfa' => 4
+            'Hadir' => ['1', 1, 'Hadir', 'hadir', 'H'],
+            'Sakit' => ['2', 2, 'Sakit', 'sakit', 'S'],
+            'Izin'  => ['3', 3, 'Izin', 'izin', 'I'],
+            'Alfa'  => ['4', 4, 'Alfa', 'alfa', 'Alpha', 'alpha', 'A']
         ];
         $presensiPerBulan = [];
-        foreach ($statusMapping as $label => $statusCode) {
+        foreach ($statusMapping as $label => $statusCodes) {
             $data = [];
             foreach ($chartMonths as $cm) {
                 $data[] = Presensi::whereYear('tanggal', $cm['year'])
                     ->whereMonth('tanggal', $cm['month'])
-                    ->where('status', $statusCode)
+                    ->whereIn('status', $statusCodes)
                     ->whereHas('siswa', function($q) {
                         $q->where('status', 'aktif');
                     })
@@ -185,11 +185,24 @@ class DashboardController extends Controller
             ->toArray();
 
         $presensiTodayBreakdown = [
-            'Hadir' => $rawBreakdown[1] ?? 0,
-            'Sakit' => $rawBreakdown[2] ?? 0,
-            'Izin'  => $rawBreakdown[3] ?? 0,
-            'Alfa'  => $rawBreakdown[4] ?? 0,
+            'Hadir' => 0,
+            'Sakit' => 0,
+            'Izin'  => 0,
+            'Alfa'  => 0,
         ];
+
+        foreach ($rawBreakdown as $st => $total) {
+            $stStr = strval($st);
+            if (in_array($stStr, ['1', 'Hadir', 'hadir', 'H'], true)) {
+                $presensiTodayBreakdown['Hadir'] += $total;
+            } elseif (in_array($stStr, ['2', 'Sakit', 'sakit', 'S'], true)) {
+                $presensiTodayBreakdown['Sakit'] += $total;
+            } elseif (in_array($stStr, ['3', 'Izin', 'izin', 'I'], true)) {
+                $presensiTodayBreakdown['Izin'] += $total;
+            } elseif (in_array($stStr, ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A'], true)) {
+                $presensiTodayBreakdown['Alfa'] += $total;
+            }
+        }
 
         // ── Statistik Jurnal Guru ──────────────────────────────────
         $jurnalBulanIni   = Kemajuan::whereYear('tanggal', now()->year)
