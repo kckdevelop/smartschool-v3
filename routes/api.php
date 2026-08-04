@@ -522,6 +522,39 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tugas/{id}/kumpulkan', [\App\Http\Controllers\Api\LmsController::class, 'kumpulkanTugas']);
         Route::get('/tugas/{id}/submisi', [\App\Http\Controllers\Api\LmsController::class, 'indexSubmisi']);
         Route::post('/submisi/{id}/nilai', [\App\Http\Controllers\Api\LmsController::class, 'nilaiSubmisi']);
+
+        // ── Kuis CBT ─────────────────────────────────────────────────────────
+
+        // Soal CRUD (Guru)
+        Route::get('/tugas/{id}/soal', [\App\Http\Controllers\Api\LmsKuisController::class, 'indexSoal']);
+        Route::post('/tugas/{id}/soal', [\App\Http\Controllers\Api\LmsKuisController::class, 'storeSoal']);
+        Route::put('/soal/{id_soal}', [\App\Http\Controllers\Api\LmsKuisController::class, 'updateSoal']);
+        Route::delete('/soal/{id_soal}', [\App\Http\Controllers\Api\LmsKuisController::class, 'destroySoal']);
+
+        // Pilihan Jawaban CRUD (Guru)
+        Route::post('/soal/{id_soal}/pilihan', [\App\Http\Controllers\Api\LmsKuisController::class, 'storePilihan']);
+        Route::put('/soal/pilihan/{id_pilihan}', [\App\Http\Controllers\Api\LmsKuisController::class, 'updatePilihan']);
+        Route::delete('/soal/pilihan/{id_pilihan}', [\App\Http\Controllers\Api\LmsKuisController::class, 'destroyPilihan']);
+
+        // Setting Kuis (Guru)
+        Route::get('/kuis/{id_tugas}/setting', [\App\Http\Controllers\Api\LmsKuisController::class, 'getSetting']);
+        Route::post('/kuis/{id_tugas}/setting', [\App\Http\Controllers\Api\LmsKuisController::class, 'saveSetting']);
+
+        // Token Kuis (Guru)
+        Route::post('/kuis/{id_tugas}/generate-token', [\App\Http\Controllers\Api\LmsKuisController::class, 'generateToken']);
+        Route::get('/kuis/{id_tugas}/token', [\App\Http\Controllers\Api\LmsKuisController::class, 'listToken']);
+        Route::delete('/kuis/token/{id_token}', [\App\Http\Controllers\Api\LmsKuisController::class, 'destroyToken']);
+
+        // Hasil Kuis (Guru)
+        Route::get('/kuis/{id_tugas}/hasil', [\App\Http\Controllers\Api\LmsKuisController::class, 'hasilSemua']);
+        Route::get('/kuis/{id_tugas}/hasil/{nis}', [\App\Http\Controllers\Api\LmsKuisController::class, 'hasilSiswa']);
+
+        // Kuis — Endpoint Siswa
+        Route::post('/kuis/{id_tugas}/masuk', [\App\Http\Controllers\Api\LmsKuisController::class, 'masukKuis']);
+        Route::get('/kuis/{id_tugas}/soal', [\App\Http\Controllers\Api\LmsKuisController::class, 'getSoalSiswa']);
+        Route::post('/kuis/{id_tugas}/jawab', [\App\Http\Controllers\Api\LmsKuisController::class, 'simpanJawaban']);
+        Route::post('/kuis/{id_tugas}/submit', [\App\Http\Controllers\Api\LmsKuisController::class, 'submitKuis']);
+        Route::get('/kuis/{id_tugas}/hasil-saya', [\App\Http\Controllers\Api\LmsKuisController::class, 'hasilSaya']);
     });
 
     // 22. Prayer Times

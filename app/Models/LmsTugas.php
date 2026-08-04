@@ -47,4 +47,19 @@ class LmsTugas extends Model
     {
         return $this->hasMany(LmsSoal::class, 'id_tugas', 'id_tugas')->orderBy('nomor_soal', 'asc');
     }
+
+    public function kuisSetting()
+    {
+        return $this->hasOne(LmsKuisSetting::class, 'id_tugas', 'id_tugas');
+    }
+
+    public function kuisToken()
+    {
+        return $this->hasMany(LmsKuisToken::class, 'id_tugas', 'id_tugas');
+    }
+
+    public function kuisSesi()
+    {
+        return $this->hasMany(LmsKuisSesi::class, 'id_tugas', 'id_tugas');
+    }
 }
