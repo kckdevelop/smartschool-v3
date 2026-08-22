@@ -95,7 +95,7 @@ class JurnalGuruController extends Controller
                 'id_mapel'     => $j->id_mapel,
                 'nama_mapel'   => $j->mapel?->nama_mapel,
                 'id_guru'      => $j->id_guru,
-                'nama_guru'    => $j->guru?->nama_karyawan ?? $j->guru?->nama_guru ?? null,
+                'nama_guru'    => $j->guru?->nama_guru ?? null,
                 'materi'       => $j->materi,
                 'hambatan'     => $hambatan,
                 'pemecahan'    => $pemecahan,
