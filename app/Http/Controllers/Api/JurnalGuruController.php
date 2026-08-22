@@ -18,11 +18,13 @@ class JurnalGuruController extends Controller
         $query = Kemajuan::with(['kelas', 'mapel', 'guru']);
 
         // Filter berdasarkan Guru yang login (jika user adalah Guru)
+        // Jika as_wali=1, skip filter id_guru agar Wali Kelas bisa lihat semua jurnal di kelasnya
         $idGuru = $request->user()->id_guru;
         if (!$idGuru && isset($request->user()->no_id)) {
             $idGuru = Guru::where('no_id', $request->user()->no_id)->value('id_guru');
         }
-        if ($idGuru) {
+        $asWali = $request->boolean('as_wali', false);
+        if ($idGuru && !$asWali) {
             $query->where('id_guru', $idGuru);
         }
 
@@ -44,7 +46,7 @@ class JurnalGuruController extends Controller
             }
         }
 
-        $perPage = $request->get('per_page', 15);
+        $perPage = $asWali ? $request->get('per_page', 100) : $request->get('per_page', 15);
         $paginated = $query->orderByDesc('tanggal')->paginate($perPage);
 
         // Transform items: tambahkan nama_mapel, nama_kelas, dan hitung presensi
@@ -93,6 +95,7 @@ class JurnalGuruController extends Controller
                 'id_mapel'     => $j->id_mapel,
                 'nama_mapel'   => $j->mapel?->nama_mapel,
                 'id_guru'      => $j->id_guru,
+                'nama_guru'    => $j->guru?->nama_karyawan ?? $j->guru?->nama_guru ?? null,
                 'materi'       => $j->materi,
                 'hambatan'     => $hambatan,
                 'pemecahan'    => $pemecahan,
