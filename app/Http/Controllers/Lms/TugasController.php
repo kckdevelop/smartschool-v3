@@ -219,7 +219,10 @@ class TugasController extends Controller
             ];
         });
 
-        return view('lms.tugas.show', compact('tugas', 'tagihanList'));
+        $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
+        $gurus = Guru::where('status', 'aktif')->orderBy('nama_guru')->get();
+
+        return view('lms.tugas.show', compact('tugas', 'tagihanList', 'kelas', 'gurus'));
     }
 
     public function update(Request $request, $id)
@@ -231,6 +234,7 @@ class TugasController extends Controller
             'id_kelas'    => 'required|integer|exists:kelas,id_kelas',
             'id_guru'     => 'required|integer|exists:guru,id_guru',
             'deskripsi'   => 'required|string',
+            'tenggat'     => 'required|date',
             'status'      => 'required|in:aktif,tidak',
         ]);
 
@@ -245,10 +249,11 @@ class TugasController extends Controller
             'id_kursus'    => $kursus->id_kursus,
             'judul'        => $request->judul_tugas,
             'deskripsi'    => $request->deskripsi,
+            'tenggat'      => $request->tenggat,
             'is_published' => $request->status === 'aktif',
         ]);
 
-        return redirect()->route('lms.tugas.index')
+        return redirect()->route('lms.tugas.show', $id)
             ->with('success', 'Tugas berhasil diperbarui.');
     }
 

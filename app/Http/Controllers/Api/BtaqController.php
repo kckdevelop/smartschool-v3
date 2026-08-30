@@ -15,12 +15,12 @@ class BtaqController extends Controller
 {
     /** Aturan jilid berdasarkan halaman global 1–55 */
     protected array $jilidRanges = [
-        1 => ['min' => 1,  'max' => 16],
-        2 => ['min' => 17, 'max' => 24],
-        3 => ['min' => 25, 'max' => 32],
-        4 => ['min' => 33, 'max' => 40],
-        5 => ['min' => 41, 'max' => 48],
-        6 => ['min' => 49, 'max' => 55],
+        1 => ['min' => 1,  'max' => 10],
+        2 => ['min' => 11, 'max' => 16],
+        3 => ['min' => 17, 'max' => 22],
+        4 => ['min' => 23, 'max' => 31],
+        5 => ['min' => 32, 'max' => 42],
+        6 => ['min' => 43, 'max' => 55],
     ];
 
     protected function jilidFromHalaman(int $halaman): int

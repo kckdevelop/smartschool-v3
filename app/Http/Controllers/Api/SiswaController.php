@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\UserSiswa;
 use App\Models\Kelas;
+use App\Models\Presensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -35,6 +36,37 @@ class SiswaController extends Controller
         // Pagination
         $perPage = $request->get('per_page', 15);
         $data    = $query->orderBy('nama_siswa')->paginate($perPage);
+
+        if ($request->filled('tanggal')) {
+            $tanggal = $request->tanggal;
+            $nisList = $data->getCollection()->pluck('nis');
+            $presensiMap = Presensi::whereIn('nis', $nisList)
+                ->whereDate('tanggal', $tanggal)
+                ->get()
+                ->keyBy('nis');
+
+            $data->getCollection()->transform(function ($siswa) use ($presensiMap) {
+                $p = $presensiMap->get($siswa->nis);
+                $dailyStatus = 'alpha';
+                if ($p) {
+                    $st = strtolower((string) $p->status);
+                    if (in_array($st, ['hadir', '1'])) {
+                        $dailyStatus = 'hadir';
+                    } elseif (in_array($st, ['sakit', '2'])) {
+                        $dailyStatus = 'sakit';
+                    } elseif (in_array($st, ['izin', 'ijin', '3'])) {
+                        $dailyStatus = 'ijin';
+                    } elseif (in_array($st, ['alfa', 'alpha', '4', '0'])) {
+                        $dailyStatus = 'alpha';
+                    } else {
+                        $dailyStatus = 'alpha';
+                    }
+                }
+                $siswa->daily_status = $dailyStatus;
+                $siswa->status_presensi = $dailyStatus;
+                return $siswa;
+            });
+        }
 
         return response()->json([
             'success' => true,

@@ -1156,7 +1156,8 @@ async function loadStudents(idKelas, existingAbsen, existingJml) {
     grid.innerHTML = '';
 
     try {
-        const res  = await fetch(`/jurnal-guru/students/${idKelas}`, {
+        const tglParam = (currentData && currentData.tanggal) ? '?tanggal=' + encodeURIComponent(currentData.tanggal) : '';
+        const res  = await fetch(`/jurnal-guru/students/${idKelas}${tglParam}`, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
         const data = await res.json();
@@ -1165,10 +1166,12 @@ async function loadStudents(idKelas, existingAbsen, existingJml) {
 
         if (!data.length) { empty.style.display = 'block'; return; }
 
-        // Parse existing absen string → build studentStatus map
-        // Supports both "Nama (Sakit)" and legacy "Nama" formats
+        // Set default status presensi per siswa:
+        // Jika presensi jurnal belum terisi (existingAbsen kosong), ambil dari data presensi harian siswa (daily_status / alpha jika tidak finger).
         studentStatus = {};
-        data.forEach(s => { studentStatus[String(s.nis)] = 'hadir'; }); // default all hadir
+        data.forEach(s => {
+            studentStatus[String(s.nis)] = existingAbsen ? 'hadir' : (s.daily_status || 'alpha');
+        });
         if (existingAbsen) {
             const parts = existingAbsen.split(',').map(p => p.trim()).filter(Boolean);
             parts.forEach(part => {

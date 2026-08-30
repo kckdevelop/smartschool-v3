@@ -207,6 +207,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanIndex'])->name('laporan');
         Route::get('/laporan/export-excel', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanExportExcel'])->name('laporan.export-excel');
         Route::get('/laporan/print', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanPrint'])->name('laporan.print');
+        Route::get('/wa-monitoring', [\App\Http\Controllers\WaPresensiController::class, 'index'])->name('wa-monitoring');
+        Route::post('/wa-monitoring/send-masal', [\App\Http\Controllers\WaPresensiController::class, 'sendMasal'])->name('wa-monitoring.send-masal');
+        Route::post('/wa-monitoring/send-single', [\App\Http\Controllers\WaPresensiController::class, 'sendSingle'])->name('wa-monitoring.send-single');
+        Route::post('/wa-monitoring/update-template', [\App\Http\Controllers\WaPresensiController::class, 'updateTemplate'])->name('wa-monitoring.update-template');
     });
 
     // 12. Jurnal Guru
@@ -465,6 +469,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/{id}', [\App\Http\Controllers\Lms\TagihanTugasController::class, 'show'])->name('show');
             Route::post('/{id}/periksa', [\App\Http\Controllers\Lms\TagihanTugasController::class, 'periksa'])->name('periksa');
             Route::delete('/{id}', [\App\Http\Controllers\Lms\TagihanTugasController::class, 'destroy'])->name('destroy');
+        });
+
+        // 3. Soal Kuis (edit & hapus per butir soal)
+        Route::prefix('soal')->name('soal.')->group(function () {
+            Route::post('/upload-image', [\App\Http\Controllers\Lms\SoalController::class, 'uploadImage'])->name('upload-image');
+            Route::post('/{id_soal}', [\App\Http\Controllers\Lms\SoalController::class, 'update'])->name('update');
+            Route::delete('/{id_soal}', [\App\Http\Controllers\Lms\SoalController::class, 'destroy'])->name('destroy');
         });
     });
 });

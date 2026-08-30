@@ -9,6 +9,7 @@ use App\Models\Kelas;
 use App\Models\Mapel;
 use App\Models\UserSiswa;
 use App\Models\JadwalMengajarHarian;
+use App\Models\Presensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -127,14 +128,46 @@ class JurnalGuruController extends Controller
     }
 
     // ─── AJAX: students by class ────────────────────────────────────────────
-    public function getStudentsByKelas($idKelas)
+    public function getStudentsByKelas($idKelas, Request $request)
     {
         $students = UserSiswa::where('id_kelas', $idKelas)
             ->where('status', 'aktif')
             ->orderBy('nama_siswa')
             ->get(['nis', 'nama_siswa']);
 
-        return response()->json($students);
+        $tanggal = $request->input('tanggal', date('Y-m-d'));
+
+        // Query data presensi harian siswa pada tanggal tersebut
+        $presensiMap = Presensi::whereIn('nis', $students->pluck('nis'))
+            ->whereDate('tanggal', $tanggal)
+            ->get()
+            ->keyBy('nis');
+
+        $result = $students->map(function ($s) use ($presensiMap) {
+            $p = $presensiMap->get($s->nis);
+            $dailyStatus = 'alpha'; // default alpha jika siswa tidak finger / tidak ada presensi harian
+            if ($p) {
+                $st = strtolower((string) $p->status);
+                if (in_array($st, ['hadir', '1'])) {
+                    $dailyStatus = 'hadir';
+                } elseif (in_array($st, ['sakit', '2'])) {
+                    $dailyStatus = 'sakit';
+                } elseif (in_array($st, ['izin', 'ijin', '3'])) {
+                    $dailyStatus = 'ijin';
+                } elseif (in_array($st, ['alfa', 'alpha', '4', '0'])) {
+                    $dailyStatus = 'alpha';
+                } else {
+                    $dailyStatus = 'alpha';
+                }
+            }
+            return [
+                'nis'          => $s->nis,
+                'nama_siswa'   => $s->nama_siswa,
+                'daily_status' => $dailyStatus,
+            ];
+        });
+
+        return response()->json($result);
     }
 
     // ─── Store ──────────────────────────────────────────────────────────────

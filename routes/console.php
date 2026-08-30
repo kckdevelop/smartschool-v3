@@ -53,3 +53,12 @@ Schedule::command('finger:hapus-log')
     ->timezone('Asia/Jakarta')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/finger-hapus.log'));
+
+// Kirim WA Presensi Siswa Harian otomatis jam 09:00 WIB kecuali hari Sabtu dan Minggu (Senin-Jumat)
+Schedule::command('wa:send-presensi-harian')
+    ->weekdays()
+    ->at('09:00')
+    ->timezone('Asia/Jakarta')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/wa-presensi-harian.log'));
+

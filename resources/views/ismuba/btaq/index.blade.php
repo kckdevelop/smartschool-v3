@@ -269,6 +269,17 @@
                             <option value="Al-Qur'an">Al-Qur'an</option>
                         </select>
                     </div>
+                    {{-- Button Gunakan Data Terakhir --}}
+                    <div id="container-btn-last-data" style="grid-column: 1/-1; display: none;">
+                        <button type="button" id="btn-use-last-data" style="width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; cursor:pointer;">
+                            <div>
+                                <i class="fa-solid fa-clock-rotate-left" style="color:#2563eb; margin-right:6px;"></i>
+                                <strong style="font-size:0.85rem;">Gunakan Data Terakhir</strong>
+                                <div id="btn-use-last-data-desc" style="font-size:0.78rem; color:#3b82f6; font-weight:normal; margin-top:2px;"></div>
+                            </div>
+                            <span style="background:#2563eb; color:#fff; font-size:0.75rem; font-weight:700; padding:4px 10px; border-radius:6px;">Terapkan</span>
+                        </button>
+                    </div>
                     {{-- Dynamic Iqro / Al-Qur'an inputs based on level category --}}
                     <div id="container-iqro-inputs" class="form-group" style="grid-column: 1/-1; display: none;">
                         {{-- Auto-jilid badge --}}
@@ -806,12 +817,45 @@ function populateBarisDropdown(preserveValue = false) {
 function updateStudentProgress() {
     const nis = document.getElementById('btaq_nis').value;
     currentStudentLastProgress = latestBtaqMap[nis] || null;
-    
+
+    const lastDataBtnContainer = document.getElementById('container-btn-last-data');
+    const lastDataBtnDesc = document.getElementById('btn-use-last-data-desc');
+
+    if (currentStudentLastProgress) {
+        lastDataBtnContainer.style.display = 'block';
+        if (currentStudentLastProgress.is_iqro) {
+            lastDataBtnDesc.textContent = `Jilid ${currentStudentLastProgress.jilid || ''}: Hal. ${currentStudentLastProgress.halaman || ''} • Baris ${currentStudentLastProgress.baris || ''}`;
+        } else {
+            lastDataBtnDesc.textContent = `QS. ${currentStudentLastProgress.surat || ''}: ${currentStudentLastProgress.ayat || ''}`;
+        }
+    } else {
+        lastDataBtnContainer.style.display = 'none';
+    }
+
     resetRestrictions();
     applyProgressRestrictions();
 }
 
 document.getElementById('btaq_nis').addEventListener('change', updateStudentProgress);
+
+document.getElementById('btn-use-last-data').addEventListener('click', function() {
+    if (!currentStudentLastProgress) return;
+    if (currentStudentLastProgress.is_iqro) {
+        document.getElementById('btaq_level').value = 'Iqro';
+        handleLevelChange();
+        document.getElementById('btaq_halaman').value = currentStudentLastProgress.halaman;
+        populateBarisDropdown(true);
+        updateJilidBadge();
+        document.getElementById('btaq_baris').value = currentStudentLastProgress.baris;
+    } else {
+        document.getElementById('btaq_level').value = "Al-Qur'an";
+        handleLevelChange();
+        document.getElementById('btaq_surat').value = currentStudentLastProgress.surat;
+        populateAyatSelect('btaq_surat', 'btaq_ayat');
+        document.getElementById('btaq_ayat').value = currentStudentLastProgress.ayat;
+    }
+    applyProgressRestrictions();
+});
 
 function disableOption(opt, suffix = ' (Terlewati)') {
     opt.disabled = true;
@@ -851,11 +895,11 @@ function applyProgressRestrictions() {
         const lastHalaman = parseInt(currentStudentLastProgress.halaman);
         const lastBaris   = parseInt(currentStudentLastProgress.baris) || 0;
 
-        // Disable halaman < lastHalaman
+        // Disable halaman < lastHalaman (atau = lastHalaman jika baris sudah 10)
         document.querySelectorAll('#btaq_halaman option').forEach(opt => {
             if (opt.value) {
                 const h = parseInt(opt.value);
-                if (h < lastHalaman) disableOption(opt);
+                if (h < lastHalaman || (h === lastHalaman && lastBaris >= 10)) disableOption(opt);
             }
         });
 

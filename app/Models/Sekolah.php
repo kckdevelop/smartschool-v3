@@ -40,6 +40,7 @@ class Sekolah extends Model
         'gemini_quota',
         'wa_token',
         'wa_status',
+        'wa_template_presensi',
     ];
 
 

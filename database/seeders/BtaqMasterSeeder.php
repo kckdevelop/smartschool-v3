@@ -21,21 +21,21 @@ class BtaqMasterSeeder extends Seeder
 
         /**
          * Aturan Jilid Iqro berdasarkan nomor halaman global (1–55):
-         * Jilid 1 : hal. 1  – 16
-         * Jilid 2 : hal. 17 – 24
-         * Jilid 3 : hal. 25 – 32
-         * Jilid 4 : hal. 33 – 40
-         * Jilid 5 : hal. 41 – 48
-         * Jilid 6 : hal. 49 – 55
-         * Setiap halaman memiliki baris 1–15
+         * Jilid 1 : hal. 1  – 10
+         * Jilid 2 : hal. 11 – 16
+         * Jilid 3 : hal. 17 – 22
+         * Jilid 4 : hal. 23 – 31
+         * Jilid 5 : hal. 32 – 42
+         * Jilid 6 : hal. 43 – 55
+         * Setiap halaman memiliki baris 1–10
          */
         $jilidRanges = [
-            1 => ['min' => 1,  'max' => 16],
-            2 => ['min' => 17, 'max' => 24],
-            3 => ['min' => 25, 'max' => 32],
-            4 => ['min' => 33, 'max' => 40],
-            5 => ['min' => 41, 'max' => 48],
-            6 => ['min' => 49, 'max' => 55],
+            1 => ['min' => 1,  'max' => 10],
+            2 => ['min' => 11, 'max' => 16],
+            3 => ['min' => 17, 'max' => 22],
+            4 => ['min' => 23, 'max' => 31],
+            5 => ['min' => 32, 'max' => 42],
+            6 => ['min' => 43, 'max' => 55],
         ];
         $maxBaris = 10;
 
