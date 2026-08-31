@@ -378,27 +378,15 @@ class WaPresensiController extends Controller
             'dilompati' => 0,
         ];
 
-        $sendCount = 0; // counter pengiriman aktual (bukan dilompati)
-
         foreach ($siswaList as $siswa) {
-            // Jeda random minimal 10 detik sebelum setiap pengiriman (kecuali pertama)
-            if ($sendCount > 0) {
-                $jeda = rand(10, 20);
-                Log::info("[WA Masal] Jeda {$jeda} detik sebelum kirim ke siswa berikutnya...");
-                sleep($jeda);
-            }
-
             $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
 
             if ($res['status'] === 'terkirim') {
                 $results['terkirim']++;
-                $sendCount++;
             } elseif ($res['status'] === 'gagal') {
                 $results['gagal']++;
-                $sendCount++; // tetap hitung sebagai percobaan kirim
             } else {
                 $results['dilompati']++;
-                // siswa dilompati tidak perlu jeda
             }
         }
 

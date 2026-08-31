@@ -591,43 +591,25 @@ function updateSelectedCount() {
     if (btnReset) btnReset.style.display = count > 0 ? 'inline-flex' : 'none';
 }
 
-// ── Trigger Kirim WA Masal ──
-function triggerKirimMasal() {
-    if (!confirm('Apakah Anda yakin ingin memproses pengiriman WA presensi harian untuk seluruh siswa pada tanggal {{ $tanggal }}?')) {
+// ── Kirim WA Masal — Client-side Batching (anti-timeout) ──
+async function triggerKirimMasal() {
+    const allCheckboxes = document.querySelectorAll('.check-siswa');
+    const nisList = Array.from(allCheckboxes).map(cb => cb.value);
+
+    if (nisList.length === 0) {
+        alert('Tidak ada siswa yang ditemukan di halaman ini.');
         return;
     }
 
-    showLoading('Memproses WA Presensi Masal', 'Sedang mengirim pesan WhatsApp ke orang tua siswa. Harap tunggu sebentar...');
+    if (!confirm(`Kirim WA presensi ke ${nisList.length} siswa?\n\nSistem akan mengirim satu per satu dengan jeda 10–20 detik antar pengiriman untuk menghindari pemblokiran gateway.`)) {
+        return;
+    }
 
-    fetch("{{ route('presensi-siswa.wa-monitoring.send-masal') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-        },
-        body: JSON.stringify({
-            tanggal: "{{ $tanggal }}",
-            id_kelas: "{{ $id_kelas }}"
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            alert(data.message);
-            window.location.reload();
-        } else {
-            alert("Gagal: " + data.message);
-        }
-    })
-    .catch(err => {
-        hideLoading();
-        alert("Terjadi kesalahan koneksi atau server: " + err.message);
-    });
+    await prosesKirimBerurutan(nisList);
 }
 
-// ── Trigger Kirim WA Siswa Terpilih ──
-function triggerKirimTerpilih() {
+// ── Kirim WA Siswa Terpilih — Client-side Batching ──
+async function triggerKirimTerpilih() {
     const checked = document.querySelectorAll('.check-siswa:checked');
     const nisList = Array.from(checked).map(cb => cb.value);
 
@@ -636,37 +618,152 @@ function triggerKirimTerpilih() {
         return;
     }
 
-    if (!confirm(`Kirim WA presensi ke ${nisList.length} siswa terpilih?`)) {
+    if (!confirm(`Kirim WA presensi ke ${nisList.length} siswa terpilih?\n\nSistem akan mengirim satu per satu dengan jeda 10–20 detik antar pengiriman.`)) {
         return;
     }
 
-    showLoading('Memproses WA Siswa Terpilih', `Sedang mengirim WA presensi ke ${nisList.length} siswa terpilih...`);
+    await prosesKirimBerurutan(nisList);
+}
 
-    fetch("{{ route('presensi-siswa.wa-monitoring.send-masal') }}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-        },
-        body: JSON.stringify({
-            tanggal: "{{ $tanggal }}",
-            nis_list: nisList
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            alert(data.message);
-            window.location.reload();
-        } else {
-            alert("Gagal: " + data.message);
+// ── Core: Proses Pengiriman Berurutan dengan Delay Client-side ──
+async function prosesKirimBerurutan(nisList) {
+    const total = nisList.length;
+    let terkirim = 0, gagal = 0, dilompati = 0, dilewati = 0;
+    let berhenti = false;
+
+    // Buat dialog progress custom
+    const overlay = document.createElement('div');
+    overlay.id = 'wa-progress-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9998;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:28px 32px;width:420px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div style="width:44px;height:44px;background:rgba(16,185,129,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-brands fa-whatsapp" style="color:#10b981;font-size:22px;"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700;font-size:1rem;color:#0f172a;">Mengirim WA Presensi</div>
+                    <div style="font-size:0.78rem;color:#64748b;" id="wa-prog-subtitle">Mempersiapkan...</div>
+                </div>
+            </div>
+
+            <div style="background:#f1f5f9;border-radius:8px;height:10px;margin-bottom:10px;overflow:hidden;">
+                <div id="wa-prog-bar" style="height:100%;background:linear-gradient(90deg,#10b981,#059669);width:0%;transition:width 0.4s ease;border-radius:8px;"></div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#475569;margin-bottom:16px;">
+                <span id="wa-prog-counter">0 / ${total}</span>
+                <span id="wa-prog-pct">0%</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+                <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:700;color:#10b981;" id="wa-prog-terkirim">0</div>
+                    <div style="font-size:0.7rem;color:#64748b;">Terkirim</div>
+                </div>
+                <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:700;color:#ef4444;" id="wa-prog-gagal">0</div>
+                    <div style="font-size:0.7rem;color:#64748b;">Gagal</div>
+                </div>
+                <div style="background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:700;color:#64748b;" id="wa-prog-dilompati">0</div>
+                    <div style="font-size:0.7rem;color:#64748b;">Dilompati</div>
+                </div>
+                <div style="background:rgba(79,70,229,0.08);border:1px solid rgba(79,70,229,0.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:700;color:#4f46e5;" id="wa-prog-dilewati">0</div>
+                    <div style="font-size:0.7rem;color:#64748b;">Dilewati</div>
+                </div>
+            </div>
+
+            <div id="wa-prog-status" style="font-size:0.78rem;color:#64748b;background:#f8fafc;border-radius:6px;padding:8px 12px;margin-bottom:16px;min-height:34px;line-height:1.4;">
+                Menyiapkan antrian pengiriman...
+            </div>
+
+            <div id="wa-prog-countdown" style="font-size:0.76rem;color:#94a3b8;text-align:center;margin-bottom:14px;min-height:18px;"></div>
+
+            <button onclick="window._waBerhenti=true;this.disabled=true;this.textContent='Menghentikan...';"
+                    style="width:100%;background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;border-radius:8px;padding:9px;font-size:0.85rem;font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-stop" style="margin-right:6px;"></i>Hentikan Pengiriman
+            </button>
+        </div>`;
+    document.body.appendChild(overlay);
+    window._waBerhenti = false;
+
+    const setStatus  = (msg)  => { const el = document.getElementById('wa-prog-status');  if(el) el.innerHTML = msg; };
+    const setCd      = (msg)  => { const el = document.getElementById('wa-prog-countdown'); if(el) el.textContent = msg; };
+    const updateBar  = (done) => {
+        const pct = Math.round((done / total) * 100);
+        const bar = document.getElementById('wa-prog-bar');
+        const ctr = document.getElementById('wa-prog-counter');
+        const pEl = document.getElementById('wa-prog-pct');
+        if(bar) bar.style.width = pct + '%';
+        if(ctr) ctr.textContent = `${done} / ${total}`;
+        if(pEl) pEl.textContent = pct + '%';
+    };
+    const updateStat = () => {
+        ['terkirim','gagal','dilompati','dilewati'].forEach(k => {
+            const el = document.getElementById('wa-prog-' + k);
+            const val = k === 'terkirim' ? terkirim : k === 'gagal' ? gagal : k === 'dilompati' ? dilompati : dilewati;
+            if(el) el.textContent = val;
+        });
+    };
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    for (let i = 0; i < nisList.length; i++) {
+        if (window._waBerhenti) { berhenti = true; break; }
+
+        const nis = nisList[i];
+
+        const row = document.getElementById('row-siswa-' + nis);
+        const namaSiswa = row ? row.querySelector('td:nth-child(3) div')?.textContent?.trim() || 'Siswa' : 'Siswa';
+
+        setStatus(`<i class="fa-solid fa-paper-plane text-success" style="margin-right:5px;"></i>Mengirim ke <strong>${namaSiswa}</strong>... (${i+1}/${total})`);
+
+        try {
+            const res  = await fetch("{{ route('presensi-siswa.wa-monitoring.send-single') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify({ nis, tanggal: "{{ $tanggal }}", force: false })
+            });
+
+            if (!res.ok) {
+                gagal++;
+                setStatus(`<i class="fa-solid fa-circle-exclamation text-danger" style="margin-right:5px;"></i>Server error (${res.status}) untuk <strong>${namaSiswa}</strong>.`);
+            } else {
+                const data = await res.json();
+                if (data.status === 'terkirim') terkirim++;
+                else if (data.status === 'gagal') gagal++;
+                else if (data.status === 'dilompati') dilompati++;
+                else dilewati++;
+            }
+        } catch(e) {
+            gagal++;
+            setStatus(`<i class="fa-solid fa-circle-exclamation text-danger" style="margin-right:5px;"></i>Gagal koneksi untuk <strong>${namaSiswa}</strong>: ${e.message}`);
         }
-    })
-    .catch(err => {
-        hideLoading();
-        alert("Terjadi kesalahan koneksi: " + err.message);
-    });
+
+        updateBar(i + 1);
+        updateStat();
+
+        if (i < nisList.length - 1 && !window._waBerhenti) {
+            const jedaSec = Math.floor(Math.random() * 11) + 10;
+            for (let s = jedaSec; s > 0; s--) {
+                if (window._waBerhenti) break;
+                setCd(`⏳ Jeda ${s} detik sebelum pengiriman berikutnya...`);
+                await sleep(1000);
+            }
+            setCd('');
+        }
+    }
+
+    const progOverlay = document.getElementById('wa-progress-overlay');
+    if (progOverlay) progOverlay.remove();
+
+    if (berhenti) {
+        alert(`Pengiriman dihentikan.\n\nTerkirim: ${terkirim}\nGagal: ${gagal}\nDilompati: ${dilompati}\nDilewati: ${dilewati}`);
+    } else {
+        alert(`✅ Pengiriman WA selesai!\n\nTerkirim: ${terkirim}\nGagal: ${gagal}\nDilompati: ${dilompati}\nDilewati (sudah terkirim): ${dilewati}`);
+    }
+    window.location.reload();
 }
 
 // ── Kirim Single WA dengan Force (selalu kirim ulang) ──
