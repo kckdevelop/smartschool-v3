@@ -65,15 +65,19 @@ class WaPresensiController extends Controller
         $namaKelas = $siswa->kelas ? ($siswa->kelas->tingkat . ' ' . $siswa->kelas->rombel . ' (' . ($siswa->kelas->jurusan->nama_jurusan ?? '') . ')') : '-';
         $tanggalFormat = Carbon::parse($tanggal)->translatedFormat('l, d F Y');
 
+        // Nama panggilan = kata pertama dari nama siswa (huruf kapital tiap kata)
+        $namaPanggilan = ucwords(strtolower(explode(' ', trim($siswa->nama_siswa))[0]));
+
         $replacements = [
-            '{nama_siswa}'   => $siswa->nama_siswa,
-            '{nis}'          => $siswa->nis,
-            '{kelas}'        => $namaKelas,
-            '{tanggal}'      => $tanggalFormat,
-            '{status}'       => $statusLabel,
-            '{jam_presensi}' => $jamPresensi,
-            '{keterangan}'   => $keterangan,
-            '{nama_sekolah}' => $sekolah->nama_sekolah ?? 'SmartSchool',
+            '{nama_siswa}'      => $siswa->nama_siswa,
+            '{nama_panggilan}'  => $namaPanggilan,
+            '{nis}'             => $siswa->nis,
+            '{kelas}'           => $namaKelas,
+            '{tanggal}'         => $tanggalFormat,
+            '{status}'          => $statusLabel,
+            '{jam_presensi}'    => $jamPresensi,
+            '{keterangan}'      => $keterangan,
+            '{nama_sekolah}'    => $sekolah->nama_sekolah ?? 'SmartSchool',
         ];
 
         $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
@@ -348,14 +352,27 @@ class WaPresensiController extends Controller
             'dilompati' => 0,
         ];
 
+        $sendCount = 0; // counter pengiriman aktual (bukan dilompati)
+
         foreach ($siswaList as $siswa) {
+            // Jeda random minimal 10 detik sebelum setiap pengiriman (kecuali pertama)
+            if ($sendCount > 0) {
+                $jeda = rand(10, 20);
+                Log::info("[WA Masal] Jeda {$jeda} detik sebelum kirim ke siswa berikutnya...");
+                sleep($jeda);
+            }
+
             $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
+
             if ($res['status'] === 'terkirim') {
                 $results['terkirim']++;
+                $sendCount++;
             } elseif ($res['status'] === 'gagal') {
                 $results['gagal']++;
+                $sendCount++; // tetap hitung sebagai percobaan kirim
             } else {
                 $results['dilompati']++;
+                // siswa dilompati tidak perlu jeda
             }
         }
 

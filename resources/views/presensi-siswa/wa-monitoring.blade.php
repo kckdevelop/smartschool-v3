@@ -390,6 +390,7 @@
                 <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
                     <span style="font-size: 0.78rem; font-weight: 600; color: #475569; margin-right: 4px;">Variabel Tersedia:</span>
                     <button type="button" class="tag-btn" onclick="insertTag('{nama_siswa}')">+{nama_siswa}</button>
+                    <button type="button" class="tag-btn" onclick="insertTag('{nama_panggilan}')">+{nama_panggilan}</button>
                     <button type="button" class="tag-btn" onclick="insertTag('{nis}')">+{nis}</button>
                     <button type="button" class="tag-btn" onclick="insertTag('{kelas}')">+{kelas}</button>
                     <button type="button" class="tag-btn" onclick="insertTag('{tanggal}')">+{tanggal}</button>
@@ -404,8 +405,19 @@
                     <textarea name="wa_template_presensi" id="wa_template_presensi" class="form-control" rows="10" style="font-family: monospace; font-size: 0.88rem; border-radius: 8px; line-height: 1.5;" required>{{ $sekolah->wa_template_presensi ?? '' }}</textarea>
                 </div>
 
-                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px 16px; border-radius: 8px; font-size: 0.8rem; color: #475569;">
-                    <i class="fa-solid fa-lightbulb text-warning" style="margin-right: 4px;"></i> <strong>Catatan:</strong> Jika status presensi siswa adalah <strong>Hadir</strong> (termasuk via fingerprint), variabel <code>{jam_presensi}</code> akan otomatis terisi dengan jam presensi siswa (contoh: <em>07:05:12 WIB</em>).
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px 16px; border-radius: 8px; font-size: 0.8rem; color: #475569; line-height: 1.6;">
+                    <div style="margin-bottom: 6px;">
+                        <i class="fa-solid fa-lightbulb text-warning" style="margin-right: 4px;"></i>
+                        <strong>{jam_presensi}</strong> — Terisi otomatis jika siswa <strong>Hadir</strong> (termasuk via fingerprint). Contoh: <em>07:05:12 WIB</em>.
+                    </div>
+                    <div style="margin-bottom: 6px;">
+                        <i class="fa-regular fa-user" style="color:#4f46e5; margin-right: 4px;"></i>
+                        <strong>{nama_panggilan}</strong> — Kata pertama dari nama siswa, cocok untuk sapaan personal. Contoh: "AHMAD BUDI SANTOSO" → <em>Ahmad</em>.
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-clock text-success" style="margin-right: 4px;"></i>
+                        <strong>Jeda pengiriman:</strong> Sistem menambahkan jeda <strong>10–20 detik secara acak</strong> antar setiap pengiriman (mode masal) untuk mencegah pemblokiran oleh gateway WA.
+                    </div>
                 </div>
             </div>
             <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px;">
