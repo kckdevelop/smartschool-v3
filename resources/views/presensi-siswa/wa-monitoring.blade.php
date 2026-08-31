@@ -110,6 +110,9 @@
             </div>
 
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" onclick="openModal('modal-reset-wa')" style="background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">
+                    <i class="fa-solid fa-arrow-rotate-left" style="margin-right: 6px;"></i> Reset Status WA
+                </button>
                 <button type="button" class="btn btn-secondary" onclick="openModal('modal-template-wa')" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);">
                     <i class="fa-solid fa-sliders" style="margin-right: 6px;"></i> Template WA
                 </button>
@@ -233,6 +236,9 @@
                 <button type="button" class="btn btn-sm btn-success" id="btn-kirim-terpilih" onclick="triggerKirimTerpilih()" style="display: none;">
                     <i class="fa-solid fa-paper-plane"></i> Kirim Terpilih (<span id="selected-count">0</span>)
                 </button>
+                <button type="button" class="btn btn-sm" id="btn-reset-terpilih" onclick="triggerResetTerpilih()" style="display: none; background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3);">
+                    <i class="fa-solid fa-arrow-rotate-left"></i> Reset Terpilih
+                </button>
             </div>
         </div>
 
@@ -351,12 +357,20 @@
                                 @endif
                             </td>
                             <td style="text-align: center;">
-                                <button type="button" class="btn btn-sm btn-primary btn-retry-single" 
-                                        onclick="kirimSingleWA({{ $siswa->nis }})" 
-                                        title="Kirim / Ulangi Kirim WA Siswa Ini" 
-                                        style="border-radius: 6px; padding: 4px 8px;">
-                                    <i class="fa-solid fa-paper-plane"></i> Kirim
-                                </button>
+                                <div style="display: flex; gap: 4px; justify-content: center;">
+                                    <button type="button" class="btn btn-sm btn-primary btn-retry-single"
+                                            onclick="kirimSingleWAForce({{ $siswa->nis }})"
+                                            title="Kirim / Paksa Kirim Ulang WA Siswa Ini"
+                                            style="border-radius: 6px; padding: 4px 8px;">
+                                        <i class="fa-solid fa-paper-plane"></i> Kirim
+                                    </button>
+                                    <button type="button" class="btn btn-sm"
+                                            onclick="resetSingleWA({{ $siswa->nis }}, '{{ addslashes($siswa->nama_siswa) }}')"
+                                            title="Reset status WA siswa ini ke Pending"
+                                            style="border-radius: 6px; padding: 4px 8px; background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.25);">
+                                        <i class="fa-solid fa-arrow-rotate-left"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -369,6 +383,64 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Reset Status WA --}}
+<div class="modal-overlay" id="modal-reset-wa">
+    <div class="modal" style="max-width: 500px; width: 92%;">
+        <div class="modal-header">
+            <h3 style="font-size: 1rem;">
+                <i class="fa-solid fa-arrow-rotate-left" style="color: #ef4444; margin-right: 8px;"></i>
+                Reset Status Pengiriman WA
+            </h3>
+            <button onclick="closeModal('modal-reset-wa')" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.82rem; color: #b91c1c; line-height: 1.5;">
+                <i class="fa-solid fa-triangle-exclamation" style="margin-right: 5px;"></i>
+                <strong>Perhatian:</strong> Reset akan <strong>menghapus log pengiriman</strong> yang dipilih sehingga status kembali ke <em>Pending</em>. Siswa yang ter-reset dapat dikirim WA kembali.
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; display: block;">Mode Reset</label>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <input type="radio" name="reset_mode" value="gagal" id="rm-gagal" checked style="accent-color: #ef4444; width:16px; height:16px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.88rem;"><i class="fa-solid fa-circle-exclamation text-danger" style="margin-right:4px;"></i> Hanya yang Gagal</div>
+                            <div style="font-size: 0.78rem; color: #64748b;">Reset semua log dengan status <em>Gagal</em></div>
+                        </div>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <input type="radio" name="reset_mode" value="dilompati" id="rm-dilompati" style="accent-color: #ef4444; width:16px; height:16px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.88rem;"><i class="fa-solid fa-forward" style="margin-right:4px; color:#64748b;"></i> Hanya yang Dilompati</div>
+                            <div style="font-size: 0.78rem; color: #64748b;">Reset semua log dengan status <em>Dilompati</em> (tanpa no. WA)</div>
+                        </div>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <input type="radio" name="reset_mode" value="semua" id="rm-semua" style="accent-color: #ef4444; width:16px; height:16px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.88rem;"><i class="fa-solid fa-rotate-right" style="margin-right:4px; color:#ef4444;"></i> Reset Semua <span style="background:#fee2e2;color:#b91c1c;font-size:0.72rem;padding:1px 6px;border-radius:4px;">Termasuk Terkirim</span></div>
+                            <div style="font-size: 0.78rem; color: #64748b;">Semua log tanggal ini dihapus, termasuk yang sudah terkirim</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: #64748b; background: #f8fafc; border-radius: 8px; padding: 10px 12px;">
+                <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>
+                Berlaku untuk tanggal <strong>{{ \Carbon\Carbon::parse($tanggal)->translatedFormat('d F Y') }}</strong>
+                @if($id_kelas) dan kelas yang sedang aktif di filter @endif
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-reset-wa')">Batal</button>
+            <button type="button" class="btn btn-danger" onclick="eksekusiResetWa()" style="font-weight: 600;">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Eksekusi Reset
+            </button>
         </div>
     </div>
 </div>
@@ -510,13 +582,13 @@ function toggleSelectAll() {
 function updateSelectedCount() {
     const checked = document.querySelectorAll('.check-siswa:checked');
     const count = checked.length;
-    const btnContainer = document.getElementById('btn-kirim-terpilih');
+    const btnKirim = document.getElementById('btn-kirim-terpilih');
+    const btnReset = document.getElementById('btn-reset-terpilih');
     const countSpan = document.getElementById('selected-count');
-    
+
     if (countSpan) countSpan.textContent = count;
-    if (btnContainer) {
-        btnContainer.style.display = count > 0 ? 'inline-flex' : 'none';
-    }
+    if (btnKirim) btnKirim.style.display = count > 0 ? 'inline-flex' : 'none';
+    if (btnReset) btnReset.style.display = count > 0 ? 'inline-flex' : 'none';
 }
 
 // ── Trigger Kirim WA Masal ──
@@ -597,8 +669,8 @@ function triggerKirimTerpilih() {
     });
 }
 
-// ── Kirim Single WA (AJAX) ──
-function kirimSingleWA(nis) {
+// ── Kirim Single WA dengan Force (selalu kirim ulang) ──
+function kirimSingleWAForce(nis) {
     showLoading('Mengirim Pesan WA', 'Sedang mengirim pesan presensi...');
 
     fetch("{{ route('presensi-siswa.wa-monitoring.send-single') }}", {
@@ -609,7 +681,8 @@ function kirimSingleWA(nis) {
         },
         body: JSON.stringify({
             nis: nis,
-            tanggal: "{{ $tanggal }}"
+            tanggal: "{{ $tanggal }}",
+            force: true
         })
     })
     .then(res => res.json())
@@ -617,15 +690,132 @@ function kirimSingleWA(nis) {
         hideLoading();
         if (data.success) {
             alert("Berhasil: " + data.message);
-            window.location.reload();
         } else {
             alert("Informasi: " + data.message);
-            window.location.reload();
         }
+        window.location.reload();
     })
     .catch(err => {
         hideLoading();
         alert("Terjadi kesalahan: " + err.message);
+    });
+}
+
+// ── Reset Status WA Siswa Tunggal ──
+function resetSingleWA(nis, nama) {
+    if (!confirm(`Reset status WA untuk ${nama}?\nLog pengiriman akan dihapus dan status kembali ke Pending.`)) return;
+
+    fetch("{{ route('presensi-siswa.wa-monitoring.reset-status') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            tanggal: "{{ $tanggal }}",
+            nis_list: [String(nis)],
+            mode: 'terpilih'
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#f59e0b;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;box-shadow:0 4px 16px rgba(245,158,11,0.4);display:flex;align-items:center;gap:8px';
+            toast.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> ' + data.message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); window.location.reload(); }, 1500);
+        } else {
+            alert('Gagal: ' + data.message);
+        }
+    })
+    .catch(err => alert('Kesalahan koneksi: ' + err.message));
+}
+
+// ── Reset Status WA Siswa Terpilih ──
+function triggerResetTerpilih() {
+    const checked = document.querySelectorAll('.check-siswa:checked');
+    const nisList = Array.from(checked).map(cb => cb.value);
+
+    if (nisList.length === 0) {
+        alert('Silakan pilih minimal 1 siswa.');
+        return;
+    }
+
+    if (!confirm(`Reset status WA untuk ${nisList.length} siswa terpilih?\nLog pengiriman akan dihapus dan status kembali ke Pending.`)) return;
+
+    fetch("{{ route('presensi-siswa.wa-monitoring.reset-status') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            tanggal: "{{ $tanggal }}",
+            nis_list: nisList,
+            mode: 'terpilih'
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Gagal: ' + data.message);
+        }
+    })
+    .catch(err => alert('Kesalahan koneksi: ' + err.message));
+}
+
+// ── Eksekusi Reset WA Masal (dari Modal) ──
+function eksekusiResetWa() {
+    const modeEl = document.querySelector('input[name="reset_mode"]:checked');
+    if (!modeEl) {
+        alert('Pilih mode reset terlebih dahulu.');
+        return;
+    }
+    const mode = modeEl.value;
+
+    const konfirmMsg = mode === 'semua'
+        ? 'PERHATIAN: Ini akan mereset SEMUA log WA termasuk yang sudah TERKIRIM!\n\nYakin melanjutkan?'
+        : `Reset log WA dengan status "${mode}" untuk tanggal {{ $tanggal }}?`;
+
+    if (!confirm(konfirmMsg)) return;
+
+    const btnEksekusi = document.querySelector('#modal-reset-wa .btn-danger');
+    btnEksekusi.disabled = true;
+    btnEksekusi.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+
+    fetch("{{ route('presensi-siswa.wa-monitoring.reset-status') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            tanggal: "{{ $tanggal }}",
+            id_kelas: "{{ $id_kelas ?: '' }}" || null,
+            mode: mode
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btnEksekusi.disabled = false;
+        btnEksekusi.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> Eksekusi Reset';
+        closeModal('modal-reset-wa');
+
+        if (data.success) {
+            alert(`✅ ${data.message}`);
+            window.location.reload();
+        } else {
+            alert('Gagal: ' + data.message);
+        }
+    })
+    .catch(err => {
+        btnEksekusi.disabled = false;
+        btnEksekusi.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> Eksekusi Reset';
+        alert('Kesalahan koneksi: ' + err.message);
     });
 }
 

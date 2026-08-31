@@ -105,6 +105,17 @@ class WaPresensiController extends Controller
         }
 
         if (empty($targetNo)) {
+            // Jika sudah 'terkirim' sebelumnya, jangan overwrite
+            $existing = LogWaPresensi::where('tanggal', $tanggal)->where('nis', $siswa->nis)->first();
+            if ($existing && $existing->status_wa === 'terkirim') {
+                return [
+                    'success' => true,
+                    'status'  => 'terkirim',
+                    'message' => "WA untuk {$siswa->nama_siswa} sudah terkirim sebelumnya (dilompati).",
+                    'log'     => $existing,
+                ];
+            }
+
             $log = LogWaPresensi::updateOrCreate(
                 ['tanggal' => $tanggal, 'nis' => $siswa->nis],
                 [
@@ -123,6 +134,17 @@ class WaPresensiController extends Controller
                 'status'  => 'dilompati',
                 'message' => "Nomor WA untuk {$siswa->nama_siswa} tidak terisi.",
                 'log'     => $log,
+            ];
+        }
+
+        // Jika sudah 'terkirim' sebelumnya, tidak perlu kirim ulang kecuali diminta eksplisit
+        $existing = LogWaPresensi::where('tanggal', $tanggal)->where('nis', $siswa->nis)->first();
+        if ($existing && $existing->status_wa === 'terkirim') {
+            return [
+                'success' => true,
+                'status'  => 'terkirim',
+                'message' => "WA untuk {$siswa->nama_siswa} sudah terkirim sebelumnya, dilewati.",
+                'log'     => $existing,
             ];
         }
 
@@ -295,6 +317,10 @@ class WaPresensiController extends Controller
     // ── 3. Send WA Masal ──
     public function sendMasal(Request $request)
     {
+        // Pastikan PHP tidak timeout saat kirim banyak siswa dengan delay
+        set_time_limit(0);
+        ignore_user_abort(true);
+
         $request->validate([
             'tanggal'  => 'required|date',
             'id_kelas' => 'nullable|exists:kelas,id_kelas',
@@ -383,16 +409,18 @@ class WaPresensiController extends Controller
         ]);
     }
 
-    // ── 4. Send Single Student (AJAX Retry) ──
+    // ── 4. Send Single Student (AJAX Retry / Force Send) ──
     public function sendSingle(Request $request)
     {
         $request->validate([
             'nis'     => 'required|exists:user_siswa,nis',
             'tanggal' => 'required|date',
+            'force'   => 'nullable|boolean',   // force=true untuk kirim ulang meski sudah terkirim
         ]);
 
-        $nis = $request->input('nis');
+        $nis     = $request->input('nis');
         $tanggal = $request->input('tanggal');
+        $force   = (bool) $request->input('force', false);
 
         $sekolah = Sekolah::first();
         if (!$sekolah || $sekolah->wa_status !== 'aktif') {
@@ -403,12 +431,70 @@ class WaPresensiController extends Controller
         }
 
         $template = $sekolah->wa_template_presensi;
-        $siswa = UserSiswa::where('nis', $nis)->with(['detail', 'kelas.jurusan'])->firstOrFail();
+        $siswa    = UserSiswa::where('nis', $nis)->with(['detail', 'kelas.jurusan'])->firstOrFail();
+
+        // Jika force=true, hapus log lama dulu agar tidak dilewati
+        if ($force) {
+            LogWaPresensi::where('tanggal', $tanggal)->where('nis', $nis)->delete();
+        }
 
         $fonnteService = new FonnteService();
         $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
 
         return response()->json($res);
+    }
+
+    // ── 6. Reset Status Pengiriman WA ──
+    public function resetStatusWa(Request $request)
+    {
+        $request->validate([
+            'tanggal'  => 'required|date',
+            'id_kelas' => 'nullable|exists:kelas,id_kelas',
+            'nis_list' => 'nullable|array',
+            'nis_list.*' => 'exists:user_siswa,nis',
+            'mode'     => 'required|in:semua,gagal,dilompati,terpilih',
+        ]);
+
+        $tanggal  = $request->input('tanggal');
+        $id_kelas = $request->input('id_kelas');
+        $nisList  = $request->input('nis_list', []);
+        $mode     = $request->input('mode');
+
+        $query = LogWaPresensi::whereDate('tanggal', $tanggal);
+
+        if ($mode === 'terpilih') {
+            if (empty($nisList)) {
+                return response()->json(['success' => false, 'message' => 'Tidak ada siswa yang dipilih.'], 400);
+            }
+            $query->whereIn('nis', $nisList);
+        } elseif ($mode === 'gagal') {
+            $query->where('status_wa', 'gagal');
+        } elseif ($mode === 'dilompati') {
+            $query->where('status_wa', 'dilompati');
+        }
+        // mode 'semua' → tidak filter status_wa tambahan
+
+        // Filter kelas jika dipilih
+        if ($id_kelas) {
+            $nisDiKelas = UserSiswa::where('id_kelas', $id_kelas)->where('status', 'aktif')->pluck('nis');
+            $query->whereIn('nis', $nisDiKelas);
+        }
+
+        // Jangan reset yang sudah 'terkirim' kecuali mode semua
+        if ($mode !== 'semua') {
+            $query->where('status_wa', '!=', 'terkirim');
+        }
+
+        $count = $query->count();
+        $query->delete();
+
+        Log::info("[WA Reset] Mode: {$mode}, Tanggal: {$tanggal}, Dihapus: {$count} record log.");
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} record log WA berhasil direset ke status Pending.",
+            'count'   => $count,
+        ]);
     }
 
     // ── 5. Update Nomor WA Presensi Siswa ──
