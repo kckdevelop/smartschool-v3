@@ -273,15 +273,24 @@
                                 </div>
                             </td>
                             <td>
-                                @if(!empty($item['no_wa']))
-                                    <span style="font-family: monospace; font-weight: 600; color: var(--text-primary);">
-                                        <i class="fa-brands fa-whatsapp text-success" style="margin-right: 4px;"></i> {{ $item['no_wa'] }}
-                                    </span>
-                                @else
-                                    <span style="font-size: 0.78rem; color: #94a3b8; font-style: italic;">
-                                        <i class="fa-solid fa-circle-exclamation text-warning" style="margin-right: 4px;"></i> Belum diisi
-                                    </span>
-                                @endif
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    @if(!empty($item['no_wa']))
+                                        <span id="no-wa-display-{{ $siswa->nis }}" style="font-family: monospace; font-weight: 600; color: var(--text-primary);">
+                                            <i class="fa-brands fa-whatsapp text-success" style="margin-right: 4px;"></i> {{ $item['no_wa'] }}
+                                        </span>
+                                    @else
+                                        <span id="no-wa-display-{{ $siswa->nis }}" style="font-size: 0.78rem; color: #94a3b8; font-style: italic;">
+                                            <i class="fa-solid fa-circle-exclamation text-warning" style="margin-right: 4px;"></i> Belum diisi
+                                        </span>
+                                    @endif
+                                    <button type="button"
+                                        class="btn btn-sm"
+                                        onclick="openEditNoWa('{{ $siswa->nis }}', '{{ $siswa->nama_siswa }}', '{{ $item['no_wa'] ?? '' }}')"
+                                        title="Edit Nomor WA"
+                                        style="padding: 2px 6px; border-radius: 6px; background: rgba(79,70,229,0.1); color: #4f46e5; border: 1px solid rgba(79,70,229,0.25); line-height: 1;">
+                                        <i class="fa-solid fa-pen-to-square" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td style="text-align: center;">
                                 @if($stPresensi === 'Hadir')
@@ -408,6 +417,57 @@
         </form>
     </div>
 </div>
+
+{{-- Modal Edit Nomor WA --}}
+<div class="modal-overlay" id="modal-edit-no-wa">
+    <div class="modal" style="max-width: 460px; width: 92%;">
+        <div class="modal-header">
+            <h3 style="font-size: 1rem;">
+                <i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 8px;"></i>
+                Edit Nomor WA Presensi
+            </h3>
+            <button onclick="closeModal('modal-edit-no-wa')" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div id="edit-no-wa-siswa-info" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: #475569;">
+                <i class="fa-solid fa-user" style="color: #4f46e5; margin-right: 6px;"></i>
+                <span id="edit-no-wa-nama">-</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                    Nomor WhatsApp Orang Tua / Wali
+                </label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px 0 0 8px; padding: 8px 12px; font-size: 0.88rem; color: #475569; white-space: nowrap;">+62</span>
+                    <input type="text" id="input-no-wa" class="form-control"
+                        placeholder="cth: 81234567890"
+                        style="border-radius: 0 8px 8px 0; font-family: monospace; font-size: 0.95rem;"
+                        maxlength="20"
+                        oninput="previewNormalized()">
+                </div>
+                <div id="no-wa-preview" style="font-size: 0.78rem; color: #64748b; margin-top: 6px;"></div>
+                <div id="no-wa-error" style="font-size: 0.78rem; color: #ef4444; margin-top: 4px; display: none;"></div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                <i class="fa-solid fa-circle-info" style="margin-right: 3px;"></i>
+                Nomor akan otomatis diformat ke format internasional (misal: 081xxx → 6281xxx).
+                Kosongkan untuk menghapus nomor.
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-no-wa')" id="btn-edit-wa-batal">Batal</button>
+            <button type="button" class="btn btn-danger" onclick="hapusNoWa()" id="btn-hapus-wa" style="display: none;">
+                <i class="fa-solid fa-trash"></i> Hapus Nomor
+            </button>
+            <button type="button" class="btn btn-primary" onclick="simpanNoWa()" id="btn-simpan-wa" style="font-weight: 600;">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -554,6 +614,146 @@ function kirimSingleWA(nis) {
     .catch(err => {
         hideLoading();
         alert("Terjadi kesalahan: " + err.message);
+    });
+}
+
+// ── Edit Nomor WA Presensi ──
+let _editNoWaNis = null;
+
+function openEditNoWa(nis, nama, noWaCurrent) {
+    _editNoWaNis = nis;
+
+    document.getElementById('edit-no-wa-nama').textContent = nama;
+
+    // Tampilkan nomor saat ini di input (tanpa awalan 62)
+    let inputVal = noWaCurrent || '';
+    if (inputVal.startsWith('62')) {
+        inputVal = inputVal.substring(2);
+    } else if (inputVal.startsWith('+62')) {
+        inputVal = inputVal.substring(3);
+    } else if (inputVal.startsWith('0')) {
+        inputVal = inputVal.substring(1);
+    }
+    document.getElementById('input-no-wa').value = inputVal;
+    document.getElementById('no-wa-error').style.display = 'none';
+    document.getElementById('no-wa-error').textContent = '';
+
+    // Tampilkan tombol hapus jika ada nomor
+    const btnHapus = document.getElementById('btn-hapus-wa');
+    btnHapus.style.display = noWaCurrent ? 'inline-flex' : 'none';
+
+    previewNormalized();
+    openModal('modal-edit-no-wa');
+    setTimeout(() => document.getElementById('input-no-wa').focus(), 200);
+}
+
+function previewNormalized() {
+    const input = document.getElementById('input-no-wa').value.trim();
+    const preview = document.getElementById('no-wa-preview');
+    const errEl = document.getElementById('no-wa-error');
+    errEl.style.display = 'none';
+
+    if (!input) {
+        preview.textContent = '';
+        return;
+    }
+
+    // Validasi: hanya angka
+    if (!/^[0-9]+$/.test(input)) {
+        preview.textContent = '';
+        errEl.textContent = 'Hanya boleh berisi angka (tanpa +, spasi, atau tanda strip).';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    const fullNumber = '62' + input;
+    preview.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i> Nomor lengkap: <strong style="font-family:monospace">${fullNumber}</strong>`;
+}
+
+function hapusNoWa() {
+    if (!confirm('Yakin ingin menghapus nomor WA presensi siswa ini?')) return;
+    document.getElementById('input-no-wa').value = '';
+    simpanNoWa();
+}
+
+function simpanNoWa() {
+    const rawInput = document.getElementById('input-no-wa').value.trim();
+    const errEl = document.getElementById('no-wa-error');
+    errEl.style.display = 'none';
+
+    // Validasi jika ada input
+    if (rawInput && !/^[0-9]+$/.test(rawInput)) {
+        errEl.textContent = 'Hanya boleh berisi angka.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Kirim nomor: jika ada input, tambahkan prefix 0 agar backend yang normalisasi ke 62
+    const noWa = rawInput ? '0' + rawInput : '';
+
+    const btnSimpan = document.getElementById('btn-simpan-wa');
+    const btnBatal = document.getElementById('btn-edit-wa-batal');
+    btnSimpan.disabled = true;
+    btnBatal.disabled = true;
+    btnSimpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    fetch("{{ route('presensi-siswa.wa-monitoring.update-no-wa') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            nis: _editNoWaNis,
+            no_wa: noWa || null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btnSimpan.disabled = false;
+        btnBatal.disabled = false;
+        btnSimpan.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan';
+
+        if (data.success) {
+            // Update tampilan di tabel tanpa reload
+            const displayEl = document.getElementById('no-wa-display-' + _editNoWaNis);
+            if (displayEl) {
+                if (data.no_wa) {
+                    displayEl.innerHTML = `<i class="fa-brands fa-whatsapp text-success" style="margin-right:4px;"></i> ${data.no_wa}`;
+                    displayEl.style.fontFamily = 'monospace';
+                    displayEl.style.fontWeight = '600';
+                    displayEl.style.color = 'var(--text-primary)';
+                    displayEl.style.fontStyle = 'normal';
+                    displayEl.style.fontSize = '';
+                } else {
+                    displayEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-warning" style="margin-right:4px;"></i> Belum diisi`;
+                    displayEl.style.fontFamily = '';
+                    displayEl.style.fontWeight = '';
+                    displayEl.style.fontStyle = 'italic';
+                    displayEl.style.fontSize = '0.78rem';
+                    displayEl.style.color = '#94a3b8';
+                }
+            }
+            closeModal('modal-edit-no-wa');
+
+            // Tampilkan notifikasi sukses
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.88rem;font-weight:600;box-shadow:0 4px 16px rgba(16,185,129,0.4);display:flex;align-items:center;gap:8px;animation:slideIn .3s ease';
+            toast.innerHTML = '<i class="fa-solid fa-circle-check"></i> Nomor WA berhasil diperbarui!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        } else {
+            const msg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.message || 'Gagal menyimpan.');
+            errEl.textContent = msg;
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(err => {
+        btnSimpan.disabled = false;
+        btnBatal.disabled = false;
+        btnSimpan.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan';
+        errEl.textContent = 'Terjadi kesalahan koneksi: ' + err.message;
+        errEl.style.display = 'block';
     });
 }
 </script>

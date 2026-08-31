@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\UserSiswa;
+use App\Models\DetailSiswa;
 use App\Models\Presensi;
 use App\Models\LogAbsensi;
 use App\Models\Sekolah;
@@ -391,5 +392,46 @@ class WaPresensiController extends Controller
         $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
 
         return response()->json($res);
+    }
+
+    // ── 5. Update Nomor WA Presensi Siswa ──
+    public function updateNoWa(Request $request)
+    {
+        $request->validate([
+            'nis'    => 'required|exists:user_siswa,nis',
+            'no_wa'  => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]{6,20}$/'],
+        ], [
+            'no_wa.regex' => 'Format nomor WA tidak valid. Gunakan angka, +, atau -.',
+            'no_wa.max'   => 'Nomor WA maksimal 20 karakter.',
+        ]);
+
+        $nis   = $request->input('nis');
+        $noWa  = $request->input('no_wa');
+
+        // Normalisasi: hilangkan spasi dan tanda strip
+        if ($noWa) {
+            $noWa = preg_replace('/[\s\-]/', '', $noWa);
+            // Ganti awalan 0 dengan 62
+            if (str_starts_with($noWa, '0')) {
+                $noWa = '62' . substr($noWa, 1);
+            }
+        }
+
+        $detail = DetailSiswa::where('nis', $nis)->first();
+
+        if ($detail) {
+            $detail->update(['no_wa_presensi' => $noWa ?: null]);
+        } else {
+            DetailSiswa::create([
+                'nis'            => $nis,
+                'no_wa_presensi' => $noWa ?: null,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nomor WA presensi berhasil diperbarui.',
+            'no_wa'   => $noWa,
+        ]);
     }
 }

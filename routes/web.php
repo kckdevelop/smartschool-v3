@@ -211,6 +211,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/wa-monitoring/send-masal', [\App\Http\Controllers\WaPresensiController::class, 'sendMasal'])->name('wa-monitoring.send-masal');
         Route::post('/wa-monitoring/send-single', [\App\Http\Controllers\WaPresensiController::class, 'sendSingle'])->name('wa-monitoring.send-single');
         Route::post('/wa-monitoring/update-template', [\App\Http\Controllers\WaPresensiController::class, 'updateTemplate'])->name('wa-monitoring.update-template');
+        Route::post('/wa-monitoring/update-no-wa', [\App\Http\Controllers\WaPresensiController::class, 'updateNoWa'])->name('wa-monitoring.update-no-wa');
     });
 
     // 12. Jurnal Guru
