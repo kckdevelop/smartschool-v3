@@ -101,13 +101,26 @@ class TarikDataFingerController extends Controller
                 }
 
                 // Cek duplikat di tabel presensi
-                $exists = DB::table('presensi')
+                $existing = DB::table('presensi')
                             ->where('nis', $log->nis)
                             ->whereDate('tanggal', $log->tanggal)
-                            ->exists();
+                            ->first();
 
-                if ($exists) {
-                    $skipped++;
+                if ($existing) {
+                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+
+                    if ($isAlpha) {
+                        DB::table('presensi')
+                            ->where('id_presensi', $existing->id_presensi)
+                            ->update([
+                                'jam'        => $log->jam,
+                                'status'     => $log->status ?? 'Hadir',
+                                'keterangan' => $log->keterangan ?? 'Sinkronisasi mesin finger',
+                            ]);
+                        $synced++;
+                    } else {
+                        $skipped++;
+                    }
                     continue;
                 }
 

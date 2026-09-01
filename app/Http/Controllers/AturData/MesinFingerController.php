@@ -103,17 +103,35 @@ class MesinFingerController extends Controller
                     continue;
                 }
 
-                $sudahAda = DB::table('presensi')
+                $existing = DB::table('presensi')
                     ->where('nis', $log->nis)
                     ->whereDate('tanggal', $log->tanggal)
-                    ->exists();
+                    ->first();
 
-                if ($sudahAda) {
-                    // Tandai: data sudah ada di presensi
-                    DB::table('log_absensi')
-                        ->where('id_presensi', $log->id_presensi)
-                        ->update(['keterangan' => 'Data sudah ada']);
-                    $skipped++;
+                if ($existing) {
+                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+
+                    if ($isAlpha) {
+                        DB::table('presensi')
+                            ->where('id_presensi', $existing->id_presensi)
+                            ->update([
+                                'jam'        => $log->jam,
+                                'status'     => $log->status ?? 'Hadir',
+                                'keterangan' => 'Sinkronisasi mesin finger',
+                            ]);
+
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Tersinkron']);
+
+                        $synced++;
+                    } else {
+                        // Tandai: data sudah ada di presensi
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Data sudah ada']);
+                        $skipped++;
+                    }
                     continue;
                 }
 
@@ -553,15 +571,33 @@ class MesinFingerController extends Controller
                     continue;
                 }
 
-                $sudahAda = DB::table('presensi')
+                $existing = DB::table('presensi')
                     ->where('nis', $log->nis)
                     ->whereDate('tanggal', $log->tanggal)
-                    ->exists();
+                    ->first();
 
-                if ($sudahAda) {
-                    DB::table('log_absensi')
-                        ->where('id_presensi', $log->id_presensi)
-                        ->update(['keterangan' => 'Data sudah ada']);
+                if ($existing) {
+                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+
+                    if ($isAlpha) {
+                        DB::table('presensi')
+                            ->where('id_presensi', $existing->id_presensi)
+                            ->update([
+                                'jam'        => $log->jam,
+                                'status'     => $log->status ?? '1',
+                                'keterangan' => 'Mesin finger – otomatis',
+                            ]);
+
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Tersinkron']);
+
+                        $synced++;
+                    } else {
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Data sudah ada']);
+                    }
                     continue;
                 }
 

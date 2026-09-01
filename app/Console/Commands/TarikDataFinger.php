@@ -227,17 +227,36 @@ class TarikDataFinger extends Command
                     continue;
                 }
 
-                // Cek apakah di tabel presensi belum ada data nis dan tanggal yang sama
-                $sudahAda = DB::table('presensi')
+                // Cek apakah di tabel presensi sudah ada data nis dan tanggal yang sama
+                $existing = DB::table('presensi')
                     ->where('nis', $log->nis)
                     ->whereDate('tanggal', $log->tanggal)
-                    ->exists();
+                    ->first();
 
-                if ($sudahAda) {
-                    // Data sudah ada — tandai keterangan
-                    DB::table('log_absensi')
-                        ->where('id_presensi', $log->id_presensi)
-                        ->update(['keterangan' => 'Data sudah ada']);
+                if ($existing) {
+                    // Jika data presensi sudah tercatat alpha, tetapi ada data finger hadir, update presensi dengan jam finger
+                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+
+                    if ($isAlpha) {
+                        DB::table('presensi')
+                            ->where('id_presensi', $existing->id_presensi)
+                            ->update([
+                                'jam'        => $log->jam,
+                                'status'     => $log->status ?? '1',
+                                'keterangan' => 'Mesin finger – otomatis',
+                            ]);
+
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Tersinkron']);
+
+                        $synced++;
+                    } else {
+                        // Data sudah ada dan bukan alpha — tandai keterangan
+                        DB::table('log_absensi')
+                            ->where('id_presensi', $log->id_presensi)
+                            ->update(['keterangan' => 'Data sudah ada']);
+                    }
                     continue;
                 }
 
