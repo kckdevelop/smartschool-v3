@@ -130,14 +130,21 @@ input:checked + .switch-slider:before {
                         <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 12px 0;">Jalankan penarikan data secara manual atau hapus seluruh data presensi langsung di semua mesin finger.</p>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto;">
-                        <form id="form-tarik-data" action="{{ route('atur-data.tarik-finger.tarik-proses') }}" method="POST" style="margin: 0; flex: 1; min-width: 140px;">
+                        <form id="form-tarik-data" action="{{ route('atur-data.tarik-finger.tarik-proses') }}" method="POST" style="margin: 0; flex: 1; min-width: 130px;">
                             @csrf
                             <button type="button" id="btn-tarik-data" class="btn btn-primary btn-sm w-full" style="justify-content: center; height: 38px;">
                                 <i class="fa-solid fa-download"></i> Tarik Data Sekarang
                             </button>
                         </form>
 
-                        <form id="form-hapus-mesin" action="{{ route('atur-data.tarik-finger.hapus-mesin') }}" method="POST" style="margin: 0; flex: 1; min-width: 140px;">
+                        <form id="form-cek-koneksi-semua" action="{{ route('atur-data.tarik-finger.cek-koneksi-semua') }}" method="POST" style="margin: 0; flex: 1; min-width: 130px;">
+                            @csrf
+                            <button type="button" id="btn-cek-koneksi-semua" class="btn btn-secondary btn-sm w-full" style="justify-content: center; height: 38px; background: #64748b; color: white; border: none;">
+                                <i class="fa-solid fa-wifi"></i> Cek Koneksi Semua
+                            </button>
+                        </form>
+
+                        <form id="form-hapus-mesin" action="{{ route('atur-data.tarik-finger.hapus-mesin') }}" method="POST" style="margin: 0; flex: 1; min-width: 130px;">
                             @csrf
                             <button type="button" class="btn btn-danger btn-sm w-full" style="justify-content: center; height: 38px;" onclick="openModal('modal-confirm-hapus')">
                                 <i class="fa-solid fa-trash-can"></i> Hapus Data di Semua Mesin
@@ -167,7 +174,7 @@ input:checked + .switch-slider:before {
                             <th style="padding: 14px 24px; text-align: center;">Jumlah Log Terakhir</th>
                             <th style="padding: 14px 24px;">Status Penghapusan</th>
                             <th style="padding: 14px 24px;">Pembaruan Terakhir</th>
-                            <th style="padding: 14px 24px; text-align: center; width: 150px;">Aksi</th>
+                            <th style="padding: 14px 24px; text-align: center; width: 290px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody style="font-size: 0.9rem; color: #334155;">
@@ -193,12 +200,28 @@ input:checked + .switch-slider:before {
                                 {{ $mesin->last_update ? \Carbon\Carbon::parse($mesin->last_update)->translatedFormat('d M Y H:i:s') : 'Belum pernah' }}
                             </td>
                             <td style="padding: 14px 24px; text-align: center;">
-                                <form action="{{ route('atur-data.tarik-finger.hapus-mesin-single', $mesin->id_mesin) }}" method="POST" style="margin:0;" onsubmit="return confirmHapusSingle('{{ $mesin->nama_mesin }}', this)">
-                                    @csrf
-                                    <button type="submit" class="btn btn-danger btn-xs" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fa-solid fa-trash-can"></i> Hapus Data
-                                    </button>
-                                </form>
+                                <div style="display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                    <form action="{{ route('atur-data.tarik-finger.tarik-mesin-single', $mesin->id_mesin) }}" method="POST" style="margin:0;" onsubmit="return confirmTarikSingle('{{ $mesin->nama_mesin }}', this)">
+                                        @csrf
+                                        <button type="submit" class="btn btn-primary btn-xs" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Tarik data presensi dari mesin ini">
+                                            <i class="fa-solid fa-download"></i> Tarik Data
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ route('atur-data.tarik-finger.cek-koneksi-single', $mesin->id_mesin) }}" method="POST" style="margin:0;" onsubmit="return confirmCekSingle('{{ $mesin->nama_mesin }}', this)">
+                                        @csrf
+                                        <button type="submit" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; background: #64748b; color: white; border: none; display: inline-flex; align-items: center; gap: 4px;" title="Cek koneksi cloud server mesin ini">
+                                            <i class="fa-solid fa-wifi"></i> Cek Koneksi
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ route('atur-data.tarik-finger.hapus-mesin-single', $mesin->id_mesin) }}" method="POST" style="margin:0;" onsubmit="return confirmHapusSingle('{{ $mesin->nama_mesin }}', this)">
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger btn-xs" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Hapus data log di mesin ini">
+                                            <i class="fa-solid fa-trash-can"></i> Hapus Data
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         @empty
@@ -495,14 +518,61 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('form-tarik-data').submit();
         });
     }
+
+    const btnCekKoneksiSemua = document.getElementById('btn-cek-koneksi-semua');
+    if (btnCekKoneksiSemua) {
+        btnCekKoneksiSemua.addEventListener('click', function() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                const loadingIcon = loadingOverlay.querySelector('.fa-spinner');
+                const loadingTitle = loadingOverlay.querySelector('h3');
+                const loadingText = loadingOverlay.querySelector('p');
+                if (loadingIcon) loadingIcon.style.color = '#64748b'; // Slate spinner for check
+                if (loadingTitle) loadingTitle.textContent = 'Memeriksa Koneksi Cloud Semua Mesin';
+                if (loadingText) loadingText.textContent = 'Sedang menguji koneksi ke cloud server untuk seluruh mesin finger. Mohon tunggu...';
+                loadingOverlay.style.display = 'flex';
+            }
+            document.getElementById('form-cek-koneksi-semua').submit();
+        });
+    }
 });
+
+function confirmTarikSingle(namaMesin, form) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        const loadingIcon = loadingOverlay.querySelector('.fa-spinner');
+        const loadingTitle = loadingOverlay.querySelector('h3');
+        const loadingText = loadingOverlay.querySelector('p');
+        if (loadingIcon) loadingIcon.style.color = '#3b82f6';
+        if (loadingTitle) loadingTitle.textContent = `Menarik Data: ${namaMesin}`;
+        if (loadingText) loadingText.textContent = `Sedang menarik log absensi terbaru dari mesin ${namaMesin}. Mohon tunggu...`;
+        loadingOverlay.style.display = 'flex';
+    }
+    return true;
+}
+
+function confirmCekSingle(namaMesin, form) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        const loadingIcon = loadingOverlay.querySelector('.fa-spinner');
+        const loadingTitle = loadingOverlay.querySelector('h3');
+        const loadingText = loadingOverlay.querySelector('p');
+        if (loadingIcon) loadingIcon.style.color = '#64748b';
+        if (loadingTitle) loadingTitle.textContent = `Memeriksa Koneksi: ${namaMesin}`;
+        if (loadingText) loadingText.textContent = `Sedang menguji status koneksi cloud server untuk ${namaMesin}. Mohon tunggu...`;
+        loadingOverlay.style.display = 'flex';
+    }
+    return true;
+}
 
 function confirmHapusSingle(namaMesin, form) {
     if (confirm(`Apakah Anda yakin ingin menghapus data presensi pada mesin "${namaMesin}"? Tindakan ini akan mengosongkan log yang tersimpan di dalam mesin tersebut secara permanen!`)) {
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) {
+            const loadingIcon = loadingOverlay.querySelector('.fa-spinner');
             const loadingTitle = loadingOverlay.querySelector('h3');
             const loadingText = loadingOverlay.querySelector('p');
+            if (loadingIcon) loadingIcon.style.color = '#ef4444';
             if (loadingTitle) loadingTitle.textContent = `Mengosongkan Mesin: ${namaMesin}`;
             if (loadingText) loadingText.textContent = 'Sedang mengirim perintah hapus dan melakukan verifikasi data log. Mohon tunggu...';
             loadingOverlay.style.display = 'flex';

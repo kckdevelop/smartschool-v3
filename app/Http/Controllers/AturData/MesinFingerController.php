@@ -330,17 +330,20 @@ class MesinFingerController extends Controller
 
     public function tarikProses(Request $request)
     {
+        set_time_limit(300);
         $mesinList = DataMesin::all();
         if ($mesinList->isEmpty()) {
             return back()->with('error', 'Tidak ada mesin finger yang terdaftar.');
         }
 
         $totalBerhasil = 0;
+        $gagalConnect  = [];
         
         foreach ($mesinList as $mesin) {
             try {
                 $cookie = $this->loginCloud($mesin->sn, $mesin->password);
                 if (!$cookie) {
+                    $gagalConnect[] = "{$mesin->nama_mesin} (SN: {$mesin->sn})";
                     continue;
                 }
 
@@ -349,20 +352,25 @@ class MesinFingerController extends Controller
 
                 // Fetch
                 $rawData = $this->fetchCloud($cookie);
-                if (empty($rawData)) {
-                    continue;
+                if (!empty($rawData)) {
+                    // Parse and Save
+                    $inserted = $this->insertLogCloud($rawData, $mesin->id_mesin);
+                    $totalBerhasil += $inserted;
+
+                    $mesin->update([
+                        'data'        => $inserted,
+                        'last_update' => now(),
+                    ]);
+                } else {
+                    $mesin->update([
+                        'last_update' => now(),
+                    ]);
                 }
 
-                // Parse and Save
-                $inserted = $this->insertLogCloud($rawData, $mesin->id_mesin);
-                $totalBerhasil += $inserted;
-
-                $mesin->update([
-                    'data' => $inserted,
-                    'last_update' => now(),
-                ]);
+                $this->logoutCloud($cookie);
 
             } catch (\Exception $e) {
+                $gagalConnect[] = "{$mesin->nama_mesin} (SN: {$mesin->sn})";
                 \Log::error("Web Pull Error for SN {$mesin->sn}: " . $e->getMessage());
             }
         }
@@ -370,7 +378,112 @@ class MesinFingerController extends Controller
         // Run sync as well
         $synced = $this->sinkronkanProses();
 
-        return redirect()->route('atur-data.tarik-finger')->with('success', "Berhasil menarik {$totalBerhasil} data log baru dan mensinkronkan {$synced} data presensi dari semua mesin.");
+        $msg = "Berhasil menarik {$totalBerhasil} data log baru dan mensinkronkan {$synced} data presensi dari mesin yang terhubung.";
+        if (!empty($gagalConnect)) {
+            $msgGagal = implode(', ', $gagalConnect);
+            return redirect()->route('atur-data.tarik-finger')->with('warning', $msg . " Perhatian: Mesin berikut tidak terhubung ke Cloud: {$msgGagal}.");
+        }
+
+        return redirect()->route('atur-data.tarik-finger')->with('success', $msg);
+    }
+
+    public function tarikSingleMesin($id)
+    {
+        set_time_limit(120);
+        $mesin = DataMesin::findOrFail($id);
+
+        try {
+            $cookie = $this->loginCloud($mesin->sn, $mesin->password);
+            if (!$cookie) {
+                return redirect()->route('atur-data.tarik-finger')->with('error', "Gagal terhubung ke cloud server untuk mesin \"{$mesin->nama_mesin}\" (SN: {$mesin->sn}). Periksa koneksi internet mesin, SN, atau password.");
+            }
+
+            // Compact
+            $this->compactCloud($cookie);
+
+            // Fetch
+            $rawData = $this->fetchCloud($cookie);
+            $inserted = 0;
+            if (!empty($rawData)) {
+                $inserted = $this->insertLogCloud($rawData, $mesin->id_mesin);
+            }
+
+            $mesin->update([
+                'data'        => $inserted,
+                'last_update' => now(),
+            ]);
+
+            $this->logoutCloud($cookie);
+
+            // Run sync to presensi
+            $synced = $this->sinkronkanProses();
+
+            return redirect()->route('atur-data.tarik-finger')->with('success', "Berhasil terhubung dan menarik {$inserted} data log baru dari mesin \"{$mesin->nama_mesin}\" (Sinkron presensi: {$synced}).");
+
+        } catch (\Exception $e) {
+            \Log::error("Tarik Single Mesin Error SN {$mesin->sn}: " . $e->getMessage());
+            return redirect()->route('atur-data.tarik-finger')->with('error', "Terjadi kesalahan saat menghubungi mesin \"{$mesin->nama_mesin}\": " . $e->getMessage());
+        }
+    }
+
+    public function cekKoneksiSingle($id)
+    {
+        set_time_limit(60);
+        $mesin = DataMesin::findOrFail($id);
+
+        try {
+            $cookie = $this->loginCloud($mesin->sn, $mesin->password);
+            if (!$cookie) {
+                return redirect()->route('atur-data.tarik-finger')->with('error', "Status Mesin \"{$mesin->nama_mesin}\" (SN: {$mesin->sn}): TIDAK TERHUBUNG ke Cloud Server / Gagal Login.");
+            }
+
+            $this->logoutCloud($cookie);
+
+            return redirect()->route('atur-data.tarik-finger')->with('success', "Status Mesin \"{$mesin->nama_mesin}\" (SN: {$mesin->sn}): TERHUBUNG dengan Cloud Server.");
+
+        } catch (\Exception $e) {
+            return redirect()->route('atur-data.tarik-finger')->with('error', "Mesin \"{$mesin->nama_mesin}\" (SN: {$mesin->sn}) error: " . $e->getMessage());
+        }
+    }
+
+    public function cekKoneksiSemua()
+    {
+        set_time_limit(180);
+        $mesinList = DataMesin::all();
+        if ($mesinList->isEmpty()) {
+            return back()->with('error', 'Tidak ada mesin finger yang terdaftar.');
+        }
+
+        $terhubung = [];
+        $terputus  = [];
+
+        foreach ($mesinList as $mesin) {
+            try {
+                $cookie = $this->loginCloud($mesin->sn, $mesin->password);
+                if ($cookie) {
+                    $terhubung[] = $mesin->nama_mesin;
+                    $this->logoutCloud($cookie);
+                } else {
+                    $terputus[] = "{$mesin->nama_mesin} (SN: {$mesin->sn})";
+                }
+            } catch (\Exception $e) {
+                $terputus[] = "{$mesin->nama_mesin} (SN: {$mesin->sn})";
+            }
+        }
+
+        $countConnected    = count($terhubung);
+        $countDisconnected = count($terputus);
+
+        if ($countDisconnected === 0) {
+            return redirect()->route('atur-data.tarik-finger')->with('success', "Semua mesin finger ({$countConnected} mesin) TERHUBUNG dengan Cloud Server.");
+        }
+
+        $msgDisconnected = implode(', ', $terputus);
+        if ($countConnected === 0) {
+            return redirect()->route('atur-data.tarik-finger')->with('error', "Seluruh mesin finger ({$countDisconnected} mesin) TIDAK TERHUBUNG ke Cloud Server: {$msgDisconnected}.");
+        }
+
+        return redirect()->route('atur-data.tarik-finger')->with('warning', "{$countConnected} mesin terhubung. Namun {$countDisconnected} mesin TIDAK TERHUBUNG ke Cloud Server: {$msgDisconnected}.");
     }
 
     private function loginCloud(string $sn, string $password): ?string

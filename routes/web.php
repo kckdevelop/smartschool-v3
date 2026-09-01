@@ -196,6 +196,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/hapus-mesin', [MesinFingerController::class, 'hapusDataMesinFinger'])->name('.hapus-mesin');
         Route::post('/hapus-mesin/{id}', [MesinFingerController::class, 'hapusSingleMesin'])->name('.hapus-mesin-single');
         Route::post('/tarik-proses', [MesinFingerController::class, 'tarikProses'])->name('.tarik-proses');
+        Route::post('/tarik-mesin/{id}', [MesinFingerController::class, 'tarikSingleMesin'])->name('.tarik-mesin-single');
+        Route::post('/cek-koneksi-semua', [MesinFingerController::class, 'cekKoneksiSemua'])->name('.cek-koneksi-semua');
+        Route::post('/cek-koneksi/{id}', [MesinFingerController::class, 'cekKoneksiSingle'])->name('.cek-koneksi-single');
     });
 
     // 11. Presensi Siswa
