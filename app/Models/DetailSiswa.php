@@ -31,6 +31,7 @@ class DetailSiswa extends Model
     ];
 
     protected $casts = [
+        'nis'       => 'integer',
         'latitude'  => 'float',
         'longitude' => 'float',
     ];

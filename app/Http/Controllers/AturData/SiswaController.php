@@ -254,24 +254,25 @@ class SiswaController extends Controller
     public function updateDetail(Request $request, $nis)
     {
         $siswa = UserSiswa::findOrFail($nis);
+
         $request->validate([
-            'alamat' => 'nullable|string',
-            'agama' => 'nullable|string|max:30',
+            'alamat'         => 'nullable|string',
+            'agama'          => 'nullable|string|max:30',
             'golongan_darah' => 'nullable|string|max:5',
-            'nama_ayah' => 'nullable|string|max:100',
+            'nama_ayah'      => 'nullable|string|max:100',
             'pekerjaan_ayah' => 'nullable|string|max:100',
-            'no_telp_ayah' => 'nullable|string|max:20',
-            'nama_ibu' => 'nullable|string|max:100',
-            'pekerjaan_ibu' => 'nullable|string|max:100',
-            'no_telp_ibu' => 'nullable|string|max:20',
-            'nama_wali' => 'nullable|string|max:100',
+            'no_telp_ayah'   => 'nullable|string|max:20',
+            'nama_ibu'       => 'nullable|string|max:100',
+            'pekerjaan_ibu'  => 'nullable|string|max:100',
+            'no_telp_ibu'    => 'nullable|string|max:20',
+            'nama_wali'      => 'nullable|string|max:100',
             'pekerjaan_wali' => 'nullable|string|max:100',
-            'no_telp_wali' => 'nullable|string|max:20',
+            'no_telp_wali'   => 'nullable|string|max:20',
             'no_wa_presensi' => 'nullable|string|max:25',
-            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'foto'           => 'nullable',
         ]);
 
-        $detail = $siswa->detail()->firstOrCreate(['nis' => $nis]);
+        $detail = DetailSiswa::firstOrCreate(['nis' => $nis]);
         
         $data = $request->only([
             'alamat', 'agama', 'golongan_darah',
@@ -281,13 +282,20 @@ class SiswaController extends Controller
             'no_wa_presensi',
         ]);
 
-        // Handle foto upload / deletion
+        // Handle foto upload / deletion safely
         if ($request->input('delete_foto') == '1') {
-            if ($detail->foto) \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
+            if ($detail->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($detail->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
+            }
             $data['foto'] = null;
-        } elseif ($request->hasFile('foto')) {
-            if ($detail->foto) \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
-            $data['foto'] = $request->file('foto')->store('siswa/foto', 'public');
+        } elseif ($request->hasFile('foto') || $request->filled('foto')) {
+            $newFoto = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'siswa/foto');
+            if ($newFoto) {
+                if ($detail->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($detail->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
+                }
+                $data['foto'] = $newFoto;
+            }
         }
 
         $detail->update($data);
