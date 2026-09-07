@@ -288,7 +288,7 @@ class SiswaController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
             }
             $data['foto'] = null;
-        } elseif ($request->hasFile('foto') || $request->filled('foto')) {
+        } else {
             $newFoto = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'siswa/foto');
             if ($newFoto) {
                 if ($detail->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($detail->foto)) {

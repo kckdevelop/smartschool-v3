@@ -126,9 +126,10 @@ a.summary-stat.stat-active-alpha  { border-color:#dc2626; box-shadow:0 0 0 3px r
         <div class="student-hero">
             <div class="student-avatar" style="padding:0; overflow:hidden;">
                 @if($siswa->detail && $siswa->detail->foto)
-                    <img src="{{ asset('storage/' . $siswa->detail->foto) }}" alt="{{ $siswa->nama_siswa }}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    <img src="{{ asset('storage/' . $siswa->detail->foto) }}" alt="{{ $siswa->nama_siswa }}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <span style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">{{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}</span>
                 @else
-                    {{ strtoupper(substr($siswa->nama_siswa, 0, 1)) }}
+                    {{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}
                 @endif
             </div>
             <div>

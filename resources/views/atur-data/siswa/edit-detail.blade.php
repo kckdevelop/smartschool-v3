@@ -60,7 +60,7 @@
     <div class="card" style="overflow:visible;">
         {{-- Hero --}}
         <div class="edit-hero">
-            <div class="edit-hero-avatar">{{ strtoupper(substr($siswa->nama_siswa, 0, 1)) }}</div>
+            <div class="edit-hero-avatar">{{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}</div>
             <div>
                 <div class="edit-hero-name">{{ $siswa->nama_siswa }}</div>
                 <div class="edit-hero-sub">NIS: {{ $siswa->nis }} &bull; {{ $siswa->kelas ? $siswa->kelas->tingkat.' '.$siswa->kelas->rombel : 'Tanpa Kelas' }}</div>
@@ -254,12 +254,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const area = document.getElementById(areaId);
         const input = document.getElementById(inputId);
         const preview = document.getElementById(previewId);
-        const previewImg = preview.querySelector('img');
+        const previewImg = preview ? preview.querySelector('img') : null;
         const removeBtn = document.getElementById(removeId);
+
+        if (!area || !input || !preview || !previewImg || !removeBtn) return;
+
+        // Prevent click bubbling when file input is clicked directly
+        input.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
 
         // Click to trigger input file selection
         area.addEventListener('click', function(e) {
-            if (e.target !== removeBtn && !removeBtn.contains(e.target)) {
+            if (e.target !== removeBtn && !removeBtn.contains(e.target) && e.target !== input) {
                 input.click();
             }
         });
@@ -298,21 +305,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function handleFile(file) {
             if (!file.type.match('image.*')) {
-                alert('Silakan upload file gambar (PNG, JPG, JPEG)');
+                alert('Silakan upload file gambar (PNG, JPG, JPEG, WEBP)');
                 return;
             }
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onloadend = function() {
-                // Open global crop modal (ratio 1:1 for student avatar)
                 openCropModal(reader.result, 1, (croppedBlob) => {
-                    // Create a new File from the blob
-                    const croppedFile = new File([croppedBlob], file.name, { type: 'image/jpeg' });
+                    const croppedFile = new File([croppedBlob], file.name || 'foto.jpg', { type: 'image/jpeg' });
                     
-                    // Set file input files
-                    const dt = new DataTransfer();
-                    dt.items.add(croppedFile);
-                    input.files = dt.files;
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(croppedFile);
+                        input.files = dt.files;
+                    } catch (err) {
+                        console.warn('DataTransfer fallback used');
+                    }
+
+                    // Create/update base64 hidden fallback input
+                    let base64Input = area.querySelector('input[name="foto_base64"]');
+                    if (!base64Input) {
+                        base64Input = document.createElement('input');
+                        base64Input.type = 'hidden';
+                        base64Input.name = 'foto_base64';
+                        area.appendChild(base64Input);
+                    }
+                    
+                    const blobReader = new FileReader();
+                    blobReader.readAsDataURL(croppedBlob);
+                    blobReader.onloadend = function() {
+                        base64Input.value = blobReader.result;
+                    };
                     
                     // Update preview image
                     previewImg.src = URL.createObjectURL(croppedBlob);
@@ -322,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deleteMarker = area.querySelector('input[name="delete_foto"]');
                     if (deleteMarker) deleteMarker.remove();
                 }, () => {
-                    // Cancel handler: reset file input if no file was already selected
                     if (!input.files.length) {
                         input.value = '';
                     }
@@ -335,13 +357,18 @@ document.addEventListener('DOMContentLoaded', function() {
             input.value = '';
             previewImg.src = '#';
             preview.style.display = 'none';
-            
-            // Create hidden input to signal backend to delete the file
-            const deleteInput = document.createElement('input');
-            deleteInput.type = 'hidden';
-            deleteInput.name = 'delete_foto';
-            deleteInput.value = '1';
-            area.appendChild(deleteInput);
+
+            const base64Input = area.querySelector('input[name="foto_base64"]');
+            if (base64Input) base64Input.remove();
+
+            let deleteInput = area.querySelector('input[name="delete_foto"]');
+            if (!deleteInput) {
+                deleteInput = document.createElement('input');
+                deleteInput.type = 'hidden';
+                deleteInput.name = 'delete_foto';
+                deleteInput.value = '1';
+                area.appendChild(deleteInput);
+            }
         });
     }
 });

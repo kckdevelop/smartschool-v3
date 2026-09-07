@@ -10,7 +10,7 @@ class BukuKasusController extends Controller
 {
     public function index(Request $request)
     {
-        $query = BukuKasus::with('siswa.kelas');
+        $query = BukuKasus::with(['siswa.kelas', 'siswa.detail']);
  
         if ($request->filled('nis')) {
             $query->where('nis', $request->nis);
@@ -29,6 +29,7 @@ class BukuKasusController extends Controller
                 'nis'           => $item->nis,
                 'nama_siswa'    => $item->siswa->nama_siswa ?? '',
                 'nama_kelas'    => $item->siswa->kelas->nama_kelas ?? '',
+                'foto_siswa'    => $item->siswa->detail->foto_url ?? null,
                 'tanggal'       => $item->tanggal ? ($item->tanggal instanceof \Carbon\Carbon ? $item->tanggal->format('Y-m-d') : substr($item->tanggal, 0, 10)) : '',
                 'nama_kasus'    => $item->judul_kasus,
                 'uraian_kasus'  => $item->uraian_kasus,

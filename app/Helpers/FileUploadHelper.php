@@ -30,6 +30,11 @@ class FileUploadHelper
                 }
             }
             $input = $request->input($key);
+
+            // Fallback for key_base64 if direct key input is empty
+            if (empty($input) && $request->has($key . '_base64')) {
+                $input = $request->input($key . '_base64');
+            }
         } else {
             $input = $request;
         }

@@ -10,7 +10,7 @@ class HomeVisitController extends Controller
 {
     public function index(Request $request)
     {
-        $query = HomeVisit::with('siswa.kelas');
+        $query = HomeVisit::with(['siswa.kelas', 'siswa.detail']);
  
         if ($request->filled('nis')) {
             $query->where('nis', $request->nis);
@@ -29,6 +29,7 @@ class HomeVisitController extends Controller
                 'nis'           => $item->nis,
                 'nama_siswa'    => $item->siswa->nama_siswa ?? '',
                 'nama_kelas'    => $item->siswa->kelas->nama_kelas ?? '',
+                'foto_siswa'    => $item->siswa->detail->foto_url ?? null,
                 'tanggal'       => $item->tanggal_visit ? ($item->tanggal_visit instanceof \Carbon\Carbon ? $item->tanggal_visit->format('Y-m-d') : substr($item->tanggal_visit, 0, 10)) : '',
                 'tujuan'        => $item->tujuan_kunjungan,
                 'hasil'         => $item->hasil_kunjungan ?? '',
