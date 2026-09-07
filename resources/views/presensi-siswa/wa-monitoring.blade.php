@@ -171,7 +171,7 @@
             </div>
             <div class="stat-info">
                 <div class="stat-value">{{ number_format($stats['dilompati']) }}</div>
-                <div class="stat-label">Dilompati (Tanpa No WA)</div>
+                <div class="stat-label">Dilompati (Tanpa WA / Belum Presensi)</div>
             </div>
         </div>
     </div>
@@ -349,9 +349,17 @@
                                         $respObj = json_decode($log->response, true);
                                         $reason = $respObj['reason'] ?? ($respObj['message'] ?? 'Gagal dikirim');
                                     @endphp
-                                    <div style="font-size: 0.76rem; color: #ef4444;" title="{{ $log->response }}">
-                                        {{ Str::limit($reason, 35) }}
+                                    <div style="font-size: 0.76rem; color: {{ $stWa === 'dilompati' ? '#64748b' : '#ef4444' }};" title="{{ $log->response }}">
+                                        {{ Str::limit($reason, 40) }}
                                     </div>
+                                @elseif($stWa === 'dilompati')
+                                    @if(empty($item['no_wa']) && $stPresensi === 'Belum Presensi')
+                                        <span style="font-size: 0.76rem; color: #64748b;" title="Tanpa WA & Belum Presensi">Tanpa WA & belum presensi</span>
+                                    @elseif(empty($item['no_wa']))
+                                        <span style="font-size: 0.76rem; color: #64748b;" title="Nomor WA presensi belum diisi">Nomor WA belum diisi</span>
+                                    @else
+                                        <span style="font-size: 0.76rem; color: #d97706;" title="Siswa belum presensi">Siswa belum presensi</span>
+                                    @endif
                                 @else
                                     <span style="font-size: 0.78rem; color: #94a3b8;">Belum diproses</span>
                                 @endif

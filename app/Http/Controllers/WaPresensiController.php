@@ -104,8 +104,12 @@ class WaPresensiController extends Controller
             $targetNo = $detail->no_wa_presensi ?? $detail->no_telp_ayah ?? $detail->no_telp_ibu ?? $detail->no_telp_wali;
         }
 
-        if (empty($targetNo)) {
-            // Jika sudah 'terkirim' sebelumnya, jangan overwrite
+        $noWaEmpty = empty($targetNo);
+        $presensiEmpty = ($formatted['status_presensi'] === 'Belum Presensi');
+
+        // Pengiriman WA HANYA ke siswa yang sudah ada nomor WA DAN sudah ada status presensi.
+        // Lewati data yang nomor WA-nya kosong ATAU belum presensi.
+        if ($noWaEmpty || $presensiEmpty) {
             $existing = LogWaPresensi::where('tanggal', $tanggal)->where('nis', $siswa->nis)->first();
             if ($existing && $existing->status_wa === 'terkirim') {
                 return [
@@ -116,15 +120,24 @@ class WaPresensiController extends Controller
                 ];
             }
 
+            $reason = '';
+            if ($noWaEmpty && $presensiEmpty) {
+                $reason = 'Nomor WA dan status presensi tidak terisi';
+            } elseif ($noWaEmpty) {
+                $reason = 'Nomor WA presensi tidak terisi';
+            } else {
+                $reason = 'Siswa belum presensi (status presensi kosong)';
+            }
+
             $log = LogWaPresensi::updateOrCreate(
                 ['tanggal' => $tanggal, 'nis' => $siswa->nis],
                 [
-                    'no_wa'           => null,
+                    'no_wa'           => $targetNo ?: null,
                     'status_presensi' => $formatted['status_presensi'],
                     'jam_presensi'    => $formatted['jam_presensi'],
                     'pesan'           => $formatted['pesan'],
                     'status_wa'       => 'dilompati',
-                    'response'        => json_encode(['reason' => 'Nomor WA presensi tidak terisi']),
+                    'response'        => json_encode(['reason' => $reason]),
                     'sent_at'         => null,
                 ]
             );
@@ -132,7 +145,7 @@ class WaPresensiController extends Controller
             return [
                 'success' => false,
                 'status'  => 'dilompati',
-                'message' => "Nomor WA untuk {$siswa->nama_siswa} tidak terisi.",
+                'message' => "WA untuk {$siswa->nama_siswa} dilompati: {$reason}.",
                 'log'     => $log,
             ];
         }
@@ -260,8 +273,18 @@ class WaPresensiController extends Controller
             elseif ($stPresensi === 'Alfa') $stats['alfa']++;
             else $stats['belum_absensi']++;
 
+            $noWa = $siswa->detail->no_wa_presensi ?? $siswa->detail->no_telp_ayah ?? $siswa->detail->no_telp_ibu ?? $siswa->detail->no_telp_wali ?? null;
+
             // WA status
             $statusWa = $logWa ? $logWa->status_wa : 'pending';
+
+            // Jika belum ada log WA, evaluasi apakah akan dilompati (karena no WA kosong ATAU belum presensi)
+            if (!$logWa) {
+                if (empty($noWa) || $stPresensi === 'Belum Presensi') {
+                    $statusWa = 'dilompati';
+                }
+            }
+
             if ($statusWa === 'terkirim') $stats['terkirim']++;
             elseif ($statusWa === 'gagal') $stats['gagal']++;
             elseif ($statusWa === 'dilompati') $stats['dilompati']++;
@@ -273,8 +296,6 @@ class WaPresensiController extends Controller
                     continue;
                 }
             }
-
-            $noWa = $siswa->detail->no_wa_presensi ?? $siswa->detail->no_telp_ayah ?? $siswa->detail->no_telp_ibu ?? $siswa->detail->no_telp_wali ?? null;
 
             $monitoringData[] = [
                 'siswa'           => $siswa,
