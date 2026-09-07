@@ -50,12 +50,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}', [SekolahController::class, 'update'])->name('.update');
     });
 
-    // 1b. WhatsApp Gateway
+    // 1b. WhatsApp Gateway Multi-API
     Route::prefix('atur-data/whatsapp-gateway')->name('atur-data.whatsapp-gateway')->group(function () {
         Route::get('/', [WhatsappGatewayController::class, 'index'])->name('');
-        Route::post('/update', [WhatsappGatewayController::class, 'update'])->name('.update');
+        Route::post('/store', [WhatsappGatewayController::class, 'store'])->name('.store');
+        Route::post('/{id}/update', [WhatsappGatewayController::class, 'update'])->name('.update');
+        Route::delete('/{id}', [WhatsappGatewayController::class, 'destroy'])->name('.destroy');
+        Route::post('/{id}/toggle-status', [WhatsappGatewayController::class, 'toggleStatus'])->name('.toggle-status');
         Route::post('/test', [WhatsappGatewayController::class, 'test'])->name('.test');
-        Route::get('/device-status', [WhatsappGatewayController::class, 'deviceStatus'])->name('.device-status');
+        Route::get('/device-status/{id?}', [WhatsappGatewayController::class, 'deviceStatus'])->name('.device-status');
     });
 
     // 1c. Backup & Restore Database & Media

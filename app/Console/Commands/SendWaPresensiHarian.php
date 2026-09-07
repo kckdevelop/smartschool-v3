@@ -83,7 +83,8 @@ class SendWaPresensiHarian extends Command
         $dilompati = 0;
 
         foreach ($siswaList as $siswa) {
-            $res = WaPresensiController::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
+            $studentFonnteService = new FonnteService();
+            $res = WaPresensiController::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $studentFonnteService);
             if ($res['status'] === 'terkirim') {
                 $terkirim++;
             } elseif ($res['status'] === 'gagal') {

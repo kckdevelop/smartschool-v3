@@ -379,7 +379,8 @@ class WaPresensiController extends Controller
         ];
 
         foreach ($siswaList as $siswa) {
-            $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $fonnteService);
+            $studentFonnteService = new FonnteService();
+            $res = self::processSendSingleStudent($siswa, $tanggal, $template, $sekolah, $studentFonnteService);
 
             if ($res['status'] === 'terkirim') {
                 $results['terkirim']++;
