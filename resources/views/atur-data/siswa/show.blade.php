@@ -124,13 +124,19 @@ a.summary-stat.stat-active-alpha  { border-color:#dc2626; box-shadow:0 0 0 3px r
     <div class="card" style="overflow:visible;">
         {{-- ─── Hero Header ─── --}}
         <div class="student-hero">
-            <div class="student-avatar" style="padding:0; overflow:hidden;">
+            <div class="student-avatar" 
+                 onclick="window.location.href='{{ route('atur-data.siswa.edit-detail', $siswa->nis) }}'"
+                 title="Klik untuk ubah foto {{ $siswa->nama_siswa }}"
+                 style="padding:0; overflow:hidden; cursor:pointer; position:relative;">
                 @if($siswa->detail && $siswa->detail->foto)
                     <img src="{{ asset('storage/' . $siswa->detail->foto) }}" alt="{{ $siswa->nama_siswa }}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <span style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">{{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}</span>
                 @else
                     {{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}
                 @endif
+                <div style="position:absolute; bottom:4px; right:4px; width:22px; height:22px; border-radius:50%; background:#0d9488; color:#fff; font-size:0.7rem; display:flex; align-items:center; justify-content:center; border:2px solid #fff; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
             </div>
             <div>
                 <div class="student-name">{{ $siswa->nama_siswa }}</div>

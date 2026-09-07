@@ -14,7 +14,7 @@ class SiswaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = UserSiswa::with(['kelas.jurusan']);
+        $query = UserSiswa::with(['kelas.jurusan', 'detail']);
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         } else {
@@ -301,6 +301,50 @@ class SiswaController extends Controller
         $detail->update($data);
 
         return redirect()->route('atur-data.siswa.show', $nis)->with('success', 'Detail siswa berhasil diperbarui.');
+    }
+
+    public function uploadFoto(Request $request, $nis)
+    {
+        $siswa = UserSiswa::findOrFail($nis);
+
+        $path = \App\Helpers\FileUploadHelper::storeFile($request, 'foto', 'siswa/foto');
+
+        if (!$path) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunggah foto. Pastikan berkas adalah gambar valid (JPG, PNG, WEBP, maks 2MB).',
+            ], 400);
+        }
+
+        $detail = DetailSiswa::firstOrCreate(['nis' => $nis]);
+
+        if ($detail->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($detail->foto)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
+        }
+
+        $detail->update(['foto' => $path]);
+
+        return response()->json([
+            'success'  => true,
+            'message'  => 'Foto siswa berhasil diunggah.',
+            'foto_url' => asset('storage/' . $path),
+        ]);
+    }
+
+    public function deleteFoto($nis)
+    {
+        $siswa = UserSiswa::findOrFail($nis);
+        $detail = DetailSiswa::where('nis', $nis)->first();
+
+        if ($detail && $detail->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($detail->foto)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($detail->foto);
+            $detail->update(['foto' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto siswa berhasil dihapus.',
+        ]);
     }
 
     public function destroy($nis)

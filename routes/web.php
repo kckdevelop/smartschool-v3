@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{nis}/detail', [SiswaController::class, 'show'])->name('.show');
         Route::get('/{nis}/edit-detail', [SiswaController::class, 'editDetail'])->name('.edit-detail');
         Route::post('/{nis}/update-detail', [SiswaController::class, 'updateDetail'])->name('.update-detail');
+        Route::post('/{nis}/upload-foto', [SiswaController::class, 'uploadFoto'])->name('.upload-foto');
+        Route::post('/{nis}/delete-foto', [SiswaController::class, 'deleteFoto'])->name('.delete-foto');
         Route::post('/{nis}', [SiswaController::class, 'update'])->name('.update');
         Route::post('/{nis}/reset-password', [SiswaController::class, 'resetPassword'])->name('.reset-password');
         Route::delete('/{nis}', [SiswaController::class, 'destroy'])->name('.destroy');

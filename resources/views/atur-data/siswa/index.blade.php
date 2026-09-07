@@ -84,7 +84,7 @@
                     <thead>
                         <tr>
                             <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all" style="cursor: pointer;"></th>
-                            <th>#</th><th>NIS</th><th>NISN</th><th>NIK</th><th>Nama Siswa</th><th>Kelas</th><th>L/P</th><th>Status</th><th>Aksi</th>
+                            <th>#</th><th>NIS</th><th style="text-align:center;">Foto</th><th>NISN</th><th>NIK</th><th>Nama Siswa</th><th>Kelas</th><th>L/P</th><th>Status</th><th>Aksi</th>
                         </tr>
                     </thead>
                 <tbody>
@@ -93,6 +93,34 @@
                         <td style="text-align: center;"><input type="checkbox" name="ids[]" class="row-checkbox" value="{{ $siswa->nis }}" style="cursor: pointer;"></td>
                         <td>{{ $siswaList->firstItem() + $i }}</td>
                         <td class="font-mono">{{ $siswa->nis }}</td>
+                        <td class="text-center" style="vertical-align: middle;">
+                            <div class="avatar-clickable" 
+                                 onclick="openUploadFotoSiswa({{ $siswa->nis }}, '{{ addslashes($siswa->nama_siswa) }}', '{{ ($siswa->detail && $siswa->detail->foto) ? asset('storage/'.$siswa->detail->foto) : '' }}')"
+                                 title="Klik untuk ubah foto {{ $siswa->nama_siswa }}"
+                                 style="cursor: pointer; position: relative; display: inline-block;">
+                                @if($siswa->detail && $siswa->detail->foto)
+                                    <img src="{{ asset('storage/'.$siswa->detail->foto) }}" 
+                                         alt="{{ $siswa->nama_siswa }}" 
+                                         id="foto-img-{{ $siswa->nis }}"
+                                         style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #0d9488; display: block; box-shadow: 0 2px 6px rgba(0,0,0,0.1);"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="avatar-initials" 
+                                         id="avatar-initial-{{ $siswa->nis }}"
+                                         style="display: none; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #0d9488, #6366f1); color: #fff; font-weight: 700; font-size: 0.95rem; align-items: center; justify-content: center; border: 2px solid #0d9488; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                                        {{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}
+                                    </div>
+                                @else
+                                    <div class="avatar-initials" 
+                                         id="avatar-initial-{{ $siswa->nis }}"
+                                         style="display: flex; width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #0d9488, #6366f1); color: #fff; font-weight: 700; font-size: 0.95rem; align-items: center; justify-content: center; border: 2px solid #0d9488; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                                        {{ strtoupper(substr(ltrim($siswa->nama_siswa, "'\" `"), 0, 1)) }}
+                                    </div>
+                                @endif
+                                <div class="avatar-overlay-badge" style="position: absolute; bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: #0d9488; color: #fff; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff;">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                            </div>
+                        </td>
                         <td class="font-mono">{{ $siswa->nisn ?? '—' }}</td>
                         <td class="font-mono">{{ $siswa->nik ?? '—' }}</td>
                         <td><strong>{{ $siswa->nama_siswa }}</strong></td>
@@ -130,7 +158,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="10" class="text-center text-muted py-6">Belum ada data siswa</td></tr>
+                    <tr><td colspan="11" class="text-center text-muted py-6">Belum ada data siswa</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -301,6 +329,50 @@
     </div>
 </div>
 
+{{-- Modal Upload / Edit Foto Siswa --}}
+<div class="modal-overlay" id="modal-upload-foto-siswa">
+    <div class="modal modal-md" style="max-width: 440px;">
+        <div class="modal-header">
+            <h3 id="upload-foto-siswa-title"><i class="fa-solid fa-camera"></i> Edit Foto Siswa</h3>
+            <button type="button" onclick="closeModal('modal-upload-foto-siswa')" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            {{-- Foto saat ini jika ada --}}
+            <div id="current-foto-wrap-siswa" style="display: none; text-align: center; margin-bottom: 20px; padding: 14px; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1;">
+                <p style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">Foto Profil Saat Ini:</p>
+                <img id="current-foto-preview-siswa" src="" alt="Foto saat ini" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #0d9488; margin: 0 auto 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <button type="button" id="btn-delete-foto-siswa" class="btn btn-sm btn-danger" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-trash"></i> Hapus Foto Saat Ini
+                </button>
+            </div>
+
+            {{-- Dropzone / Upload baru --}}
+            <div class="form-group mb-0">
+                <label class="form-label" style="font-weight: 700;">Pilih Foto Baru</label>
+                <div class="dropzone-area" id="dropzone-foto-modal" style="width: 100%; height: 140px; border-radius: 14px; border: 2px dashed #0d9488; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; background: #fafafa;">
+                    <div class="dropzone-icon" style="font-size: 1.8rem; color: #0d9488; margin-bottom: 6px;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div class="dropzone-text" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-align: center; padding: 0 12px;">
+                        Klik atau seret foto ke sini<br><span style="font-weight: 400; font-size: 0.68rem; opacity: 0.8;">(JPG, JPEG, PNG, WEBP, Maks 2MB)</span>
+                    </div>
+                    <input type="file" id="input-foto-siswa-modal" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+                    
+                    <div id="preview-foto-modal-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; align-items: center; justify-content: center; background: #fff; z-index: 5;">
+                        <img id="foto-new-preview-siswa" src="" alt="Preview Baru" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #0d9488;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 20px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" onclick="closeModal('modal-upload-foto-siswa')" class="btn btn-secondary">Batal</button>
+            <button type="button" id="btn-save-foto-siswa" class="btn btn-primary">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Foto
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmDeleteSiswa(nis, nama) {
     document.getElementById('form-confirm-delete').action = `/atur-data/siswa/${nis}`;
@@ -408,5 +480,144 @@ function openBulkDeleteModal() {
     document.getElementById('bulk-confirm-count').textContent = checkedCount;
     openModal('modal-bulk-confirm');
 }
+
+// ─── Modal Upload / Edit Foto Siswa Logic ───
+let currentUploadSiswaNis = null;
+let selectedCroppedBlobSiswa = null;
+
+function openUploadFotoSiswa(nis, nama, fotoUrl) {
+    currentUploadSiswaNis = nis;
+    selectedCroppedBlobSiswa = null;
+    
+    document.getElementById('upload-foto-siswa-title').innerHTML = '<i class="fa-solid fa-camera"></i> Edit Foto — ' + nama;
+    document.getElementById('input-foto-siswa-modal').value = '';
+    document.getElementById('preview-foto-modal-container').style.display = 'none';
+    document.getElementById('foto-new-preview-siswa').src = '';
+    
+    const currentWrap = document.getElementById('current-foto-wrap-siswa');
+    if (fotoUrl && fotoUrl !== '') {
+        document.getElementById('current-foto-preview-siswa').src = fotoUrl;
+        currentWrap.style.display = 'block';
+    } else {
+        currentWrap.style.display = 'none';
+    }
+    
+    openModal('modal-upload-foto-siswa');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const area = document.getElementById('dropzone-foto-modal');
+    const input = document.getElementById('input-foto-siswa-modal');
+    
+    if (area && input) {
+        input.addEventListener('click', e => e.stopPropagation());
+        area.addEventListener('click', e => {
+            if (e.target !== input) input.click();
+        });
+        
+        input.addEventListener('change', function() {
+            if (this.files.length) {
+                const file = this.files[0];
+                if (!file.type.match('image.*')) {
+                    alert('Silakan pilih file gambar (JPG, PNG, WEBP).');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onloadend = function() {
+                    openCropModal(reader.result, 1, (croppedBlob) => {
+                        selectedCroppedBlobSiswa = croppedBlob;
+                        const previewImg = document.getElementById('foto-new-preview-siswa');
+                        previewImg.src = URL.createObjectURL(croppedBlob);
+                        document.getElementById('preview-foto-modal-container').style.display = 'flex';
+                    });
+                };
+            }
+        });
+    }
+    
+    const btnSave = document.getElementById('btn-save-foto-siswa');
+    if (btnSave) {
+        btnSave.addEventListener('click', function() {
+            if (!currentUploadSiswaNis) return;
+            
+            const fileInput = document.getElementById('input-foto-siswa-modal');
+            if (!selectedCroppedBlobSiswa && (!fileInput.files || !fileInput.files.length)) {
+                alert('Pilih berkas foto terlebih dahulu.');
+                return;
+            }
+            
+            const formData = new FormData();
+            if (selectedCroppedBlobSiswa) {
+                formData.append('foto', selectedCroppedBlobSiswa, 'foto.jpg');
+            } else if (fileInput.files[0]) {
+                formData.append('foto', fileInput.files[0]);
+            }
+            
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            fetch(`/atur-data/siswa/${currentUploadSiswaNis}/upload-foto`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Simpan Foto';
+                
+                if (data.success) {
+                    closeModal('modal-upload-foto-siswa');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Gagal mengunggah foto.');
+                }
+            })
+            .catch(err => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Simpan Foto';
+                alert('Terjadi kesalahan jaringan/server.');
+            });
+        });
+    }
+    
+    const btnDelete = document.getElementById('btn-delete-foto-siswa');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', function() {
+            if (!currentUploadSiswaNis || !confirm('Yakin ingin menghapus foto profil siswa ini?')) return;
+            
+            btnDelete.disabled = true;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            fetch(`/atur-data/siswa/${currentUploadSiswaNis}/delete-foto`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnDelete.disabled = false;
+                if (data.success) {
+                    closeModal('modal-upload-foto-siswa');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Gagal menghapus foto.');
+                }
+            })
+            .catch(err => {
+                btnDelete.disabled = false;
+                alert('Terjadi kesalahan jaringan/server.');
+            });
+        });
+    }
+});
 </script>
 @endsection
