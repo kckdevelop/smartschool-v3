@@ -162,11 +162,13 @@ class BtaqController extends Controller
             if ($isIqro && $lastIsIqro && $lastBtaq->iqroAwal) {
                 $lastHalaman = (int) $lastBtaq->iqroAwal->halaman;
                 $lastBaris   = (int) $lastBtaq->iqroAwal->baris;
+                // Halaman tidak boleh mundur (lebih kecil dari sebelumnya)
                 if ($halamanInt < $lastHalaman) {
                     return response()->json(['success' => false, 'message' => "Halaman tidak boleh mundur dari halaman {$lastHalaman}."], 422);
                 }
-                if ($halamanInt === $lastHalaman && $barisInt <= $lastBaris) {
-                    return response()->json(['success' => false, 'message' => "Baris harus lebih besar dari baris sebelumnya (Baris {$lastBaris})."], 422);
+                // Baris tidak boleh lebih kecil dari sebelumnya (nilai sama diizinkan)
+                if ($halamanInt === $lastHalaman && $barisInt < $lastBaris) {
+                    return response()->json(['success' => false, 'message' => "Baris tidak boleh lebih kecil dari baris sebelumnya (Baris {$lastBaris})."], 422);
                 }
             } elseif (!$isIqro && !$lastIsIqro && $lastBtaq->alquranAwal) {
                 if ($recordId < $lastBtaq->awal) {

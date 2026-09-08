@@ -196,16 +196,17 @@ class BtaqController extends Controller
             if ($isIqro && $lastIsIqro && $lastBtaq->iqroAwal) {
                 $lastHalaman = (int) $lastBtaq->iqroAwal->halaman;
                 $lastBaris   = (int) $lastBtaq->iqroAwal->baris;
-                // Halaman baru harus > halaman lama, atau halaman sama & baris lebih besar
+                // Halaman tidak boleh mundur (lebih kecil dari sebelumnya)
                 if ($halamanInt < $lastHalaman) {
                     return back()->withErrors(['halaman' => "Halaman tidak boleh mundur dari halaman {$lastHalaman}."])->withInput();
                 }
-                if ($halamanInt === $lastHalaman && $barisInt <= $lastBaris) {
-                    return back()->withErrors(['baris' => "Baris harus lebih besar dari baris sebelumnya (Baris {$lastBaris})."])->withInput();
+                // Baris tidak boleh lebih kecil dari sebelumnya (nilai sama diizinkan)
+                if ($halamanInt === $lastHalaman && $barisInt < $lastBaris) {
+                    return back()->withErrors(['baris' => "Baris tidak boleh lebih kecil dari baris sebelumnya (Baris {$lastBaris})."])->withInput();
                 }
             } elseif (!$isIqro && !$lastIsIqro && $lastBtaq->alquranAwal) {
-                if ($recordId <= $lastBtaq->awal) {
-                    return back()->withErrors(['ayat' => 'Progress surat/ayat harus lebih besar dari sebelumnya (QS. ' . $lastBtaq->alquranAwal->surat . ': ' . $lastBtaq->alquranAwal->ayat . ').'])->withInput();
+                if ($recordId < $lastBtaq->awal) {
+                    return back()->withErrors(['ayat' => 'Progress surat/ayat tidak boleh lebih kecil dari sebelumnya (QS. ' . $lastBtaq->alquranAwal->surat . ': ' . $lastBtaq->alquranAwal->ayat . ').'])->withInput();
                 }
             } elseif ($isIqro && !$lastIsIqro) {
                 return back()->withErrors(['level' => 'Siswa sudah mencapai tingkat Al-Qur\'an, tidak bisa kembali ke Iqro.'])->withInput();
