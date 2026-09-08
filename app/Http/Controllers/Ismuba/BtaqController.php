@@ -271,36 +271,6 @@ class BtaqController extends Controller
             $recordId = $quranRecord->id;
         }
 
-        // Progression validation (excluding current record)
-        $lastBtaq = Btaq::with(['iqroAwal', 'alquranAwal'])
-            ->where('nis', $request->nis)
-            ->where('tanggal', '<=', $request->tanggal)
-            ->where('id_btaq', '!=', $id)
-            ->orderByDesc('tanggal')
-            ->orderByDesc('id_btaq')
-            ->first();
-
-        if ($lastBtaq) {
-            $lastIsIqro = (stripos($lastBtaq->level, 'Iqra') !== false || stripos($lastBtaq->level, 'Iqro') !== false);
-
-            if ($isIqro && $lastIsIqro && $lastBtaq->iqroAwal) {
-                $lastHalaman = (int) $lastBtaq->iqroAwal->halaman;
-                $lastBaris   = (int) $lastBtaq->iqroAwal->baris;
-                if ($halamanInt < $lastHalaman) {
-                    return back()->withErrors(['halaman' => "Halaman tidak boleh mundur dari halaman {$lastHalaman}."])->withInput();
-                }
-                if ($halamanInt === $lastHalaman && $barisInt <= $lastBaris) {
-                    return back()->withErrors(['baris' => "Baris harus lebih besar dari baris sebelumnya (Baris {$lastBaris})."])->withInput();
-                }
-            } elseif (!$isIqro && !$lastIsIqro && $lastBtaq->alquranAwal) {
-                if ($recordId <= $lastBtaq->awal) {
-                    return back()->withErrors(['ayat' => 'Progress surat/ayat harus lebih besar dari sebelumnya (QS. ' . $lastBtaq->alquranAwal->surat . ': ' . $lastBtaq->alquranAwal->ayat . ').'])->withInput();
-                }
-            } elseif ($isIqro && !$lastIsIqro) {
-                return back()->withErrors(['level' => 'Siswa sudah mencapai tingkat Al-Qur\'an, tidak bisa kembali ke Iqro.'])->withInput();
-            }
-        }
-
         $btaq = Btaq::findOrFail($id);
         $btaqData = $request->only(['tanggal', 'nis', 'id_kelas', 'level', 'id_guru']);
         $btaqData['awal']  = $recordId;

@@ -1013,25 +1013,37 @@ function editBtaq(data) {
     document.getElementById('btaq_level').value = data.level;
     document.getElementById('btaq_id_guru').value = data.id_guru;
 
-    // Load student's progress
-    currentStudentLastProgress = latestBtaqMap[data.nis] || null;
-
+    // Saat mode edit: nonaktifkan restriction dulu agar nilai lama bisa di-set
+    // Gunakan null sementara supaya handleLevelChange() tidak menghapus dropdown
+    currentStudentLastProgress = null;
     handleLevelChange();
 
+    // Set nilai halaman/baris atau surat/ayat dari data yang sedang diedit
     if (data.iqro_awal) {
         document.getElementById('btaq_halaman').value = data.iqro_awal.halaman;
-        populateBarisDropdown(true);
+        populateBarisDropdown(false);
         updateJilidBadge();
-        document.getElementById('btaq_baris').value = data.iqro_awal.baris;
+        // Set baris setelah dropdown terisi
+        setTimeout(() => {
+            document.getElementById('btaq_baris').value = String(data.iqro_awal.baris);
+        }, 0);
     }
     if (data.alquran_awal) {
         document.getElementById('btaq_surat').value = data.alquran_awal.surat;
         populateAyatSelect('btaq_surat', 'btaq_ayat');
-        document.getElementById('btaq_ayat').value = data.alquran_awal.ayat;
+        setTimeout(() => {
+            document.getElementById('btaq_ayat').value = String(data.alquran_awal.ayat);
+        }, 0);
     }
-    
-    // Apply restrictions
-    applyProgressRestrictions();
+
+    // Setelah nilai di-set, baru terapkan restriction berdasarkan data terbaru siswa
+    // TAPI untuk mode edit (admin), restriction tidak diblokir total —
+    // hanya tampilkan info, bukan reset nilai yang sudah ada
+    currentStudentLastProgress = latestBtaqMap[data.nis] || null;
+
+    // Jangan panggil applyProgressRestrictions() saat mode edit
+    // agar admin bisa memundurkan data jika perlu
+    // (validasi server-side di update() juga sudah dihapus)
     
     openModal('modal-add-btaq');
 }
