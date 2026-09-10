@@ -7,6 +7,8 @@ use App\Models\Kelas;
 use App\Models\UserSiswa;
 use App\Models\Presensi;
 use App\Models\Sekolah;
+use App\Models\Semester;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -565,5 +567,152 @@ class PresensiSiswaController extends Controller
         return view('presensi-siswa.rekap-print', compact(
             'kelas', 'sekolah', 'waliKelas', 'bulan', 'siswaList', 'daysInMonth', 'year', 'month', 'rekapData'
         ));
+    }
+
+    // ── 5. Rekap Per Siswa (per Semester) ──
+    public function rekapSiswaIndex(Request $request)
+    {
+        $kelasList = Kelas::where('status', 'aktif')
+            ->with(['jurusan', 'guru'])
+            ->orderBy('tingkat')
+            ->orderBy('rombel')
+            ->get();
+
+        $semesterList = Semester::with('tahunAjaran')
+            ->orderByDesc('id_semester')
+            ->get();
+
+        // Semester aktif sebagai default
+        $semesterAktif = $semesterList->firstWhere('status', 'aktif');
+
+        $id_kelas       = $request->get('id_kelas');
+        $nis            = $request->get('nis');
+        $id_semester    = $request->get('id_semester', $semesterAktif?->id_semester);
+
+        $siswaList      = collect();
+        $siswa          = null;
+        $presensiList   = collect();
+        $semester       = null;
+        $stats          = [];
+
+        if ($id_kelas) {
+            $siswaList = UserSiswa::where('id_kelas', $id_kelas)
+                ->where('status', 'aktif')
+                ->orderBy('nama_siswa')
+                ->get();
+        }
+
+        if ($id_kelas && $nis && $id_semester) {
+            $siswa   = UserSiswa::where('nis', $nis)
+                ->where('id_kelas', $id_kelas)
+                ->with(['kelas.guru', 'kelas.jurusan'])
+                ->first();
+
+            $semester = Semester::with('tahunAjaran')->find($id_semester);
+
+            if ($siswa && $semester) {
+                $awal  = $semester->awal instanceof Carbon ? $semester->awal->toDateString() : $semester->awal;
+                $akhir = $semester->akhir instanceof Carbon ? $semester->akhir->toDateString() : $semester->akhir;
+
+                $presensiList = Presensi::where('nis', $nis)
+                    ->whereBetween('tanggal', [$awal, $akhir])
+                    ->orderBy('tanggal', 'asc')
+                    ->get()
+                    ->map(function ($p) {
+                        $p->status_label = $this->mapStatusToName($p->status);
+                        $p->status_badge = $this->mapStatusToBadge($p->status);
+                        return $p;
+                    });
+
+                $hadir = $presensiList->where('status_label', 'Hadir')->count();
+                $sakit = $presensiList->where('status_label', 'Sakit')->count();
+                $izin  = $presensiList->where('status_label', 'Izin')->count();
+                $alfa  = $presensiList->where('status_label', 'Alfa')->count();
+                $total = $hadir + $sakit + $izin + $alfa;
+
+                $stats = [
+                    'hadir'      => $hadir,
+                    'sakit'      => $sakit,
+                    'izin'       => $izin,
+                    'alfa'       => $alfa,
+                    'total'      => $total,
+                    'persentase' => $total > 0 ? round(($hadir / $total) * 100, 1) : 0,
+                ];
+            }
+        }
+
+        return view('presensi-siswa.rekap-siswa', compact(
+            'kelasList', 'semesterList', 'semesterAktif',
+            'id_kelas', 'nis', 'id_semester',
+            'siswaList', 'siswa', 'semester', 'presensiList', 'stats'
+        ));
+    }
+
+    // ── 5b. Export PDF Rekap Per Siswa ──
+    public function rekapSiswaPdf(Request $request)
+    {
+        $id_kelas    = $request->get('id_kelas');
+        $nis         = $request->get('nis');
+        $id_semester = $request->get('id_semester');
+
+        if (!$id_kelas || !$nis || !$id_semester) {
+            return '<script>alert("Filter tidak lengkap."); window.close();</script>';
+        }
+
+        $siswa    = UserSiswa::where('nis', $nis)
+            ->with(['kelas.guru', 'kelas.jurusan'])
+            ->firstOrFail();
+        $semester = Semester::with('tahunAjaran')->findOrFail($id_semester);
+        $sekolah  = Sekolah::where('id_sekolah', 1)->first();
+        $kelas    = Kelas::with(['jurusan', 'guru'])->findOrFail($id_kelas);
+
+        $awal  = $semester->awal instanceof Carbon ? $semester->awal->toDateString() : $semester->awal;
+        $akhir = $semester->akhir instanceof Carbon ? $semester->akhir->toDateString() : $semester->akhir;
+
+        $presensiList = Presensi::where('nis', $nis)
+            ->whereBetween('tanggal', [$awal, $akhir])
+            ->orderBy('tanggal', 'asc')
+            ->get()
+            ->map(function ($p) {
+                $p->status_label = $this->mapStatusToName($p->status);
+                $p->status_badge = $this->mapStatusToBadge($p->status);
+                return $p;
+            });
+
+        $hadir = $presensiList->where('status_label', 'Hadir')->count();
+        $sakit = $presensiList->where('status_label', 'Sakit')->count();
+        $izin  = $presensiList->where('status_label', 'Izin')->count();
+        $alfa  = $presensiList->where('status_label', 'Alfa')->count();
+        $total = $hadir + $sakit + $izin + $alfa;
+
+        $stats = [
+            'hadir'      => $hadir,
+            'sakit'      => $sakit,
+            'izin'       => $izin,
+            'alfa'       => $alfa,
+            'total'      => $total,
+            'persentase' => $total > 0 ? round(($hadir / $total) * 100, 1) : 0,
+        ];
+
+        $waliKelas = $kelas->guru ? $kelas->guru->nama_guru : null;
+
+        $pdf = Pdf::loadView('presensi-siswa.rekap-siswa-pdf', compact(
+            'siswa', 'kelas', 'semester', 'sekolah', 'presensiList', 'stats', 'waliKelas', 'awal', 'akhir'
+        ))->setPaper('a4', 'portrait');
+
+        $filename = 'rekap_presensi_' . $siswa->nama_siswa . '_' . ($semester->semester ?? 'semester') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // ── 5c. AJAX: get siswa list by kelas ──
+    public function getSiswaByKelas($id_kelas)
+    {
+        $siswaList = UserSiswa::where('id_kelas', $id_kelas)
+            ->where('status', 'aktif')
+            ->orderBy('nama_siswa')
+            ->get(['nis', 'nama_siswa']);
+
+        return response()->json($siswaList);
     }
 }

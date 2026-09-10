@@ -212,6 +212,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/input', [\App\Http\Controllers\PresensiSiswaController::class, 'inputStore'])->name('input.store');
         Route::get('/rekap', [\App\Http\Controllers\PresensiSiswaController::class, 'rekapIndex'])->name('rekap');
         Route::get('/rekap/print', [\App\Http\Controllers\PresensiSiswaController::class, 'rekapPrint'])->name('rekap.print');
+        Route::get('/rekap-siswa', [\App\Http\Controllers\PresensiSiswaController::class, 'rekapSiswaIndex'])->name('rekap-siswa');
+        Route::get('/rekap-siswa/pdf', [\App\Http\Controllers\PresensiSiswaController::class, 'rekapSiswaPdf'])->name('rekap-siswa.pdf');
+        Route::get('/rekap-siswa/students/{id_kelas}', [\App\Http\Controllers\PresensiSiswaController::class, 'getSiswaByKelas'])->name('rekap-siswa.students');
         Route::get('/laporan', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanIndex'])->name('laporan');
         Route::get('/laporan/export-excel', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanExportExcel'])->name('laporan.export-excel');
         Route::get('/laporan/print', [\App\Http\Controllers\PresensiSiswaController::class, 'laporanPrint'])->name('laporan.print');

@@ -116,6 +116,7 @@
                     <ul class="nav-submenu {{ request()->is('presensi-siswa*') ? 'open' : '' }}" id="submenu-presensi">
                         <li><a href="{{ route('presensi-siswa.input') }}" class="nav-sub-link {{ request()->routeIs('presensi-siswa.input') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Input Presensi</a></li>
                         <li><a href="{{ route('presensi-siswa.rekap') }}" class="nav-sub-link {{ request()->routeIs('presensi-siswa.rekap') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Rekap Presensi</a></li>
+                        <li><a href="{{ route('presensi-siswa.rekap-siswa') }}" class="nav-sub-link {{ request()->routeIs('presensi-siswa.rekap-siswa*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Rekap Per Siswa</a></li>
                         <li><a href="{{ route('presensi-siswa.laporan') }}" class="nav-sub-link {{ request()->routeIs('presensi-siswa.laporan') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Laporan Presensi</a></li>
                         <li><a href="{{ route('presensi-siswa.wa-monitoring') }}" class="nav-sub-link {{ request()->routeIs('presensi-siswa.wa-monitoring') ? 'active' : '' }}"><i class="fa-solid fa-paper-plane"></i> Kirim WA Presensi</a></li>
                     </ul>
