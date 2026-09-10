@@ -8,82 +8,62 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 10pt;
+            font-size: 10.5pt;
             color: #111;
             background: #fff;
-            /* padding sebagai fallback untuk DomPDF */
-            padding: 20mm 22mm 24mm 25mm;
+            padding: 18mm 20mm 20mm 25mm;
         }
 
-        /* ─── Halaman & margin ─── */
-        /* DomPDF menggunakan @page untuk margin kertas fisik */
-        @page { size: A4 portrait; margin: 20mm 22mm 24mm 25mm; }
+        @page { size: A4 portrait; margin: 0; }
 
-        /* ─── Kop surat (override partial agar rapi di DomPDF) ─── */
-        .kop-surat-table { width: 100%; border-collapse: collapse; }
-        .kop-surat-table td { border: none; }
-        .kop-divider { border: none; border-top: 3px double #000; margin: 6px 0 12px; }
+        /* ── Kop Header ─────────────────────────── */
+        .kop-surat   { display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 14px; }
+        .kop-logo    { width: 75px; height: 75px; object-fit: contain; margin-right: 18px; }
+        .kop-detail  { flex: 1; text-align: center; }
+        .kop-sekolah { font-size: 15pt; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; }
+        .kop-npsn    { font-size: 8.5pt; color: #555; margin: 2px 0; }
+        .kop-alamat  { font-size: 9pt; font-style: italic; color: #333; }
 
-        /* ─── Garis bawah judul ─── */
-        .title-wrap { text-align: center; margin-bottom: 12px; }
-        .title-main {
+        /* ── Judul Dokumen ─────────────────────── */
+        .doc-title {
+            text-align: center;
             font-size: 13pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: block;
-            margin-bottom: 3px;
+            letter-spacing: .6px;
+            margin: 14px 0 4px;
         }
-        .title-sub {
-            font-size: 9pt;
+        .doc-subtitle {
+            text-align: center;
+            font-size: 9.5pt;
             color: #555;
+            margin-bottom: 4px;
         }
-        .title-divider {
+        .doc-divider {
             border: none;
-            border-bottom: 1.5px solid #888;
-            margin: 8px auto 14px;
-            width: 80%;
+            border-bottom: 1px solid #aaa;
+            margin: 8px auto 16px;
+            width: 70%;
         }
 
-        /* ─── Info Siswa (box bingkai) ─── */
-        .info-box {
-            border: 1.5px solid #999;
-            border-radius: 0;
-            margin-bottom: 12px;
-            padding: 0;
-        }
-        .info-box-header {
-            background: #1e3a5f;
-            color: #fff;
-            font-size: 8.5pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 5px 10px;
-        }
-        .info-grid {
+        /* ── Info Siswa ────────────────────────── */
+        .info-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 14px;
             font-size: 9.5pt;
         }
-        .info-grid td {
-            padding: 5px 10px;
-            vertical-align: middle;
+        .info-table td {
+            padding: 4px 6px;
             border: none;
+            vertical-align: middle;
         }
-        .info-lbl {
-            width: 100px;
-            font-weight: bold;
-            color: #333;
-            white-space: nowrap;
-        }
-        .info-sep { width: 10px; }
-        .info-val { }
-        .info-spacer { width: 24px; }
-        .info-divider-row td { padding: 0; }
-        .info-hr { border: none; border-top: 1px solid #e5e7eb; margin: 0; }
+        .info-lbl  { width: 110px; font-weight: bold; color: #333; white-space: nowrap; }
+        .info-sep  { width: 12px; }
+        .info-val  { }
+        .info-gap  { width: 28px; }
 
-        /* ─── Ringkasan Statistik ─── */
+        /* ── Ringkasan Statistik ─────────────── */
         .stats-table {
             width: 100%;
             border-collapse: collapse;
@@ -96,21 +76,16 @@
             font-weight: bold;
             border: 1px solid #1e3a5f;
             font-size: 8.5pt;
-            letter-spacing: 0.3px;
+            background: #1e3a5f;
+            color: #fff;
         }
         .stats-table td {
-            padding: 9px 4px;
+            padding: 8px 4px;
             text-align: center;
             font-size: 14pt;
             font-weight: bold;
             border: 1px solid #ccc;
         }
-        .th-hadir  { background: #1e3a5f; color: #fff; }
-        .th-sakit  { background: #1e3a5f; color: #fff; }
-        .th-izin   { background: #1e3a5f; color: #fff; }
-        .th-alfa   { background: #1e3a5f; color: #fff; }
-        .th-total  { background: #1e3a5f; color: #fff; }
-        .th-persen { background: #1e3a5f; color: #fff; }
         .td-hadir  { background: #d1fae5; color: #065f46; }
         .td-sakit  { background: #fef9c3; color: #92400e; }
         .td-izin   { background: #dbeafe; color: #1e40af; }
@@ -118,7 +93,7 @@
         .td-total  { background: #f3f4f6; color: #111; }
         .td-persen { background: #ede9fe; color: #4c1d95; }
 
-        /* ─── Tabel Presensi ─── */
+        /* ── Tabel Presensi ──────────────────── */
         .presensi-table {
             width: 100%;
             border-collapse: collapse;
@@ -143,42 +118,25 @@
         }
         .presensi-table tbody tr:nth-child(even) { background: #f8fafc; }
         .center { text-align: center; }
+        .mono   { font-family: 'Courier New', monospace; }
 
-        /* Badge status (DomPDF friendly — no border-radius needed) */
-        .badge {
-            display: inline-block;
-            padding: 2px 10px;
-            font-weight: 700;
-            font-size: 8.5pt;
-        }
-        .badge-hadir { color: #065f46; background: #d1fae5; }
-        .badge-sakit { color: #92400e; background: #fef3c7; }
-        .badge-izin  { color: #1e40af; background: #dbeafe; }
-        .badge-alfa  { color: #7f1d1d; background: #fee2e2; }
+        .badge-hadir  { color: #065f46; background: #d1fae5; padding: 2px 8px; font-weight: 700; font-size: 8.5pt; }
+        .badge-sakit  { color: #92400e; background: #fef3c7; padding: 2px 8px; font-weight: 700; font-size: 8.5pt; }
+        .badge-izin   { color: #1e40af; background: #dbeafe; padding: 2px 8px; font-weight: 700; font-size: 8.5pt; }
+        .badge-alfa   { color: #7f1d1d; background: #fee2e2; padding: 2px 8px; font-weight: 700; font-size: 8.5pt; }
 
-        .jam-text {
-            font-family: 'Courier New', monospace;
-            font-size: 9.5pt;
-        }
-
-        /* ─── Tanda Tangan ─── */
-        .ttd-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 28px;
-            font-size: 10pt;
-        }
+        /* ── Tanda Tangan ────────────────────── */
+        .ttd-table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 10pt; }
         .ttd-table td { border: none; padding: 0; }
-        .ttd-right { width: 200px; text-align: center; }
-        .ttd-gap { height: 52px; }
-        .ttd-line { border-top: 1.5px solid #111; display: block; padding-top: 4px; }
+        .ttd-right { width: 210px; text-align: center; }
+        .ttd-gap   { height: 54px; }
+        .ttd-nama  { font-weight: bold; border-top: 1.5px solid #111; display: inline-block; min-width: 175px; padding-top: 4px; }
 
-        /* ─── Footer cetak ─── */
         .footer-cetak {
             text-align: center;
             font-size: 7.5pt;
             color: #aaa;
-            margin-top: 14px;
+            margin-top: 16px;
             border-top: 1px dashed #ddd;
             padding-top: 6px;
         }
@@ -186,95 +144,84 @@
 </head>
 <body>
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      KOP SURAT SEKOLAH
-══════════════════════════════════════ --}}
+════════════════════════════════════════ --}}
 @php
     $sekolah = $sekolah ?? \App\Models\Sekolah::first();
     $isPdf   = true;
 @endphp
 @include('partials.kop-surat')
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      JUDUL
-══════════════════════════════════════ --}}
-<div class="title-wrap">
-    <span class="title-main">Rekap Presensi Siswa Per Semester</span>
-    <span class="title-sub">
-        Semester {{ ucfirst($semester->semester ?? '-') }}
-        @if($semester->tahunAjaran) &mdash; Tahun Ajaran {{ $semester->tahunAjaran->tahun }} @endif
-        &nbsp;|&nbsp;
-        {{ \Carbon\Carbon::parse($awal)->translatedFormat('d F Y') }} s.d. {{ \Carbon\Carbon::parse($akhir)->translatedFormat('d F Y') }}
-    </span>
-    <div class="title-divider"></div>
+════════════════════════════════════════ --}}
+<div class="doc-title">Rekap Presensi Siswa Per Semester</div>
+<div class="doc-subtitle">
+    Semester {{ ucfirst($semester->semester ?? '-') }}
+    @if($semester->tahunAjaran) &mdash; Tahun Ajaran {{ $semester->tahunAjaran->tahun }} @endif
+    &nbsp;|&nbsp;
+    {{ \Carbon\Carbon::parse($awal)->translatedFormat('d F Y') }} s.d. {{ \Carbon\Carbon::parse($akhir)->translatedFormat('d F Y') }}
 </div>
+<div class="doc-divider"></div>
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      INFO SISWA
-══════════════════════════════════════ --}}
-<div class="info-box">
-    <div class="info-box-header">&#128100; Data Siswa</div>
-    <table class="info-grid">
-        <tr>
-            <td class="info-lbl">NIS</td>
-            <td class="info-sep">:</td>
-            <td class="info-val"><strong>{{ $siswa->nis }}</strong></td>
-            <td class="info-spacer"></td>
-            <td class="info-lbl">Kelas</td>
-            <td class="info-sep">:</td>
-            <td class="info-val">
-                @if($kelas)
-                    {{ $kelas->tingkat }} {{ $kelas->rombel }}
-                    @if($kelas->jurusan)&nbsp;&mdash;&nbsp;{{ $kelas->jurusan->nama_jurusan }}@endif
-                @else &mdash; @endif
-            </td>
-        </tr>
-        <tr class="info-divider-row">
-            <td colspan="7" style="padding:0 10px;"><div class="info-hr"></div></td>
-        </tr>
-        <tr>
-            <td class="info-lbl">Nama Siswa</td>
-            <td class="info-sep">:</td>
-            <td class="info-val"><strong>{{ $siswa->nama_siswa }}</strong></td>
-            <td class="info-spacer"></td>
-            <td class="info-lbl">Wali Kelas</td>
-            <td class="info-sep">:</td>
-            <td class="info-val">{{ $waliKelas ?? '&mdash;' }}</td>
-        </tr>
-        <tr class="info-divider-row">
-            <td colspan="7" style="padding:0 10px;"><div class="info-hr"></div></td>
-        </tr>
-        <tr>
-            <td class="info-lbl">Semester</td>
-            <td class="info-sep">:</td>
-            <td class="info-val">
-                Semester {{ ucfirst($semester->semester ?? '-') }}
-                @if($semester->tahunAjaran) &mdash; TA {{ $semester->tahunAjaran->tahun }} @endif
-            </td>
-            <td class="info-spacer"></td>
-            <td class="info-lbl">Periode</td>
-            <td class="info-sep">:</td>
-            <td class="info-val">
-                {{ \Carbon\Carbon::parse($awal)->translatedFormat('d M Y') }}
-                &ndash;
-                {{ \Carbon\Carbon::parse($akhir)->translatedFormat('d M Y') }}
-            </td>
-        </tr>
-    </table>
-</div>
+════════════════════════════════════════ --}}
+<table class="info-table">
+    <tr>
+        <td class="info-lbl">NIS</td>
+        <td class="info-sep">:</td>
+        <td class="info-val"><strong>{{ $siswa->nis }}</strong></td>
+        <td class="info-gap"></td>
+        <td class="info-lbl">Kelas</td>
+        <td class="info-sep">:</td>
+        <td class="info-val">
+            @if($kelas)
+                {{ $kelas->tingkat }} {{ $kelas->rombel }}
+                @if($kelas->jurusan) &mdash; {{ $kelas->jurusan->nama_jurusan }} @endif
+            @else &mdash; @endif
+        </td>
+    </tr>
+    <tr>
+        <td class="info-lbl">Nama Siswa</td>
+        <td class="info-sep">:</td>
+        <td class="info-val"><strong>{{ $siswa->nama_siswa }}</strong></td>
+        <td class="info-gap"></td>
+        <td class="info-lbl">Wali Kelas</td>
+        <td class="info-sep">:</td>
+        <td class="info-val">{{ $waliKelas ?? '&mdash;' }}</td>
+    </tr>
+    <tr>
+        <td class="info-lbl">Semester</td>
+        <td class="info-sep">:</td>
+        <td class="info-val">
+            Semester {{ ucfirst($semester->semester ?? '-') }}
+            @if($semester->tahunAjaran) &mdash; TA {{ $semester->tahunAjaran->tahun }} @endif
+        </td>
+        <td class="info-gap"></td>
+        <td class="info-lbl">Periode</td>
+        <td class="info-sep">:</td>
+        <td class="info-val">
+            {{ \Carbon\Carbon::parse($awal)->translatedFormat('d M Y') }}
+            &ndash;
+            {{ \Carbon\Carbon::parse($akhir)->translatedFormat('d M Y') }}
+        </td>
+    </tr>
+</table>
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      RINGKASAN STATISTIK
-══════════════════════════════════════ --}}
+════════════════════════════════════════ --}}
 <table class="stats-table">
     <thead>
         <tr>
-            <th class="th-hadir">Hadir</th>
-            <th class="th-sakit">Sakit</th>
-            <th class="th-izin">Izin</th>
-            <th class="th-alfa">Alfa</th>
-            <th class="th-total">Total Hari</th>
-            <th class="th-persen">% Kehadiran</th>
+            <th>Hadir</th>
+            <th>Sakit</th>
+            <th>Izin</th>
+            <th>Alfa</th>
+            <th>Total Hari</th>
+            <th>% Kehadiran</th>
         </tr>
     </thead>
     <tbody>
@@ -289,9 +236,9 @@
     </tbody>
 </table>
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      TABEL DETAIL PRESENSI
-══════════════════════════════════════ --}}
+════════════════════════════════════════ --}}
 <table class="presensi-table">
     <thead>
         <tr>
@@ -305,30 +252,30 @@
     <tbody>
         @forelse($presensiList as $idx => $p)
         <tr>
-            <td class="center" style="color:#555; font-size:8.5pt;">{{ $idx + 1 }}</td>
+            <td class="center" style="color:#888; font-size:8.5pt;">{{ $idx + 1 }}</td>
             <td>
                 {{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('l') }},
                 {{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d F Y') }}
             </td>
             <td class="center">
                 @if($p->status_label === 'Hadir')
-                    <span class="badge badge-hadir">Hadir</span>
+                    <span class="badge-hadir">Hadir</span>
                 @elseif($p->status_label === 'Sakit')
-                    <span class="badge badge-sakit">Sakit</span>
+                    <span class="badge-sakit">Sakit</span>
                 @elseif($p->status_label === 'Izin')
-                    <span class="badge badge-izin">Izin</span>
+                    <span class="badge-izin">Izin</span>
                 @else
-                    <span class="badge badge-alfa">Alfa</span>
+                    <span class="badge-alfa">Alfa</span>
                 @endif
             </td>
-            <td class="center">
+            <td class="center mono">
                 @if($p->jam)
-                    <span class="jam-text">{{ \Carbon\Carbon::parse($p->jam)->format('H:i') }}</span>
+                    {{ \Carbon\Carbon::parse($p->jam)->format('H:i') }}
                 @else
-                    <span style="color:#aaa;">&mdash;</span>
+                    <span style="color:#bbb;">&mdash;</span>
                 @endif
             </td>
-            <td style="color: {{ $p->keterangan ? '#111' : '#aaa' }}; font-style: {{ $p->keterangan ? 'normal' : 'italic' }};">
+            <td style="{{ $p->keterangan ? '' : 'color:#bbb; font-style:italic;' }}">
                 {{ $p->keterangan ?: '&mdash;' }}
             </td>
         </tr>
@@ -342,9 +289,9 @@
     </tbody>
 </table>
 
-{{-- ══════════════════════════════════════
+{{-- ═══════════════════════════════════════
      TANDA TANGAN WALI KELAS
-══════════════════════════════════════ --}}
+════════════════════════════════════════ --}}
 <table class="ttd-table">
     <tr>
         <td></td>
@@ -355,7 +302,7 @@
     </tr>
     <tr>
         <td></td>
-        <td class="ttd-right" style="padding-top:3px; font-weight:bold;">Wali Kelas</td>
+        <td class="ttd-right" style="padding-top:4px; font-weight:bold;">Wali Kelas</td>
     </tr>
     <tr>
         <td></td>
@@ -364,7 +311,7 @@
     <tr>
         <td></td>
         <td class="ttd-right">
-            <span class="ttd-line">{{ $waliKelas ?? '________________________' }}</span>
+            <span class="ttd-nama">{{ $waliKelas ?? '________________________' }}</span>
         </td>
     </tr>
 </table>
