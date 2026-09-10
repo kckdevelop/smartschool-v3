@@ -11,10 +11,13 @@
             font-size: 10pt;
             color: #111;
             background: #fff;
+            /* padding sebagai fallback untuk DomPDF */
+            padding: 20mm 22mm 24mm 25mm;
         }
 
         /* ─── Halaman & margin ─── */
-        @page { size: A4 portrait; margin: 18mm 20mm 20mm 22mm; }
+        /* DomPDF menggunakan @page untuk margin kertas fisik */
+        @page { size: A4 portrait; margin: 20mm 22mm 24mm 25mm; }
 
         /* ─── Kop surat (override partial agar rapi di DomPDF) ─── */
         .kop-surat-table { width: 100%; border-collapse: collapse; }
