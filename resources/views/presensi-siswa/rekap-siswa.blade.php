@@ -267,14 +267,19 @@
                     <thead>
                         <tr>
                             <th style="width:52px; text-align:center;">No</th>
-                            <th style="min-width:200px;">Hari &amp; Tanggal</th>
-                            <th style="width:120px; text-align:center;">Status</th>
-                            <th style="width:120px; text-align:center;">Jam Finger</th>
-                            <th>Keterangan</th>
+                            <th style="min-width:180px;">Hari &amp; Tanggal</th>
+                            <th style="width:110px; text-align:center;">Status</th>
+                            <th style="width:110px; text-align:center;">Jam Finger</th>
+                            <th style="min-width:180px;">Keterangan</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($presensiList as $idx => $p)
+                        @php
+                            // Auto-label: ada jam tapi keterangan kosong → Mesin Finger
+                            $ketDisplay = $p->keterangan ?: ($p->jam ? 'Mesin Finger' : null);
+                            $ketIsMesin = (!$p->keterangan && $p->jam);
+                        @endphp
                         <tr>
                             <td style="text-align:center;" class="empty-muted">{{ $idx + 1 }}</td>
                             <td>
@@ -295,8 +300,11 @@
                                 @endif
                             </td>
                             <td>
-                                @if($p->keterangan)
-                                    {{ $p->keterangan }}
+                                @if($ketDisplay)
+                                    <span style="{{ $ketIsMesin ? 'color:var(--text-muted); font-style:italic;' : '' }}">
+                                        <i class="{{ $ketIsMesin ? 'fa-solid fa-fingerprint' : '' }}" style="{{ $ketIsMesin ? 'margin-right:4px; font-size:.8rem; color:#9ca3af;' : '' }}"></i>
+                                        {{ $ketDisplay }}
+                                    </span>
                                 @else
                                     <span class="empty-muted">—</span>
                                 @endif

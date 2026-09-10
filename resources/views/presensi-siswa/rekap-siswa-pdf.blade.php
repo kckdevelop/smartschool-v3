@@ -242,15 +242,20 @@
 <table class="presensi-table">
     <thead>
         <tr>
-            <th style="width:36px;">No</th>
-            <th class="left" style="width:52%;">Hari, Tanggal</th>
-            <th style="width:80px;">Status</th>
-            <th style="width:76px;">Jam Finger</th>
+            <th style="width:28px;">No</th>
+            <th class="left" style="width:38%;">Hari, Tanggal</th>
+            <th style="width:64px;">Status</th>
+            <th style="width:66px; white-space:nowrap;">Jam Finger</th>
             <th class="left">Keterangan</th>
         </tr>
     </thead>
     <tbody>
         @forelse($presensiList as $idx => $p)
+        @php
+            // Auto-label: jika ada jam finger tapi keterangan kosong → 'Mesin Finger'
+            $ketDisplay = $p->keterangan ?: ($p->jam ? 'Mesin Finger' : null);
+            $ketIsMesin = (!$p->keterangan && $p->jam);
+        @endphp
         <tr>
             <td class="center" style="color:#888; font-size:8.5pt;">{{ $idx + 1 }}</td>
             <td>
@@ -268,15 +273,19 @@
                     <span class="badge-alfa">Alfa</span>
                 @endif
             </td>
-            <td class="center mono">
+            <td class="center mono" style="white-space:nowrap;">
                 @if($p->jam)
                     {{ \Carbon\Carbon::parse($p->jam)->format('H:i') }}
                 @else
                     <span style="color:#bbb;">&mdash;</span>
                 @endif
             </td>
-            <td style="{{ $p->keterangan ? '' : 'color:#bbb; font-style:italic;' }}">
-                {{ $p->keterangan ?: '&mdash;' }}
+            <td style="{{ $ketIsMesin ? 'color:#6b7280; font-style:italic;' : (!$ketDisplay ? 'color:#bbb; font-style:italic;' : '') }}">
+                @if($ketDisplay)
+                    {{ $ketDisplay }}
+                @else
+                    &mdash;
+                @endif
             </td>
         </tr>
         @empty
