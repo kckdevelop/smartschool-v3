@@ -384,6 +384,7 @@
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border-color);
             overflow: hidden;
+            margin-bottom: 30px;
         }
 
         .table-header-box {
@@ -394,6 +395,7 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
+            background: #ffffff;
         }
 
         .table-title {
@@ -408,31 +410,36 @@
         .table-responsive {
             width: 100%;
             overflow-x: auto;
+            display: block;
         }
 
         .custom-table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
+            background: #ffffff;
         }
 
         .custom-table th {
             background: #f8fafc;
-            padding: 14px 18px;
+            padding: 14px 16px;
             font-size: 0.78rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border-color);
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+            vertical-align: middle;
         }
 
         .custom-table td {
-            padding: 14px 18px;
+            padding: 14px 16px;
             font-size: 0.88rem;
             font-weight: 600;
             border-bottom: 1px solid #f1f5f9;
             color: var(--text-main);
+            vertical-align: middle;
         }
 
         .custom-table tbody tr {
@@ -660,36 +667,39 @@
             </div>
 
             <div class="table-responsive">
-                <custom-table class="custom-table" id="classTable">
+                <table class="custom-table" id="classTable">
                     <thead>
                         <tr>
                             <th style="width: 50px; text-align: center;">No</th>
-                            <th>Nama Kelas</th>
-                            <th>Wali Kelas</th>
+                            <th>Nama Kelas &amp; Wali</th>
                             <th style="text-align: center;">Total Siswa</th>
                             <th style="text-align: center;">Hadir</th>
-                            <th style="text-align: center;">Sakit</th>
                             <th style="text-align: center;">Izin</th>
+                            <th style="text-align: center;">Sakit</th>
                             <th style="text-align: center;">Alfa</th>
                             <th style="text-align: center;">Belum Finger</th>
-                            <th style="width: 180px;">% Kehadiran</th>
+                            <th style="min-width: 160px;">% Kehadiran</th>
                         </tr>
                     </thead>
                     <tbody id="classTableBody">
                         @forelse($classes as $idx => $c)
                         <tr data-tingkat="{{ $c['tingkat'] }}" data-search="{{ strtolower($c['nama_kelas'] . ' ' . $c['wali_kelas']) }}">
                             <td style="text-align: center; color:var(--text-muted);">{{ $idx + 1 }}</td>
-                            <td style="font-weight: 800; color:var(--primary);">{{ $c['nama_kelas'] }}</td>
-                            <td style="color:#334155;">{{ $c['wali_kelas'] }}</td>
+                            <td>
+                                <div style="font-weight: 800; color:var(--primary); font-size:0.95rem;">{{ $c['nama_kelas'] }}</div>
+                                <div style="font-size: 0.78rem; color:var(--text-muted); font-weight: 500; margin-top:2px;">
+                                    <i class="fa-solid fa-user-tie" style="font-size:0.75rem; margin-right:4px;"></i>{{ $c['wali_kelas'] }}
+                                </div>
+                            </td>
                             <td style="text-align: center; font-weight: 700;">{{ $c['total_siswa'] }}</td>
                             <td style="text-align: center;">
                                 <span class="pill pill-hadir"><i class="fa-solid fa-check"></i> {{ $c['hadir'] }}</span>
                             </td>
                             <td style="text-align: center;">
-                                <span class="pill {{ $c['sakit'] > 0 ? 'pill-sakit' : 'pill-muted' }}">{{ $c['sakit'] }}</span>
+                                <span class="pill {{ $c['izin'] > 0 ? 'pill-izin' : 'pill-muted' }}">{{ $c['izin'] }}</span>
                             </td>
                             <td style="text-align: center;">
-                                <span class="pill {{ $c['izin'] > 0 ? 'pill-izin' : 'pill-muted' }}">{{ $c['izin'] }}</span>
+                                <span class="pill {{ $c['sakit'] > 0 ? 'pill-sakit' : 'pill-muted' }}">{{ $c['sakit'] }}</span>
                             </td>
                             <td style="text-align: center;">
                                 <span class="pill {{ $c['alfa'] > 0 ? 'pill-alfa' : 'pill-muted' }}">{{ $c['alfa'] }}</span>
@@ -708,13 +718,13 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="10" style="text-align: center; padding: 30px; color:var(--text-muted); font-style:italic;">
+                            <td colspan="9" style="text-align: center; padding: 30px; color:var(--text-muted); font-style:italic;">
                                 Tidak ada data kelas aktif.
                             </td>
                         </tr>
                         @endforelse
                     </tbody>
-                </custom-table>
+                </table>
             </div>
         </div>
 
@@ -905,7 +915,7 @@
         function renderTableBody(classes) {
             const tbody = document.getElementById('classTableBody');
             if (!classes || classes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 30px; color:var(--text-muted); font-style:italic;">Tidak ada data kelas.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color:var(--text-muted); font-style:italic;">Tidak ada data kelas.</td></tr>`;
                 return;
             }
 
@@ -915,17 +925,21 @@
                 html += `
                 <tr data-tingkat="${c.tingkat}" data-search="${searchStr}">
                     <td style="text-align: center; color:var(--text-muted);">${idx + 1}</td>
-                    <td style="font-weight: 800; color:var(--primary);">${c.nama_kelas}</td>
-                    <td style="color:#334155;">${c.wali_kelas}</td>
+                    <td>
+                        <div style="font-weight: 800; color:var(--primary); font-size:0.95rem;">${c.nama_kelas}</div>
+                        <div style="font-size: 0.78rem; color:var(--text-muted); font-weight: 500; margin-top:2px;">
+                            <i class="fa-solid fa-user-tie" style="font-size:0.75rem; margin-right:4px;"></i>${c.wali_kelas}
+                        </div>
+                    </td>
                     <td style="text-align: center; font-weight: 700;">${c.total_siswa}</td>
                     <td style="text-align: center;">
                         <span class="pill pill-hadir"><i class="fa-solid fa-check"></i> ${c.hadir}</span>
                     </td>
                     <td style="text-align: center;">
-                        <span class="pill ${c.sakit > 0 ? 'pill-sakit' : 'pill-muted'}">${c.sakit}</span>
+                        <span class="pill ${c.izin > 0 ? 'pill-izin' : 'pill-muted'}">${c.izin}</span>
                     </td>
                     <td style="text-align: center;">
-                        <span class="pill ${c.izin > 0 ? 'pill-izin' : 'pill-muted'}">${c.izin}</span>
+                        <span class="pill ${c.sakit > 0 ? 'pill-sakit' : 'pill-muted'}">${c.sakit}</span>
                     </td>
                     <td style="text-align: center;">
                         <span class="pill ${c.alfa > 0 ? 'pill-alfa' : 'pill-muted'}">${c.alfa}</span>
