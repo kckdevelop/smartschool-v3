@@ -779,7 +779,37 @@
                             position: 'bottom',
                             labels: {
                                 font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' },
-                                padding: 16
+                                padding: 14,
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        const dataset = data.datasets[0];
+                                        return data.labels.map(function(label, i) {
+                                            const val = dataset.data[i] || 0;
+                                            const fill = dataset.backgroundColor[i];
+                                            return {
+                                                text: `${label} (${val})`,
+                                                fillStyle: fill,
+                                                strokeStyle: fill,
+                                                lineWidth: 0,
+                                                hidden: isNaN(dataset.data[i]) || (chart.getDatasetMeta(0).data[i] && chart.getDatasetMeta(0).data[i].hidden),
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return ` ${label}: ${value} Siswa (${percentage}%)`;
+                                }
                             }
                         }
                     },
