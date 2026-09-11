@@ -546,40 +546,6 @@
     {{-- MAIN CONTAINER --}}
     <main class="main-container">
 
-        {{-- FILTER TOOLBAR --}}
-        <div class="toolbar-card">
-            <div class="toolbar-left">
-                <div class="input-group-custom">
-                    <i class="fa-solid fa-calendar-day" style="color:var(--primary);"></i>
-                    <input type="date" id="filterTanggal" value="{{ $tanggal }}" onchange="updateDashboardData()">
-                </div>
-
-                <div class="input-group-custom">
-                    <i class="fa-solid fa-filter" style="color:var(--primary);"></i>
-                    <select id="filterTingkat" onchange="applyTableFilter()">
-                        <option value="all">Semua Tingkat</option>
-                        <option value="10">Kelas X</option>
-                        <option value="11">Kelas XI</option>
-                        <option value="12">Kelas XII</option>
-                    </select>
-                </div>
-
-                <div class="input-group-custom" style="min-width: 220px;">
-                    <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);"></i>
-                    <input type="text" id="searchKelas" placeholder="Cari nama kelas / wali..." onkeyup="applyTableFilter()">
-                </div>
-            </div>
-
-            <div class="toolbar-right">
-                <span id="lastUpdated" style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">
-                    Tanggal: {{ $formatted_tanggal }}
-                </span>
-                <button class="btn-refresh" onclick="updateDashboardData(true)">
-                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Perbarui Data
-                </button>
-            </div>
-        </div>
-
         {{-- KPI SUMMARY CARDS --}}
         <div class="kpi-grid">
             <div class="kpi-card kpi-total">
@@ -652,6 +618,40 @@
                 <div class="chart-body">
                     <canvas id="barChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        {{-- FILTER TOOLBAR --}}
+        <div class="toolbar-card">
+            <div class="toolbar-left">
+                <div class="input-group-custom">
+                    <i class="fa-solid fa-calendar-day" style="color:var(--primary);"></i>
+                    <input type="date" id="filterTanggal" value="{{ $tanggal }}" onchange="updateDashboardData()">
+                </div>
+
+                <div class="input-group-custom">
+                    <i class="fa-solid fa-filter" style="color:var(--primary);"></i>
+                    <select id="filterTingkat" onchange="applyTableFilter()">
+                        <option value="all">Semua Tingkat</option>
+                        <option value="10">Kelas X</option>
+                        <option value="11">Kelas XI</option>
+                        <option value="12">Kelas XII</option>
+                    </select>
+                </div>
+
+                <div class="input-group-custom" style="min-width: 220px;">
+                    <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);"></i>
+                    <input type="text" id="searchKelas" placeholder="Cari nama kelas / wali..." onkeyup="applyTableFilter()">
+                </div>
+            </div>
+
+            <div class="toolbar-right">
+                <span id="lastUpdated" style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">
+                    Tanggal: {{ $formatted_tanggal }}
+                </span>
+                <button class="btn-refresh" onclick="updateDashboardData(true)">
+                    <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Perbarui Data
+                </button>
             </div>
         </div>
 
