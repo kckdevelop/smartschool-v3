@@ -5,12 +5,12 @@
     <title>Surat Pemberitahuan Orang Tua</title>
     <style>
         @page {
-            margin: 1.2cm 1.5cm 1.0cm 1.5cm;
+            margin: 0.8cm 1.2cm 0.8cm 1.2cm;
         }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
-            line-height: 1.45;
+            font-size: 10pt;
+            line-height: 1.3;
             color: #000;
             margin: 0;
             padding: 0;
@@ -18,12 +18,12 @@
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .meta-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .meta-table td {
             vertical-align: top;
@@ -32,26 +32,26 @@
         }
         .content {
             text-align: justify;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .content p {
             margin-top: 0;
-            margin-bottom: 8px;
-            text-indent: 30px;
+            margin-bottom: 6px;
+            text-indent: 25px;
         }
         .details-table {
-            width: 90%;
-            margin-left: 20px;
+            width: 92%;
+            margin-left: 15px;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .details-table td {
             vertical-align: top;
-            padding: 2.5px 5px;
+            padding: 1.5px 4px;
             border: none;
         }
         .details-table td.label {
-            width: 170px;
+            width: 160px;
         }
         .details-table td.separator {
             width: 10px;
@@ -59,55 +59,49 @@
         }
         .sp-title {
             text-align: center;
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: bold;
             text-decoration: underline;
             text-transform: uppercase;
-            margin-bottom: 4px;
-            margin-top: 10px;
+            margin-bottom: 2px;
+            margin-top: 4px;
         }
         .sp-subtitle {
             text-align: center;
-            font-size: 10.5pt;
-            margin-bottom: 15px;
+            font-size: 10pt;
+            margin-bottom: 10px;
         }
         .reason-box {
             background-color: #f9f9f9;
-            padding: 10px 15px;
+            padding: 6px 12px;
             border-left: 3px solid #333;
-            margin: 10px 20px 15px 20px;
+            margin: 6px 15px;
             font-style: italic;
+            font-size: 9.5pt;
         }
         .sign-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 25px;
+            margin-top: 15px;
         }
         .sign-table td {
             text-align: center;
             vertical-align: top;
             border: none;
-            padding: 5px;
+            padding: 2px 4px;
         }
         .sign-title {
-            margin-bottom: 55px;
+            margin-bottom: 38px;
+            font-size: 9.5pt;
         }
         .sign-name {
             font-weight: bold;
             text-decoration: underline;
+            font-size: 9.5pt;
         }
         .sign-nip {
-            font-size: 9.5pt;
+            font-size: 9pt;
             color: #333;
-        }
-        .warning-box {
-            border: 1px dashed #d97706;
-            background-color: #fffbeb;
-            color: #92400e;
-            padding: 8px 12px;
-            margin: 10px 0;
-            font-size: 10pt;
-            border-radius: 4px;
         }
     </style>
 </head>
@@ -127,7 +121,7 @@
 
     <table class="meta-table">
         <tr>
-            <td style="width: 80px;">Perihal</td>
+            <td style="width: 70px;">Perihal</td>
             <td style="width: 10px;">:</td>
             <td style="font-weight: bold;">Pemberitahuan Indisipliner Siswa (Pra-SP 1)</td>
             <td style="text-align: right; width: 200px;">
@@ -137,12 +131,12 @@
     </table>
 
     <div class="content">
-        <p>Kepada Yth.<br>
+        <p style="text-indent: 0;">Kepada Yth.<br>
         Bapak/Ibu Orang Tua / Wali dari <strong>{{ $surat->siswa?->nama_siswa ?? '-' }}</strong><br>
         di Tempat</p>
 
-        <p style="margin-top: 15px;">Dengan hormat,</p>
-        <p>Melalui surat ini, kami pihak sekolah menyampaikan pemberitahuan mengenai perkembangan sikap dan kedisiplinan putra/putri Bapak/Ibu di sekolah sebagai berikut:</p>
+        <p style="margin-top: 10px; text-indent: 0;">Dengan hormat,</p>
+        <p>Melalui surat ini, kami menyampaikan pemberitahuan perkembangan kedisiplinan putra/putri Bapak/Ibu di sekolah sebagai berikut:</p>
         
         <table class="details-table">
             <tr>
@@ -172,24 +166,24 @@
             </tr>
         </table>
 
-        <p>Berdasarkan catatan kedisiplinan dan absensi di sekolah, siswa yang bersangkutan telah melakukan pelanggaran/kendala kedisiplinan berupa:</p>
+        <p>Berdasarkan catatan kedisiplinan dan absensi, siswa yang bersangkutan telah melakukan pelanggaran/kendala berupa:</p>
         
         <div class="reason-box">
             "{{ $surat->alasan_pemberitahuan }}"
         </div>
 
         @if($surat->tindakan_sekolah)
-            <p>Tindakan/imbauan yang disarankan oleh pihak sekolah:</p>
-            <div style="margin-left: 20px; margin-bottom: 10px;">
+            <p style="margin-bottom: 2px;">Imbauan / Tindakan Sekolah:</p>
+            <div style="margin-left: 20px; margin-bottom: 6px; font-style: italic; font-size: 9.5pt;">
                 {!! nl2br(e($surat->tindakan_sekolah)) !!}
             </div>
         @endif
 
-        <p>Surat Pemberitahuan ini kami sampaikan sebagai bentuk keterbukaan serta koordinasi awal antara pihak sekolah dengan orang tua/wali siswa <strong>sebelum diterbitkannya Surat Peringatan 1 (SP 1)</strong>. Kami sangat berharap Bapak/Ibu dapat memberikan perhatian khusus, pengarahan, serta bimbingan kepada putra/putri Bapak/Ibu di rumah.</p>
+        <p>Surat Pemberitahuan ini disampaikan sebagai koordinasi awal antara pihak sekolah dengan orang tua/wali siswa <strong>sebelum diterbitkannya Surat Peringatan 1 (SP 1)</strong>. Kami mengharapkan perhatian dan bimbingan Bapak/Ibu kepada putra/putri di rumah.</p>
 
-        <p><strong>Perhatian:</strong> Apabila setelah diterbitkannya Surat Pemberitahuan ini masalah indisipliner/ketidakhadiran siswa masih terus berulang, maka pihak sekolah akan menindaklanjuti proses ini ke tahap penerbitan <strong>Surat Peringatan 1 (SP 1)</strong> dan prosedur penanganan lebih lanjut sesuai tata tertib sekolah.</p>
+        <p><strong>Catatan:</strong> Apabila masalah indisipliner/ketidakhadiran siswa masih terus berulang, sekolah akan melanjutkan proses ini ke tahap <strong>Surat Peringatan 1 (SP 1)</strong>.</p>
 
-        <p>Demikian surat pemberitahuan ini kami sampaikan. Atas perhatian, pengertian, dan kerja sama Bapak/Ibu Orang Tua/Wali Siswa, kami ucapkan terima kasih.</p>
+        <p>Demikian surat pemberitahuan ini sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.</p>
     </div>
 
     <!-- TANDA TANGAN (Orang Tua & Wali Kelas & Guru BK & Kepala Sekolah) -->
@@ -219,8 +213,8 @@
             </td>
         </tr>
         <tr>
-            <td colspan="3" style="text-align: center; padding-top: 20px;">
-                <div class="sign-title" style="margin-bottom: 45px;">
+            <td colspan="3" style="text-align: center; padding-top: 10px;">
+                <div class="sign-title" style="margin-bottom: 38px;">
                     Mengetahui,<br>
                     Kepala Sekolah
                 </div>
