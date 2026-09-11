@@ -16,6 +16,7 @@ class PanggilOrtuController extends Controller
     public function index(Request $request)
     {
         $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
+        $listGuru = \App\Models\Guru::orderBy('nama_guru')->get();
         $query = PanggilOrtu::with(['siswa.kelas', 'guru'])->orderByDesc('tanggal_panggil');
 
         if ($request->filled('status')) {
@@ -31,7 +32,7 @@ class PanggilOrtuController extends Controller
         }
 
         $data = $query->paginate(15)->withQueryString();
-        return view('bk.panggil-ortu.index', compact('data', 'kelas'));
+        return view('bk.panggil-ortu.index', compact('data', 'kelas', 'listGuru'));
     }
 
     public function store(Request $request)
@@ -46,6 +47,7 @@ class PanggilOrtuController extends Controller
             'no_surat'        => 'nullable|string|max:100|unique:panggil_ortu,no_surat',
             'bukti_pertemuan' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'surat_pernyataan'=> 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
+            'id_guru'         => 'nullable|integer',
         ]);
 
         $buktiPath = null;
@@ -73,7 +75,7 @@ class PanggilOrtuController extends Controller
             'bukti_pertemuan' => $buktiPath,
             'surat_pernyataan'=> $suratPath,
             'status'          => $request->status ?? 'belum_hadir',
-            'id_guru'         => $guru->id_guru ?? 1,
+            'id_guru'         => $request->id_guru ?? ($guru->id_guru ?? 1),
         ]);
 
         return redirect()->route('bk.panggil-ortu.index')
@@ -93,12 +95,13 @@ class PanggilOrtuController extends Controller
             'status'          => 'required|in:belum_hadir,sudah_hadir,tidak_hadir',
             'bukti_pertemuan' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'surat_pernyataan'=> 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
+            'id_guru'         => 'nullable|integer',
         ]);
 
         $panggil = PanggilOrtu::findOrFail($id);
         $data = $request->only([
             'no_surat', 'tanggal_panggil', 'waktu_pertemuan', 'lokasi_pertemuan', 'nis', 'nama_ortu', 'no_hp_ortu',
-            'jenis_panggilan', 'alasan_panggil', 'hasil_pertemuan', 'status'
+            'jenis_panggilan', 'alasan_panggil', 'hasil_pertemuan', 'status', 'id_guru'
         ]);
 
         if ($request->hasFile('bukti_pertemuan')) {
@@ -166,11 +169,12 @@ class PanggilOrtuController extends Controller
             'alasan_panggil'  => 'required|string',
             'jenis_panggilan' => 'required|in:panggilan_biasa,sp_1,sp_2,sp_3',
             'no_surat'        => 'nullable|string|max:100',
+            'id_guru'         => 'nullable|integer',
         ]);
 
         $sekolah = Sekolah::first();
         $siswa = UserSiswa::with('kelas')->where('nis', $request->nis)->first();
-        $guru = Auth::user();
+        $guru = $request->filled('id_guru') ? (\App\Models\Guru::find($request->id_guru) ?? Auth::user()) : Auth::user();
 
         $panggil = new PanggilOrtu([
             'no_surat'        => $request->no_surat,

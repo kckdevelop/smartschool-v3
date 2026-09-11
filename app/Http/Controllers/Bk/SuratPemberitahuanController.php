@@ -17,6 +17,7 @@ class SuratPemberitahuanController extends Controller
     public function index(Request $request)
     {
         $kelas = Kelas::where('status', 'aktif')->orderBy('tingkat')->orderBy('rombel')->get();
+        $listGuru = \App\Models\Guru::orderBy('nama_guru')->get();
         $query = SuratPemberitahuan::with(['siswa.kelas.guru', 'guru', 'sp1'])->orderByDesc('tanggal_surat');
 
         if ($request->filled('status')) {
@@ -32,7 +33,7 @@ class SuratPemberitahuanController extends Controller
         }
 
         $data = $query->paginate(15)->withQueryString();
-        return view('bk.surat-pemberitahuan.index', compact('data', 'kelas'));
+        return view('bk.surat-pemberitahuan.index', compact('data', 'kelas', 'listGuru'));
     }
 
     public function store(Request $request)
@@ -42,6 +43,7 @@ class SuratPemberitahuanController extends Controller
             'nis'                  => 'required|string|max:20',
             'alasan_pemberitahuan' => 'required|string',
             'no_surat'             => 'nullable|string|max:100|unique:surat_pemberitahuan,no_surat',
+            'id_guru'              => 'nullable|integer',
         ]);
 
         $guru = Auth::user();
@@ -54,7 +56,7 @@ class SuratPemberitahuanController extends Controller
             'alasan_pemberitahuan' => $request->alasan_pemberitahuan,
             'tindakan_sekolah'     => $request->tindakan_sekolah,
             'status'               => $request->status ?? 'diterbitkan',
-            'id_guru'              => $guru->id_guru ?? 1,
+            'id_guru'              => $request->id_guru ?? ($guru->id_guru ?? 1),
         ]);
 
         return redirect()->route('bk.surat-pemberitahuan.index')
@@ -69,12 +71,13 @@ class SuratPemberitahuanController extends Controller
             'alasan_pemberitahuan' => 'required|string',
             'no_surat'             => 'nullable|string|max:100|unique:surat_pemberitahuan,no_surat,' . $id . ',id_pemberitahuan',
             'status'               => 'required|in:diterbitkan,disampaikan,lanjut_sp1,selesai',
+            'id_guru'              => 'nullable|integer',
         ]);
 
         $surat = SuratPemberitahuan::findOrFail($id);
         $data = $request->only([
             'no_surat', 'tanggal_surat', 'nis', 'nama_ortu', 'no_hp_ortu',
-            'alasan_pemberitahuan', 'tindakan_sekolah', 'status'
+            'alasan_pemberitahuan', 'tindakan_sekolah', 'status', 'id_guru'
         ]);
 
         $surat->update($data);

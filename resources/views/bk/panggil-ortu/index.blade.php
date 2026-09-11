@@ -216,6 +216,15 @@
                         <input type="text" name="lokasi_pertemuan" id="po_lokasi" class="form-control" required value="Ruang Bimbingan Konseling (BK)" maxlength="255">
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Guru BK / Penanggung Jawab <span class="required">*</span></label>
+                        <select name="id_guru" id="po_id_guru" class="form-control">
+                            @foreach($listGuru as $g)
+                                <option value="{{ $g->id_guru }}" {{ (Auth::user()->id_guru ?? null) == $g->id_guru ? 'selected' : '' }}>{{ $g->nama_guru }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="form-group" id="status-group" style="display:none;">
                         <label class="form-label">Status Kehadiran <span class="required">*</span></label>
                         <select name="status" id="po_status" class="form-control">
@@ -242,14 +251,14 @@
 
                     <div class="form-group">
                         <label class="form-label">Siswa <span class="required">*</span></label>
-                        <select name="nis" id="po_nis" class="form-control" required onchange="fetchSiswaDetail(this.value)">
+                        <select name="nis" id="po_nis" class="form-control" required onchange="fetchSiswaDetail(this.value, true)">
                             <option value="">-- Pilih Kelas Terlebih Dahulu --</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Nama Orang Tua/Wali</label>
-                        <input type="text" name="nama_ortu" id="po_nama_ortu" class="form-control" placeholder="Akan terisi otomatis jika data wali ada" maxlength="100">
+                        <input type="text" name="nama_ortu" id="po_nama_ortu" class="form-control" placeholder="Masukkan Nama Orang Tua / Wali" maxlength="100">
                     </div>
 
                     <div class="form-group">
@@ -563,20 +572,18 @@ function updateAlasanText(val) {
     }
 }
 
-function fetchSiswaDetail(nis) {
+function fetchSiswaDetail(nis, force = false) {
     if (!nis) return;
     fetch(`{{ route('bk.panggil-ortu.siswa-detail') }}?nis=${nis}`)
         .then(r => r.json())
         .then(data => {
-            if (data.nama_ortu) {
-                document.getElementById('po_nama_ortu').value = data.nama_ortu;
-            } else {
-                document.getElementById('po_nama_ortu').value = '';
+            const namaOrtuInput = document.getElementById('po_nama_ortu');
+            if (force || !namaOrtuInput.value) {
+                namaOrtuInput.value = data.nama_ortu || '';
             }
-            if (data.no_hp_ortu) {
-                document.getElementById('po_hp_ortu').value = data.no_hp_ortu;
-            } else {
-                document.getElementById('po_hp_ortu').value = '';
+            const hpoInput = document.getElementById('po_hp_ortu');
+            if (force || !hpoInput.value) {
+                hpoInput.value = data.no_hp_ortu || '';
             }
         })
         .catch(err => console.error('Gagal mengambil data wali siswa:', err));
@@ -736,6 +743,9 @@ function editPanggil(data) {
     
     document.getElementById('po_nama_ortu').value = data.nama_ortu || '';
     document.getElementById('po_hp_ortu').value = data.no_hp_ortu || '';
+    if (data.id_guru && document.getElementById('po_id_guru')) {
+        document.getElementById('po_id_guru').value = data.id_guru;
+    }
     document.getElementById('po_alasan').value = data.alasan_panggil;
 
     // Coba cocokkan alasan tersimpan dengan salah satu opsi dropdown

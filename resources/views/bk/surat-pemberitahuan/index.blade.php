@@ -246,14 +246,22 @@
                 <input type="hidden" name="_method" id="form-method-surat" value="POST">
                 <div class="modal-body" style="max-height: calc(100vh - 180px); overflow-y: auto; padding: 24px;">
                     <div class="row">
-                        <div class="col-md-6 form-group mb-4">
+                        <div class="col-md-4 form-group mb-4">
                             <label class="form-label">Nomor Surat</label>
                             <input type="text" name="no_surat" id="surat-no_surat" class="form-control" placeholder="Contoh: 015/BK/SMART/IX/2026" autocomplete="off">
-                            <small class="form-text text-muted">Opsional, bisa dikosongkan jika belum ada nomor resmi.</small>
+                            <small class="form-text text-muted">Opsional.</small>
                         </div>
-                        <div class="col-md-6 form-group mb-4">
+                        <div class="col-md-4 form-group mb-4">
                             <label class="form-label required">Tanggal Surat</label>
                             <input type="date" name="tanggal_surat" id="surat-tanggal_surat" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-md-4 form-group mb-4">
+                            <label class="form-label required">Guru BK Pembuat</label>
+                            <select name="id_guru" id="surat-id_guru" class="form-control">
+                                @foreach($listGuru as $g)
+                                    <option value="{{ $g->id_guru }}" {{ (Auth::user()->id_guru ?? null) == $g->id_guru ? 'selected' : '' }}>{{ $g->nama_guru }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -529,6 +537,9 @@
         document.getElementById('surat-alasan_pemberitahuan').value = item.alasan_pemberitahuan || '';
         document.getElementById('surat-tindakan_sekolah').value = item.tindakan_sekolah || '';
         document.getElementById('surat-status').value = item.status || 'diterbitkan';
+        if (item.id_guru && document.getElementById('surat-id_guru')) {
+            document.getElementById('surat-id_guru').value = item.id_guru;
+        }
 
         if (item.siswa) {
             selectSiswa({
