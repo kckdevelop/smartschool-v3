@@ -352,6 +352,11 @@ Route::middleware('auth')->group(function () {
         Route::get('panggil-ortu/siswa-detail', [\App\Http\Controllers\Bk\PanggilOrtuController::class, 'getSiswaDetail'])->name('panggil-ortu.siswa-detail');
         Route::get('panggil-ortu/{id}/pdf', [\App\Http\Controllers\Bk\PanggilOrtuController::class, 'downloadPdf'])->name('panggil-ortu.pdf');
         Route::resource('panggil-ortu', \App\Http\Controllers\Bk\PanggilOrtuController::class)->except(['create','edit','show']);
+        Route::post('surat-pemberitahuan/preview', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'preview'])->name('surat-pemberitahuan.preview');
+        Route::get('surat-pemberitahuan/siswa-detail', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'getSiswaDetail'])->name('surat-pemberitahuan.siswa-detail');
+        Route::get('surat-pemberitahuan/{id}/pdf', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'downloadPdf'])->name('surat-pemberitahuan.pdf');
+        Route::post('surat-pemberitahuan/{id}/escalate-sp1', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'escalateSp1'])->name('surat-pemberitahuan.escalate-sp1');
+        Route::resource('surat-pemberitahuan', \App\Http\Controllers\Bk\SuratPemberitahuanController::class)->except(['create','edit','show']);
         Route::patch('gaya-belajar/{id}/catatan', [\App\Http\Controllers\Bk\GayaBelajarController::class, 'updateCatatan'])->name('gaya-belajar.update-catatan');
         Route::resource('gaya-belajar', \App\Http\Controllers\Bk\GayaBelajarController::class)->except(['create','edit','show']);
         Route::get('laporan', [\App\Http\Controllers\Bk\LaporanController::class, 'index'])->name('laporan.index');

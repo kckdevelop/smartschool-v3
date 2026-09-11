@@ -216,6 +216,7 @@
                         <li><a href="{{ route('bk.buku-konsultasi.index') }}" class="nav-sub-link {{ request()->routeIs('bk.buku-konsultasi.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Buku Konsultasi</a></li>
                         <li><a href="{{ route('bk.home-visit.index') }}" class="nav-sub-link {{ request()->routeIs('bk.home-visit.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Home Visit</a></li>
                         <li><a href="{{ route('bk.panggil-ortu.index') }}" class="nav-sub-link {{ request()->routeIs('bk.panggil-ortu.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Panggil Orang Tua</a></li>
+                        <li><a href="{{ route('bk.surat-pemberitahuan.index') }}" class="nav-sub-link {{ request()->routeIs('bk.surat-pemberitahuan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Surat Pemberitahuan Ortu</a></li>
                         <li><a href="{{ route('bk.laporan.index') }}" class="nav-sub-link {{ request()->routeIs('bk.laporan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Laporan Pelanggaran & Reward</a></li>
                         <li><a href="{{ route('bk.gaya-belajar.index') }}" class="nav-sub-link {{ request()->routeIs('bk.gaya-belajar.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Gaya Belajar & Minat</a></li>
                     </ul>
