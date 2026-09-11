@@ -130,13 +130,15 @@
             <td style="width: 80px;">Perihal</td>
             <td style="width: 10px;">:</td>
             <td style="font-weight: bold;">Pemberitahuan Indisipliner Siswa (Pra-SP 1)</td>
-            <td style="text-align: right; width: 200px;">{{ \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') }}</td>
+            <td style="text-align: right; width: 200px;">
+                {{ $surat->tanggal_surat ? \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') : '-' }}
+            </td>
         </tr>
     </table>
 
     <div class="content">
         <p>Kepada Yth.<br>
-        Bapak/Ibu Orang Tua / Wali dari <strong>{{ $surat->siswa->nama_siswa ?? '-' }}</strong><br>
+        Bapak/Ibu Orang Tua / Wali dari <strong>{{ $surat->siswa?->nama_siswa ?? '-' }}</strong><br>
         di Tempat</p>
 
         <p style="margin-top: 15px;">Dengan hormat,</p>
@@ -146,7 +148,7 @@
             <tr>
                 <td class="label">Nama Siswa</td>
                 <td class="separator">:</td>
-                <td style="font-weight: bold;">{{ $surat->siswa->nama_siswa ?? '-' }}</td>
+                <td style="font-weight: bold;">{{ $surat->siswa?->nama_siswa ?? '-' }}</td>
             </tr>
             <tr>
                 <td class="label">NIS / NISN</td>
@@ -156,17 +158,17 @@
             <tr>
                 <td class="label">Kelas</td>
                 <td class="separator">:</td>
-                <td>{{ $surat->siswa->kelas->nama_kelas ?? '-' }}</td>
+                <td>{{ $surat->siswa?->kelas?->nama_kelas ?? '-' }}</td>
             </tr>
             <tr>
                 <td class="label">Wali Kelas</td>
                 <td class="separator">:</td>
-                <td>{{ $surat->siswa->kelas->guru->nama_guru ?? '-' }}</td>
+                <td>{{ $surat->siswa?->kelas?->guru?->nama_guru ?? '-' }}</td>
             </tr>
             <tr>
                 <td class="label">Nama Orang Tua / Wali</td>
                 <td class="separator">:</td>
-                <td>{{ $surat->nama_ortu ?? ($surat->siswa->detail->nama_wali ?? $surat->siswa->detail->nama_ayah ?? '-') }}</td>
+                <td>{{ !empty($surat->nama_ortu) ? $surat->nama_ortu : ($surat->siswa?->detail?->nama_wali ?? $surat->siswa?->detail?->nama_ayah ?? $surat->siswa?->detail?->nama_ibu ?? '-') }}</td>
             </tr>
         </table>
 
@@ -197,23 +199,23 @@
                 <div class="sign-title">
                     Orang Tua / Wali Siswa,
                 </div>
-                <div class="sign-name">{{ $surat->nama_ortu ?? ($surat->siswa->detail->nama_wali ?? $surat->siswa->detail->nama_ayah ?? '(..........................................)') }}</div>
+                <div class="sign-name">{{ !empty($surat->nama_ortu) ? $surat->nama_ortu : ($surat->siswa?->detail?->nama_wali ?? $surat->siswa?->detail?->nama_ayah ?? $surat->siswa?->detail?->nama_ibu ?? '(..........................................)') }}</div>
                 <div class="sign-nip">&nbsp;</div>
             </td>
             <td style="width: 34%;">
                 <div class="sign-title">
                     Wali Kelas,
                 </div>
-                <div class="sign-name">{{ $surat->siswa->kelas->guru->nama_guru ?? 'Wali Kelas' }}</div>
-                <div class="sign-nip">NIP. {{ $surat->siswa->kelas->guru->no_id ?? '-' }}</div>
+                <div class="sign-name">{{ $surat->siswa?->kelas?->guru?->nama_guru ?? 'Wali Kelas' }}</div>
+                <div class="sign-nip">NIP. {{ $surat->siswa?->kelas?->guru?->no_id ?? '-' }}</div>
             </td>
             <td style="width: 33%;">
                 <div class="sign-title">
-                    {{ $sekolah->kota ?? 'Kota' }}, {{ \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') }}<br>
+                    {{ $sekolah?->kota ?? 'Kota' }}, {{ $surat->tanggal_surat ? \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') : \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>
                     Guru BK,
                 </div>
-                <div class="sign-name">{{ $surat->guru->nama_guru ?? 'Guru Bimbingan Konseling' }}</div>
-                <div class="sign-nip">NIP. {{ $surat->guru->no_id ?? '-' }}</div>
+                <div class="sign-name">{{ $surat->guru?->nama_guru ?? 'Guru Bimbingan Konseling' }}</div>
+                <div class="sign-nip">NIP. {{ $surat->guru?->no_id ?? '-' }}</div>
             </td>
         </tr>
         <tr>
@@ -222,8 +224,8 @@
                     Mengetahui,<br>
                     Kepala Sekolah
                 </div>
-                <div class="sign-name">{{ $sekolah->kepala_sekolah ?? 'Kepala Sekolah Smart School' }}</div>
-                <div class="sign-nip">NIP. {{ $sekolah->nip ?? '-' }}</div>
+                <div class="sign-name">{{ $sekolah?->kepala_sekolah ?? 'Kepala Sekolah Smart School' }}</div>
+                <div class="sign-nip">NIP. {{ $sekolah?->nip ?? '-' }}</div>
             </td>
         </tr>
     </table>
