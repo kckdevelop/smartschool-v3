@@ -276,9 +276,11 @@
                     <tbody>
                         @foreach($presensiList as $idx => $p)
                         @php
-                            // Auto-label: ada jam tapi keterangan kosong → Mesin Finger
-                            $ketDisplay = $p->keterangan ?: ($p->jam ? 'Mesin Finger' : null);
-                            $ketIsMesin = (!$p->keterangan && $p->jam);
+                            // Auto-label: ada jam tapi keterangan kosong dan status Hadir → Mesin Finger
+                            $isHadir     = $p->status_label === 'Hadir';
+                            $tampilJam   = $p->jam && $isHadir;
+                            $ketDisplay  = $p->keterangan ?: ($tampilJam ? 'Mesin Finger' : null);
+                            $ketIsMesin  = (!$p->keterangan && $tampilJam);
                         @endphp
                         <tr>
                             <td style="text-align:center;" class="empty-muted">{{ $idx + 1 }}</td>
@@ -293,7 +295,7 @@
                                 </span>
                             </td>
                             <td style="text-align:center;">
-                                @if($p->jam)
+                                @if($tampilJam)
                                     <span class="jam-chip">{{ \Carbon\Carbon::parse($p->jam)->format('H:i') }}</span>
                                 @else
                                     <span class="empty-muted">—</span>

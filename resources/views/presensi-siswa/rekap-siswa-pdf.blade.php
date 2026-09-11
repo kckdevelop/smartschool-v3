@@ -252,9 +252,10 @@
     <tbody>
         @forelse($presensiList as $idx => $p)
         @php
-            // Auto-label: jika ada jam finger tapi keterangan kosong → 'Mesin Finger'
-            $ketDisplay = $p->keterangan ?: ($p->jam ? 'Mesin Finger' : null);
-            $ketIsMesin = (!$p->keterangan && $p->jam);
+            $isHadir    = $p->status_label === 'Hadir';
+            $tampilJam  = $p->jam && $isHadir;
+            $ketDisplay = $p->keterangan ?: ($tampilJam ? 'Mesin Finger' : null);
+            $ketIsMesin = (!$p->keterangan && $tampilJam);
         @endphp
         <tr>
             <td class="center" style="color:#888; font-size:8.5pt;">{{ $idx + 1 }}</td>
@@ -274,7 +275,7 @@
                 @endif
             </td>
             <td class="center mono" style="white-space:nowrap;">
-                @if($p->jam)
+                @if($tampilJam)
                     {{ \Carbon\Carbon::parse($p->jam)->format('H:i') }}
                 @else
                     <span style="color:#bbb;">&mdash;</span>
