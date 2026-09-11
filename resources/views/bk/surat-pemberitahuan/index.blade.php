@@ -192,9 +192,9 @@
                             <button class="btn-icon" title="Lihat Detail" onclick="showDetailSurat({{ json_encode($item) }})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:5px 8px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
-                            <a href="{{ route('bk.surat-pemberitahuan.pdf', $item->id_pemberitahuan) }}" class="btn-icon btn-print" title="Cetak PDF" target="_blank" style="background:#fee2e2;color:#ef4444;border:1px solid #fecaca;padding:5px 8px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;">
+                            <button type="button" class="btn-icon btn-print" title="Preview PDF & Download" onclick="openSavedPdfPreview({{ $item->id_pemberitahuan }})" style="background:#fee2e2;color:#ef4444;border:1px solid #fecaca;padding:5px 8px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;">
                                 <i class="fa-solid fa-file-pdf"></i>
-                            </a>
+                            </button>
                             @if($item->status !== 'lanjut_sp1')
                                 <button type="button" class="btn-icon" title="Lanjutkan ke SP 1" onclick="openEscalateModal({{ json_encode($item) }})" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:5px 8px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -328,7 +328,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer" style="padding: 16px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <div class="modal-footer" style="padding: 16px 24px; display:flex; justify-size:space-between; align-items:center;">
                     <button type="button" class="btn btn-info btn-sm" onclick="previewPdfForm()"><i class="fa-solid fa-eye"></i> Preview Surat PDF</button>
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="btn btn-secondary" onclick="closeSuratModal()">Batal</button>
@@ -405,18 +405,26 @@
     </div>
 </div>
 
-{{-- MODAL PREVIEW PDF --}}
+{{-- MODAL PREVIEW PDF (DENGAN TOMBOL DOWNLOAD PDF) --}}
 <div class="modal-backdrop" id="modal-preview-pdf" style="display:none;">
     <div class="modal-dialog modal-xl" style="max-width:960px; width:95%;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Preview Surat Pemberitahuan</h3>
-                <button type="button" class="modal-close" onclick="closePreviewPdf()">&times;</button>
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="modal-title"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Preview Surat Pemberitahuan PDF</h3>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <a id="btn-download-pdf-modal" href="#" class="btn btn-danger btn-sm" target="_blank" style="display:none; padding:6px 14px; font-weight:600;">
+                        <i class="fa-solid fa-download"></i> Download PDF
+                    </a>
+                    <button type="button" class="modal-close" onclick="closePreviewPdf()">&times;</button>
+                </div>
             </div>
             <div class="modal-body p-0" style="height:650px;">
                 <iframe id="iframe-pdf-preview" style="width:100%; height:100%; border:none;"></iframe>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; padding:12px 24px;">
+                <a id="btn-download-pdf-footer" href="#" class="btn btn-danger" target="_blank" style="display:none; padding:8px 18px; font-weight:600;">
+                    <i class="fa-solid fa-file-arrow-down"></i> Download PDF Surat
+                </a>
                 <button type="button" class="btn btn-secondary" onclick="closePreviewPdf()">Tutup Preview</button>
             </div>
         </div>
@@ -636,9 +644,33 @@
         document.getElementById('modal-escalate').style.display = 'none';
     }
 
+    function openSavedPdfPreview(id) {
+        const streamUrl = `{{ url("bk/surat-pemberitahuan") }}/${id}/stream`;
+        const downloadUrl = `{{ url("bk/surat-pemberitahuan") }}/${id}/pdf`;
+        
+        const iframe = document.getElementById('iframe-pdf-preview');
+        iframe.src = streamUrl;
+
+        const btnHeader = document.getElementById('btn-download-pdf-modal');
+        const btnFooter = document.getElementById('btn-download-pdf-footer');
+
+        btnHeader.href = downloadUrl;
+        btnHeader.style.display = 'inline-flex';
+
+        btnFooter.href = downloadUrl;
+        btnFooter.style.display = 'inline-flex';
+
+        document.getElementById('modal-preview-pdf').style.display = 'flex';
+    }
+
     function previewPdfForm() {
         const formData = new FormData(document.getElementById('form-surat'));
         
+        const btnHeader = document.getElementById('btn-download-pdf-modal');
+        const btnFooter = document.getElementById('btn-download-pdf-footer');
+        btnHeader.style.display = 'none';
+        btnFooter.style.display = 'none';
+
         fetch('{{ route("bk.surat-pemberitahuan.preview") }}', {
             method: 'POST',
             body: formData,
@@ -649,6 +681,7 @@
         .then(res => res.text())
         .then(html => {
             const iframe = document.getElementById('iframe-pdf-preview');
+            iframe.src = 'about:blank';
             iframe.contentWindow.document.open();
             iframe.contentWindow.document.write(html);
             iframe.contentWindow.document.close();
@@ -660,6 +693,7 @@
     }
 
     function closePreviewPdf() {
+        document.getElementById('iframe-pdf-preview').src = 'about:blank';
         document.getElementById('modal-preview-pdf').style.display = 'none';
     }
 </script>

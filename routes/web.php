@@ -355,6 +355,7 @@ Route::middleware('auth')->group(function () {
         Route::post('surat-pemberitahuan/preview', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'preview'])->name('surat-pemberitahuan.preview');
         Route::get('surat-pemberitahuan/siswa-detail', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'getSiswaDetail'])->name('surat-pemberitahuan.siswa-detail');
         Route::get('surat-pemberitahuan/search-siswa', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'searchSiswa'])->name('surat-pemberitahuan.search-siswa');
+        Route::get('surat-pemberitahuan/{id}/stream', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'streamPdf'])->name('surat-pemberitahuan.stream');
         Route::get('surat-pemberitahuan/{id}/pdf', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'downloadPdf'])->name('surat-pemberitahuan.pdf');
         Route::post('surat-pemberitahuan/{id}/escalate-sp1', [\App\Http\Controllers\Bk\SuratPemberitahuanController::class, 'escalateSp1'])->name('surat-pemberitahuan.escalate-sp1');
         Route::resource('surat-pemberitahuan', \App\Http\Controllers\Bk\SuratPemberitahuanController::class)->except(['create','edit','show']);
