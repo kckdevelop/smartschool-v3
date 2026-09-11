@@ -22,10 +22,15 @@ use App\Http\Controllers\Ismuba\IbadahController;
 use App\Http\Controllers\Ismuba\LaporanIsmubaController;
 use App\Http\Controllers\Ismuba\JadwalPengajianController;
 use App\Http\Controllers\Ismuba\DashboardIsmubaController;
+use App\Http\Controllers\PublicPresensiController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Halaman Informasi Presensi Publik (Dapat diakses tanpa login)
+Route::get('/info-presensi', [PublicPresensiController::class, 'index'])->name('public.presensi');
+Route::get('/info-presensi/data', [PublicPresensiController::class, 'getData'])->name('public.presensi.data');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
