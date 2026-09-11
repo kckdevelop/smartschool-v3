@@ -116,6 +116,37 @@ class SuratPemberitahuanController extends Controller
         ]);
     }
 
+    public function searchSiswa(Request $request)
+    {
+        $q = $request->get('q', '');
+        $siswa = UserSiswa::with(['kelas.guru', 'detail'])
+            ->where(function ($query) use ($q) {
+                $query->where('nama_siswa', 'like', "%{$q}%")
+                      ->orWhere('nis', 'like', "%{$q}%");
+            })
+            ->where('status', 'aktif')
+            ->orderBy('nama_siswa')
+            ->limit(15)
+            ->get();
+
+        return response()->json($siswa->map(function ($s) {
+            $namaOrtu = $s->detail->nama_wali ?? $s->detail->nama_ayah ?? $s->detail->nama_ibu ?? '';
+            $noHpOrtu = $s->detail->no_telp_wali ?? $s->detail->no_telp_ayah ?? $s->detail->no_telp_ibu ?? '';
+            $waliKelasName = $s->kelas && $s->kelas->guru ? $s->kelas->guru->nama_guru : '-';
+            $waliKelasNip = $s->kelas && $s->kelas->guru ? ($s->kelas->guru->no_id ?? '-') : '-';
+
+            return [
+                'nis'             => $s->nis,
+                'nama_siswa'      => $s->nama_siswa,
+                'nama_kelas'      => $s->kelas ? $s->kelas->nama_kelas : '-',
+                'nama_ortu'       => $namaOrtu,
+                'no_hp_ortu'      => $noHpOrtu,
+                'nama_wali_kelas' => $waliKelasName,
+                'nip_wali_kelas'  => $waliKelasNip,
+            ];
+        }));
+    }
+
     public function preview(Request $request)
     {
         $request->validate([
