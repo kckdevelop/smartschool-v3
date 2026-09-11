@@ -177,7 +177,7 @@ class SuratPemberitahuanController extends Controller
         return view('bk.surat-pemberitahuan.pdf', compact('surat', 'sekolah'))->with('isPreview', true);
     }
 
-    public function downloadPdf($id)
+    public function downloadPdf(Request $request, $id)
     {
         $surat = SuratPemberitahuan::with(['siswa.kelas.guru', 'siswa.detail', 'guru'])->findOrFail($id);
         $sekolah = Sekolah::first();
@@ -187,19 +187,11 @@ class SuratPemberitahuanController extends Controller
             ->setOption('isRemoteEnabled', true);
         
         $filename = 'surat_pemberitahuan_ortu_' . $surat->nis . '.pdf';
-        return $pdf->download($filename);
-    }
 
-    public function streamPdf($id)
-    {
-        $surat = SuratPemberitahuan::with(['siswa.kelas.guru', 'siswa.detail', 'guru'])->findOrFail($id);
-        $sekolah = Sekolah::first();
+        if ($request->has('download')) {
+            return $pdf->download($filename);
+        }
 
-        $pdf = Pdf::loadView('bk.surat-pemberitahuan.pdf', compact('surat', 'sekolah'))
-            ->setPaper('a4', 'portrait')
-            ->setOption('isRemoteEnabled', true);
-        
-        $filename = 'surat_pemberitahuan_ortu_' . $surat->nis . '.pdf';
         return $pdf->stream($filename);
     }
 
