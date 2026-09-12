@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('tempat_lahir', 30)->nullable();
             $table->date('tgl_lahir')->nullable();
             $table->integer('kelengkapan')->default(0)->nullable();
-            $table->enum('status', ['aktif', 'tidak'])->default('aktif');
+            $table->enum('status', ['aktif', 'tidak', 'keluar'])->default('aktif');
         });
     }
 
