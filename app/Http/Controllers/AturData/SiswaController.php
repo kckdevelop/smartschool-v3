@@ -46,39 +46,35 @@ class SiswaController extends Controller
             'tgl_lahir'    => 'nullable|date',
             'status'       => 'required|in:aktif,tidak,keluar',
         ]);
-        $siswa = UserSiswa::create([
-            'nis'           => $request->nis,
-            'nisn'          => $request->nisn,
-            'nik'           => $request->nik,
-            'password'      => sha1($request->password),
-            'password_wali' => sha1($request->password),
-            'id_kelas'      => $request->id_kelas,
-            'nama_siswa'    => $request->nama_siswa,
-            'jenkel'        => $request->jenkel,
-            'tempat_lahir'  => $request->tempat_lahir,
-            'tgl_lahir'     => $request->tgl_lahir,
-            'kelengkapan'   => 0,
-            'status'        => $request->status,
-        ]);
 
-        if ($request->status === 'keluar') {
-            $siswa->presensi()->delete();
-            $siswa->logAbsensi()->delete();
-            $siswa->btaq()->delete();
-            $siswa->kesehatan()->delete();
-            
-            // Delete related riwayat_obat records before deleting kunjungan_uks records to satisfy foreign key constraint
-            $kunjunganIds = $siswa->kunjunganUks()->pluck('id_kunjungan');
-            \Illuminate\Support\Facades\DB::table('riwayat_obat')->whereIn('id_kunjungan', $kunjunganIds)->delete();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $siswa = UserSiswa::create([
+                'nis'           => $request->nis,
+                'nisn'          => $request->nisn,
+                'nik'           => $request->nik,
+                'password'      => sha1($request->password),
+                'password_wali' => sha1($request->password),
+                'id_kelas'      => $request->id_kelas,
+                'nama_siswa'    => $request->nama_siswa,
+                'jenkel'        => $request->jenkel,
+                'tempat_lahir'  => $request->tempat_lahir,
+                'tgl_lahir'     => $request->tgl_lahir,
+                'kelengkapan'   => 0,
+                'status'        => $request->status,
+            ]);
 
-            $siswa->kunjunganUks()->delete();
-            $siswa->riwayatPoin()->delete();
-            $siswa->riwayatReward()->delete();
-            $siswa->dataCheckup()->delete();
-            $siswa->tagihan()->delete();
+            if ($request->status === 'keluar') {
+                $this->cleanSiswaRelatedData($siswa);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            return redirect()->route('atur-data.siswa')->with('success','Siswa berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error adding siswa: ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan data siswa: ' . $e->getMessage());
         }
-
-        return redirect()->route('atur-data.siswa')->with('success','Siswa berhasil ditambahkan.');
     }
 
     public function update(Request $request, $nis)
@@ -96,26 +92,22 @@ class SiswaController extends Controller
         ]);
         
         $oldStatus = $siswa->status;
-        $siswa->update($request->only('id_kelas','nama_siswa','nisn','nik','jenkel','tempat_lahir','tgl_lahir','status'));
-        
-        if ($request->status === 'keluar' && $oldStatus !== 'keluar') {
-            $siswa->presensi()->delete();
-            $siswa->logAbsensi()->delete();
-            $siswa->btaq()->delete();
-            $siswa->kesehatan()->delete();
-            
-            // Delete related riwayat_obat records before deleting kunjungan_uks records to satisfy foreign key constraint
-            $kunjunganIds = $siswa->kunjunganUks()->pluck('id_kunjungan');
-            \Illuminate\Support\Facades\DB::table('riwayat_obat')->whereIn('id_kunjungan', $kunjunganIds)->delete();
 
-            $siswa->kunjunganUks()->delete();
-            $siswa->riwayatPoin()->delete();
-            $siswa->riwayatReward()->delete();
-            $siswa->dataCheckup()->delete();
-            $siswa->tagihan()->delete();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $siswa->update($request->only('id_kelas','nama_siswa','nisn','nik','jenkel','tempat_lahir','tgl_lahir','status'));
+
+            if ($request->status === 'keluar' && $oldStatus !== 'keluar') {
+                $this->cleanSiswaRelatedData($siswa);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            return redirect()->route('atur-data.siswa')->with('success','Data siswa berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error updating siswa (NIS: '.$nis.'): ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui data siswa: ' . $e->getMessage());
         }
-
-        return redirect()->route('atur-data.siswa')->with('success','Data siswa berhasil diperbarui.');
     }
 
     public function resetPassword(Request $request, $nis)
@@ -349,29 +341,24 @@ class SiswaController extends Controller
 
     public function destroy($nis)
     {
-        $siswa = UserSiswa::findOrFail($nis);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $siswa = UserSiswa::findOrFail($nis);
+            $this->cleanSiswaRelatedData($siswa);
 
-        // Delete all related data first to avoid integrity constraint violations
-        $siswa->presensi()->delete();
-        $siswa->logAbsensi()->delete();
-        $siswa->btaq()->delete();
-        $siswa->kesehatan()->delete();
+            if ($siswa->detail) {
+                $siswa->detail()->delete();
+            }
 
-        // Delete related riwayat_obat records
-        $kunjunganIds = $siswa->kunjunganUks()->pluck('id_kunjungan');
-        \Illuminate\Support\Facades\DB::table('riwayat_obat')->whereIn('id_kunjungan', $kunjunganIds)->delete();
-        
-        $siswa->kunjunganUks()->delete();
-        $siswa->riwayatKesehatan()->delete();
-        $siswa->riwayatPoin()->delete();
-        $siswa->riwayatReward()->delete();
-        $siswa->dataCheckup()->delete();
-        $siswa->tagihan()->delete();
+            $siswa->delete();
 
-        // Finally, delete the student record
-        $siswa->delete();
-
-        return redirect()->route('atur-data.siswa')->with('success','Data siswa dan semua data terkait berhasil dihapus.');
+            \Illuminate\Support\Facades\DB::commit();
+            return redirect()->route('atur-data.siswa')->with('success','Data siswa dan semua data terkait berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error deleting siswa (NIS: '.$nis.'): ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus data siswa: ' . $e->getMessage());
+        }
     }
 
     public function bulkDestroy(Request $request)
@@ -386,30 +373,81 @@ class SiswaController extends Controller
             foreach ($ids as $nis) {
                 $siswa = UserSiswa::find($nis);
                 if ($siswa) {
-                    $siswa->presensi()->delete();
-                    $siswa->logAbsensi()->delete();
-                    $siswa->btaq()->delete();
-                    $siswa->kesehatan()->delete();
-
-                    $kunjunganIds = $siswa->kunjunganUks()->pluck('id_kunjungan');
-                    \Illuminate\Support\Facades\DB::table('riwayat_obat')->whereIn('id_kunjungan', $kunjunganIds)->delete();
-                    
-                    $siswa->kunjunganUks()->delete();
-                    $siswa->riwayatKesehatan()->delete();
-                    $siswa->riwayatPoin()->delete();
-                    $siswa->riwayatReward()->delete();
-                    $siswa->dataCheckup()->delete();
-                    $siswa->tagihan()->delete();
+                    $this->cleanSiswaRelatedData($siswa);
+                    if ($siswa->detail) {
+                        $siswa->detail()->delete();
+                    }
                     $siswa->delete();
                 }
             }
             \Illuminate\Support\Facades\DB::commit();
+            return redirect()->route('atur-data.siswa')->with('success', 'Berhasil menghapus ' . count($ids) . ' data siswa terpilih.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Error bulk deleting siswa: ' . $e->getMessage());
             return redirect()->route('atur-data.siswa')->with('error', 'Terjadi kesalahan saat menghapus data siswa: ' . $e->getMessage());
         }
+    }
 
-        return redirect()->route('atur-data.siswa')->with('success', 'Berhasil menghapus ' . count($ids) . ' data siswa terpilih.');
+    /**
+     * Safely delete or clean up all related records for a student across all tables.
+     */
+    private function cleanSiswaRelatedData(UserSiswa $siswa)
+    {
+        $nis = $siswa->nis;
+
+        // 1. Presensi & Absensi
+        $siswa->presensi()->delete();
+        $siswa->logAbsensi()->delete();
+
+        // 2. BTAQ & Kesehatan / UKS
+        $siswa->btaq()->delete();
+        $siswa->kesehatan()->delete();
+        $siswa->riwayatKesehatan()->delete();
+
+        $kunjunganIds = $siswa->kunjunganUks()->pluck('id_kunjungan');
+        if ($kunjunganIds->isNotEmpty()) {
+            \Illuminate\Support\Facades\DB::table('riwayat_obat')->whereIn('id_kunjungan', $kunjunganIds)->delete();
+        }
+        $siswa->kunjunganUks()->delete();
+
+        // 3. Poin, Reward, Tagihan
+        $siswa->riwayatPoin()->delete();
+        $siswa->riwayatReward()->delete();
+        $siswa->tagihan()->delete();
+
+        // 4. Bimbingan Konseling & Pantau Ibadah
+        $siswa->bimbinganKonseling()->delete();
+        $siswa->pantauIbadah()->delete();
+
+        // 5. Dynamic Tables (Check Schema::hasTable & Schema::hasColumn 'nis' first)
+        $optionalTables = [
+            'log_wa_presensi',
+            'data_checkup',
+            'gaya_belajar',
+            'buku_kasus',
+            'home_visit',
+            'panggil_ortu',
+            'pelanggaran_kelas',
+            'pkl_riwayat_pindah',
+            'pkl_penempatan',
+            'surat_pemberitahuan',
+        ];
+
+        foreach ($optionalTables as $table) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($table) && \Illuminate\Support\Facades\Schema::hasColumn($table, 'nis')) {
+                \Illuminate\Support\Facades\DB::table($table)->where('nis', $nis)->delete();
+            }
+        }
+
+        // 6. LMS (Sesi Kuis & Jawaban)
+        if (\Illuminate\Support\Facades\Schema::hasTable('lms_kuis_sesi') && \Illuminate\Support\Facades\Schema::hasColumn('lms_kuis_sesi', 'nis')) {
+            $sesiIds = \Illuminate\Support\Facades\DB::table('lms_kuis_sesi')->where('nis', $nis)->pluck('id_sesi');
+            if ($sesiIds->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('lms_kuis_jawaban')) {
+                \Illuminate\Support\Facades\DB::table('lms_kuis_jawaban')->whereIn('id_sesi', $sesiIds)->delete();
+            }
+            \Illuminate\Support\Facades\DB::table('lms_kuis_sesi')->where('nis', $nis)->delete();
+        }
     }
 
 
