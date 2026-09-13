@@ -248,7 +248,7 @@ class LmsController extends Controller
             'deskripsi' => 'required|string',
             'tenggat'   => 'nullable|date',
             'deadline'  => 'nullable|date',   // alias Flutter
-            'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi',
+            'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz',
         ]);
 
         // Dukung 'deadline' sebagai alias 'tenggat'
@@ -285,7 +285,7 @@ class LmsController extends Controller
             'deskripsi'=> 'sometimes|required|string',
             'tenggat'  => 'nullable|date',
             'deadline' => 'nullable|date',   // alias Flutter
-            'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi',
+            'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz',
         ]);
 
         $data = $request->only('judul', 'deskripsi', 'tipe');
