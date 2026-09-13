@@ -523,6 +523,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/tugas/{id}/submisi', [\App\Http\Controllers\Api\LmsController::class, 'indexSubmisi']);
         Route::post('/submisi/{id}/nilai', [\App\Http\Controllers\Api\LmsController::class, 'nilaiSubmisi']);
 
+        // ── Tugas Baca Materi ─────────────────────────────────────────────────
+        // Guru: Buat tugas baca materi (upload PDF wajib)
+        Route::post('/tugas-baca-materi', [\App\Http\Controllers\Api\LmsController::class, 'storeTugasBacaMateri']);
+        // Siswa: Buka PDF materi → tugas otomatis selesai (idempotent)
+        Route::post('/tugas/{id}/buka-materi', [\App\Http\Controllers\Api\LmsController::class, 'bukaPdfMateri']);
+
+
         // ── Kuis CBT ─────────────────────────────────────────────────────────
 
         // Soal CRUD (Guru)

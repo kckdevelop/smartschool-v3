@@ -171,6 +171,7 @@ class TugasController extends Controller
             'id_guru'     => 'required|integer|exists:guru,id_guru',
             'deskripsi'   => 'required|string',
             'status'      => 'required|in:aktif,tidak',
+            'tipe'        => 'nullable|in:pdf,gambar,teks,kuis,baca_materi',
         ]);
 
         $kelas = Kelas::findOrFail($request->id_kelas);
@@ -185,13 +186,52 @@ class TugasController extends Controller
             'judul'        => $request->judul_tugas,
             'deskripsi'    => $request->deskripsi,
             'tenggat'      => now()->addDays(7),
-            'tipe'         => 'pdf',
+            'tipe'         => $request->tipe ?? 'pdf',
             'file_path'    => null,
             'is_published' => $request->status === 'aktif',
         ]);
 
         return redirect()->route('lms.tugas.index')
             ->with('success', 'Tugas baru berhasil ditambahkan.');
+    }
+
+    /**
+     * Simpan tugas baca materi dengan upload file PDF.
+     * Tugas otomatis selesai saat siswa pertama kali membuka file PDF.
+     */
+    public function storeBacaMateri(Request $request)
+    {
+        $request->validate([
+            'judul_tugas' => 'required|string|max:150',
+            'id_kelas'    => 'required|integer|exists:kelas,id_kelas',
+            'id_guru'     => 'required|integer|exists:guru,id_guru',
+            'deskripsi'   => 'required|string',
+            'tenggat'     => 'required|date',
+            'status'      => 'required|in:aktif,tidak',
+            'file_materi' => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        $kelas = Kelas::findOrFail($request->id_kelas);
+
+        $kursus = LmsKursus::firstOrCreate(
+            ['id_kelas' => $request->id_kelas, 'id_guru' => $request->id_guru],
+            ['nama_kursus' => 'Kursus ' . $kelas->tingkat . ' ' . $kelas->rombel]
+        );
+
+        $filePath = $request->file('file_materi')->store('lms/materi', 'public');
+
+        $tugas = LmsTugas::create([
+            'id_kursus'    => $kursus->id_kursus,
+            'judul'        => $request->judul_tugas,
+            'deskripsi'    => $request->deskripsi,
+            'tenggat'      => $request->tenggat,
+            'tipe'         => 'baca_materi',
+            'file_path'    => $filePath,
+            'is_published' => $request->status === 'aktif',
+        ]);
+
+        return redirect()->route('lms.tugas.show', $tugas->id_tugas)
+            ->with('success', 'Tugas baca materi berhasil dibuat! Siswa akan menyelesaikan tugas secara otomatis saat membuka file PDF.');
     }
 
     public function show($id)

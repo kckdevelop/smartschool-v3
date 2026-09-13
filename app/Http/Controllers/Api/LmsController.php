@@ -248,7 +248,7 @@ class LmsController extends Controller
             'deskripsi' => 'required|string',
             'tenggat'   => 'nullable|date',
             'deadline'  => 'nullable|date',   // alias Flutter
-            'tipe'      => 'nullable|in:pdf,gambar,teks',
+            'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi',
         ]);
 
         // Dukung 'deadline' sebagai alias 'tenggat'
@@ -285,7 +285,7 @@ class LmsController extends Controller
             'deskripsi'=> 'sometimes|required|string',
             'tenggat'  => 'nullable|date',
             'deadline' => 'nullable|date',   // alias Flutter
-            'tipe'     => 'nullable|in:pdf,gambar,teks',
+            'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi',
         ]);
 
         $data = $request->only('judul', 'deskripsi', 'tipe');
@@ -555,5 +555,161 @@ class LmsController extends Controller
             'message' => 'Kursus dan semua tugas di dalamnya berhasil dihapus.'
         ]);
     }
-}
 
+    // =========================================================================
+    //  TUGAS BACA MATERI
+    // =========================================================================
+
+
+    /**
+     * Guru: Buat tugas baca materi dengan upload file PDF.
+     * Siswa hanya perlu membuka PDF untuk menyelesaikan tugas secara otomatis.
+     */
+    public function storeTugasBacaMateri(Request $request)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof Guru)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya guru yang dapat membuat tugas baca materi.',
+            ], 403);
+        }
+
+        $request->validate([
+            'id_kursus'    => 'required|integer|exists:lms_kursus,id_kursus',
+            'judul'        => 'required|string|max:150',
+            'deskripsi'    => 'required|string',
+            'tenggat'      => 'nullable|date',
+            'is_published' => 'nullable|boolean',
+            'file'         => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/materi');
+
+        if (!$filePath) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupload file PDF materi.',
+            ], 422);
+        }
+
+        $tenggat = $request->tenggat ?? $request->deadline;
+
+        $tugas = LmsTugas::create([
+            'id_kursus'    => $request->id_kursus,
+            'judul'        => $request->judul,
+            'deskripsi'    => $request->deskripsi,
+            'tenggat'      => $tenggat,
+            'tipe'         => 'baca_materi',
+            'file_path'    => $filePath,
+            'is_published' => $request->has('is_published') ? (bool)$request->is_published : true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas baca materi berhasil dibuat.',
+            'data'    => [
+                'id_tugas'     => $tugas->id_tugas,
+                'id_kursus'    => $tugas->id_kursus,
+                'judul'        => $tugas->judul,
+                'deskripsi'    => $tugas->deskripsi,
+                'tenggat'      => $tugas->tenggat ? $tugas->tenggat->format('Y-m-d H:i:s') : null,
+                'tipe'         => $tugas->tipe,
+                'file_url'     => $tugas->file_url,
+                'is_published' => $tugas->is_published,
+                'created_at'   => $tugas->created_at->format('Y-m-d H:i:s'),
+            ],
+        ], 201);
+    }
+
+    /**
+     * Siswa: Buka file PDF materi — tugas otomatis ditandai selesai (diserahkan).
+     * Endpoint ini bersifat idempotent: jika sudah dibuka sebelumnya, status tidak berubah.
+     * Response selalu menyertakan URL file PDF agar langsung bisa dibuka di aplikasi.
+     */
+    public function bukaPdfMateri(Request $request, $id_tugas)
+    {
+        $user = $request->user();
+
+        if (!($user instanceof UserSiswa)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya siswa yang dapat mengakses endpoint ini.',
+            ], 403);
+        }
+
+        $tugas = LmsTugas::with('kursus')->findOrFail($id_tugas);
+
+        // Pastikan tipe tugas adalah baca_materi
+        if ($tugas->tipe !== 'baca_materi') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tugas ini bukan tugas baca materi.',
+            ], 422);
+        }
+
+        // Pastikan tugas sudah dipublish
+        if (!$tugas->is_published) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tugas belum tersedia.',
+            ], 404);
+        }
+
+        // Pastikan siswa berada di kelas yang sesuai dengan kursus ini
+        if ($tugas->kursus && $tugas->kursus->id_kelas !== $user->id_kelas) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tugas ini tidak tersedia untuk kelas Anda.',
+            ], 403);
+        }
+
+        // Pastikan file materi tersedia
+        if (!$tugas->file_path) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File materi tidak ditemukan.',
+            ], 404);
+        }
+
+        // Cek apakah sudah pernah dibuka sebelumnya
+        $submisi = LmsPengumpulan::where('id_tugas', $id_tugas)
+            ->where('nis', $user->nis)
+            ->first();
+
+        $pertamaKali = false;
+
+        if (!$submisi) {
+            // Pertama kali membuka → buat record pengumpulan secara otomatis
+            $submisi = LmsPengumpulan::create([
+                'id_tugas' => $id_tugas,
+                'nis'      => $user->nis,
+                'file_path'=> null,
+                'catatan'  => 'Tugas diselesaikan dengan membaca materi PDF.',
+                'nilai'    => 100,
+                'status'   => 'diserahkan',
+            ]);
+            $pertamaKali = true;
+        }
+
+        return response()->json([
+            'success'       => true,
+            'sudah_dibaca'  => true,
+            'pertama_kali'  => $pertamaKali,
+            'waktu_baca'    => $submisi->updated_at->format('Y-m-d H:i:s'),
+            'file_url'      => $tugas->file_url,
+            'message'       => $pertamaKali
+                ? 'Selamat! Tugas baca materi telah selesai secara otomatis.'
+                : 'Materi sudah pernah dibaca sebelumnya.',
+            'data' => [
+                'id_pengumpulan' => $submisi->id_pengumpulan,
+                'id_tugas'       => $tugas->id_tugas,
+                'judul'          => $tugas->judul,
+                'status'         => $submisi->status,
+                'nilai'          => $submisi->nilai,
+                'waktu_selesai'  => $submisi->updated_at->format('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
+}
