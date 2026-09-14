@@ -242,35 +242,57 @@ class LmsController extends Controller
      */
     public function storeTugas(Request $request)
     {
-        $request->validate([
-            'id_kursus' => 'required|integer|exists:lms_kursus,id_kursus',
-            'judul'     => 'required|string|max:150',
-            'deskripsi' => 'required|string',
-            'tenggat'   => 'nullable|date',
-            'deadline'  => 'nullable|date',   // alias Flutter
-            'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz',
-        ]);
+        try {
+            $request->validate([
+                'id_kursus' => 'required|integer|exists:lms_kursus,id_kursus',
+                'judul'     => 'required|string|max:150',
+                'deskripsi' => 'nullable|string',
+                'tenggat'   => 'nullable|date',
+                'deadline'  => 'nullable|date',   // alias Flutter
+                'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz,kuis',
+            ]);
 
-        // Dukung 'deadline' sebagai alias 'tenggat'
-        $tenggat = $request->tenggat ?? $request->deadline;
+            // Mapping alias tipe agar sesuai dengan ENUM database ('baca_materi', 'kuis')
+            $tipeRaw = $request->tipe ?? 'pdf';
+            if ($tipeRaw === 'materi' || $tipeRaw === 'baca_materi') {
+                $tipe = 'baca_materi';
+            } elseif ($tipeRaw === 'quis' || $tipeRaw === 'quiz' || $tipeRaw === 'kuis') {
+                $tipe = 'kuis';
+            } else {
+                $tipe = $tipeRaw;
+            }
 
-        $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
+            // Dukung 'deadline' sebagai alias 'tenggat'
+            $tenggat = $request->tenggat ?? $request->deadline;
 
-        $tugas = LmsTugas::create([
-            'id_kursus'    => $request->id_kursus,
-            'judul'        => $request->judul,
-            'deskripsi'    => $request->deskripsi,
-            'tenggat'      => $tenggat,
-            'tipe'         => $request->tipe ?? 'pdf',
-            'file_path'    => $filePath,
-            'is_published' => $request->has('is_published') ? (bool)$request->is_published : true,
-        ]);
+            $filePath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dibuat.',
-            'data'    => $tugas
-        ], 201);
+            $tugas = LmsTugas::create([
+                'id_kursus'    => $request->id_kursus,
+                'judul'        => $request->judul,
+                'deskripsi'    => $request->deskripsi ?? '',
+                'tenggat'      => $tenggat,
+                'tipe'         => $tipe,
+                'file_path'    => $filePath,
+                'is_published' => $request->has('is_published') ? (bool)$request->is_published : true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil dibuat.',
+                'data'    => $tugas
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal storeTugas: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan tugas: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -278,45 +300,65 @@ class LmsController extends Controller
      */
     public function updateTugas(Request $request, $id_tugas)
     {
-        $tugas = LmsTugas::findOrFail($id_tugas);
+        try {
+            $tugas = LmsTugas::findOrFail($id_tugas);
 
-        $request->validate([
-            'judul'    => 'sometimes|required|string|max:150',
-            'deskripsi'=> 'sometimes|required|string',
-            'tenggat'  => 'nullable|date',
-            'deadline' => 'nullable|date',   // alias Flutter
-            'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz',
-        ]);
+            $request->validate([
+                'judul'    => 'sometimes|required|string|max:150',
+                'deskripsi'=> 'sometimes|nullable|string',
+                'tenggat'  => 'nullable|date',
+                'deadline' => 'nullable|date',   // alias Flutter
+                'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz,kuis',
+            ]);
 
-        $data = $request->only('judul', 'deskripsi', 'tipe');
+            $data = $request->only('judul', 'deskripsi', 'tipe');
 
-        if ($request->has('is_published')) {
-            $data['is_published'] = (bool)$request->is_published;
-        }
-
-        // Dukung 'deadline' sebagai alias 'tenggat'
-        $tenggat = $request->tenggat ?? $request->deadline;
-        if ($tenggat) {
-            $data['tenggat'] = $tenggat;
-        }
-
-        if ($request->has('file') || $request->hasFile('file')) {
-            $newPath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
-            if ($newPath) {
-                if ($tugas->file_path && Storage::disk('public')->exists($tugas->file_path)) {
-                    Storage::disk('public')->delete($tugas->file_path);
+            if (isset($data['tipe'])) {
+                if ($data['tipe'] === 'materi' || $data['tipe'] === 'baca_materi') {
+                    $data['tipe'] = 'baca_materi';
+                } elseif ($data['tipe'] === 'quis' || $data['tipe'] === 'quiz' || $data['tipe'] === 'kuis') {
+                    $data['tipe'] = 'kuis';
                 }
-                $data['file_path'] = $newPath;
             }
+
+            if ($request->has('is_published')) {
+                $data['is_published'] = (bool)$request->is_published;
+            }
+
+            // Dukung 'deadline' sebagai alias 'tenggat'
+            $tenggat = $request->tenggat ?? $request->deadline;
+            if ($tenggat) {
+                $data['tenggat'] = $tenggat;
+            }
+
+            if ($request->has('file') || $request->hasFile('file')) {
+                $newPath = \App\Helpers\FileUploadHelper::storeFile($request, 'file', 'lms/assignments');
+                if ($newPath) {
+                    if ($tugas->file_path && Storage::disk('public')->exists($tugas->file_path)) {
+                        Storage::disk('public')->delete($tugas->file_path);
+                    }
+                    $data['file_path'] = $newPath;
+                }
+            }
+
+            $tugas->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil diperbarui.',
+                'data'    => $tugas
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal updateTugas: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui tugas: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $tugas->update($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil diperbarui.',
-            'data'    => $tugas
-        ]);
     }
 
     /**
