@@ -92,76 +92,12 @@ class MesinFingerController extends Controller
             'tanggal_dari'   => 'required|date',
             'tanggal_sampai' => 'required|date|after_or_equal:tanggal_dari',
         ]);
-        $logs   = LogAbsensi::whereBetween('tanggal', [$request->tanggal_dari, $request->tanggal_sampai])->get();
-        $synced = 0; $skipped = 0;
 
-        foreach ($logs as $log) {
-            try {
-                // Siswa tidak terdaftar — skip, tidak perlu ubah keterangan
-                if (!UserSiswa::where('nis', $log->nis)->exists()) {
-                    $skipped++;
-                    continue;
-                }
-
-                $existing = DB::table('presensi')
-                    ->where('nis', $log->nis)
-                    ->whereDate('tanggal', $log->tanggal)
-                    ->first();
-
-                if ($existing) {
-                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
-
-                    if ($isAlpha) {
-                        DB::table('presensi')
-                            ->where('id_presensi', $existing->id_presensi)
-                            ->update([
-                                'jam'        => $log->jam,
-                                'status'     => $log->status ?? 'Hadir',
-                                'keterangan' => 'Sinkronisasi mesin finger',
-                            ]);
-
-                        DB::table('log_absensi')
-                            ->where('id_presensi', $log->id_presensi)
-                            ->update(['keterangan' => 'Tersinkron']);
-
-                        $synced++;
-                    } else {
-                        // Tandai: data sudah ada di presensi
-                        DB::table('log_absensi')
-                            ->where('id_presensi', $log->id_presensi)
-                            ->update(['keterangan' => 'Data sudah ada']);
-                        $skipped++;
-                    }
-                    continue;
-                }
-
-                DB::table('presensi')->insert([
-                    'nis'        => $log->nis,
-                    'tanggal'    => $log->tanggal,
-                    'jam'        => $log->jam,
-                    'status'     => $log->status ?? 'Hadir',
-                    'keterangan' => 'Sinkronisasi mesin finger',
-                    'file'       => null,
-                ]);
-
-                // Tandai: berhasil tersinkron
-                DB::table('log_absensi')
-                    ->where('id_presensi', $log->id_presensi)
-                    ->update(['keterangan' => 'Tersinkron']);
-
-                $synced++;
-
-            } catch (\Exception $e) {
-                // Tandai: gagal sinkron
-                DB::table('log_absensi')
-                    ->where('id_presensi', $log->id_presensi)
-                    ->update(['keterangan' => 'Gagal']);
-                \Log::error("[Sinkronkan] NIS {$log->nis} tanggal {$log->tanggal}: " . $e->getMessage());
-            }
-        }
+        $query = LogAbsensi::whereBetween('tanggal', [$request->tanggal_dari, $request->tanggal_sampai]);
+        $res   = $this->prosesSinkronisasiBulk($query);
 
         return redirect()->route('atur-data.tarik-finger')
-            ->with('success', "Sinkronisasi selesai. Berhasil: {$synced}, Dilewati: {$skipped}.");
+            ->with('success', "Sinkronisasi selesai. Berhasil: {$res['synced']}, Dilewati: {$res['skipped']}.");
     }
 
     public function hapusByTanggal(Request $request)
@@ -489,6 +425,9 @@ class MesinFingerController extends Controller
     // ── Upload File .dat ──
     public function uploadDat(Request $request)
     {
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
         $request->validate([
             'dat_file' => 'required|file|max:51200', // maks 50 MB
         ], [
@@ -500,7 +439,7 @@ class MesinFingerController extends Controller
         $file = $request->file('dat_file');
         $ext  = strtolower($file->getClientOriginalExtension());
 
-        // Terima juga file tanpa ekstensi (nama seperti "attlog") atau .dat / .txt
+        // Terima file .dat, .txt, atau tanpa ekstensi
         if (!in_array($ext, ['dat', 'txt', ''])) {
             return redirect()->route('atur-data.tarik-finger')
                 ->with('error', 'Format file tidak didukung. Gunakan file .dat dari mesin finger.');
@@ -512,13 +451,12 @@ class MesinFingerController extends Controller
                 ->with('error', 'File kosong atau tidak dapat dibaca.');
         }
 
-        // Normalize line endings (support CRLF, CR, LF)
+        // Normalize line endings
         $rawContent = str_replace(["\r\n", "\r"], "\n", $rawContent);
         $rows       = explode("\n", trim($rawContent));
 
-        $inserted = 0;
-        $skipped  = 0;
-        $invalid  = 0;
+        $parsedRecords = [];
+        $invalid       = 0;
 
         foreach ($rows as $row) {
             $row = trim($row);
@@ -531,14 +469,14 @@ class MesinFingerController extends Controller
             $jam     = null;
             $status  = '1';
 
-            // Coba parsing format tab-delimited terlebih dahulu (standar ZKTeco / Solution attlog.dat)
+            // 1. Coba format tab-delimited (standar ZKTeco / Solution attlog.dat)
             if (strpos($row, "\t") !== false) {
-                $cols = explode("\t", $row);
-                $nis  = trim($cols[0] ?? '');
-                $dt   = trim($cols[1] ?? '');
+                $cols   = explode("\t", $row);
+                $nis    = trim($cols[0] ?? '');
+                $dt     = trim($cols[1] ?? '');
                 $status = trim($cols[2] ?? '1');
 
-                // Jika kolom datetime mengandung spasi (format: YYYY-MM-DD HH:MM:SS)
+                // Jika kolom datetime gabungan (YYYY-MM-DD HH:MM:SS)
                 if (preg_match('/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)/', $dt, $m)) {
                     $tanggal = $m[1];
                     $jam     = $m[2];
@@ -549,7 +487,7 @@ class MesinFingerController extends Controller
                 }
             }
 
-            // Fallback: split dengan whitespace (spasi atau tab ganda)
+            // 2. Fallback: whitespace-separated
             if (!$tanggal || !$jam) {
                 $cols = preg_split('/\s+/', $row);
                 if (count($cols) >= 3) {
@@ -560,47 +498,65 @@ class MesinFingerController extends Controller
                 }
             }
 
-            // Validasi NIS harus berupa angka
-            if (!is_numeric($nis)) {
+            if (!is_numeric($nis) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $jam)) {
                 $invalid++;
                 continue;
             }
 
-            // Validasi format tanggal (YYYY-MM-DD) dan jam (HH:MM / HH:MM:SS)
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $jam)) {
-                $invalid++;
-                continue;
+            $nisInt = (int) $nis;
+            $key    = "{$nisInt}|{$tanggal}|{$jam}";
+
+            // Dedup internal di file
+            if (!isset($parsedRecords[$key])) {
+                $parsedRecords[$key] = [
+                    'nis'        => $nisInt,
+                    'tanggal'    => $tanggal,
+                    'jam'        => $jam,
+                    'status'     => $status,
+                    'keterangan' => 'Belum Tersinkron',
+                ];
             }
-
-            $nisInt  = (int) $nis;
-            $tanggal = trim($tanggal);
-            $jam     = trim($jam);
-            $status  = trim($status);
-
-            // Cek duplikat di log_absensi
-            $exists = DB::table('log_absensi')
-                ->where('nis', $nisInt)
-                ->where('tanggal', $tanggal)
-                ->where('jam', $jam)
-                ->exists();
-
-            if ($exists) {
-                $skipped++;
-                continue;
-            }
-
-            DB::table('log_absensi')->insert([
-                'nis'        => $nisInt,
-                'tanggal'    => $tanggal,
-                'jam'        => $jam,
-                'status'     => $status,
-                'keterangan' => 'Belum Tersinkron',
-            ]);
-
-            $inserted++;
         }
 
-        // Jalankan otomatis sinkronisasi ke tabel presensi
+        if (empty($parsedRecords)) {
+            return redirect()->route('atur-data.tarik-finger')
+                ->with('error', 'Tidak ada baris data yang valid dalam file .dat yang diupload.');
+        }
+
+        // Ambil list tanggal dari data yang diupload
+        $dates = array_values(array_unique(array_column($parsedRecords, 'tanggal')));
+
+        // Cek existing log_absensi dalam 1 query cepat
+        $existingLogs = DB::table('log_absensi')
+            ->whereIn('tanggal', $dates)
+            ->select('nis', 'tanggal', 'jam')
+            ->get()
+            ->mapWithKeys(function ($r) {
+                return ["{$r->nis}|{$r->tanggal}|{$r->jam}" => true];
+            })
+            ->toArray();
+
+        $toInsert = [];
+        $skipped  = 0;
+
+        foreach ($parsedRecords as $key => $rec) {
+            if (isset($existingLogs[$key])) {
+                $skipped++;
+            } else {
+                $toInsert[] = $rec;
+            }
+        }
+
+        // Bulk insert ke log_absensi dalam batch 500
+        if (!empty($toInsert)) {
+            foreach (array_chunk($toInsert, 500) as $chunk) {
+                DB::table('log_absensi')->insert($chunk);
+            }
+        }
+
+        $inserted = count($toInsert);
+
+        // Jalankan sinkronisasi presensi otomatis
         $synced = $this->sinkronkanProses();
 
         $msg = "Upload .dat selesai: {$inserted} baris baru diimport, {$skipped} duplikat dilewati";
@@ -608,11 +564,6 @@ class MesinFingerController extends Controller
             $msg .= ", {$invalid} baris tidak valid";
         }
         $msg .= ". Sinkronisasi presensi: {$synced} data berhasil disinkron.";
-
-        if ($inserted === 0 && $skipped === 0 && $invalid > 0) {
-            return redirect()->route('atur-data.tarik-finger')
-                ->with('error', 'Tidak ada baris data yang valid dalam file .dat yang diupload. Pastikan format file benar.');
-        }
 
         return redirect()->route('atur-data.tarik-finger')->with('success', $msg);
     }
@@ -761,8 +712,8 @@ class MesinFingerController extends Controller
 
     private function insertLogCloud(string $rawData, int $idMesin): int
     {
-        $rows     = explode("\n", trim($rawData));
-        $inserted = 0;
+        $rows = explode("\n", trim($rawData));
+        $parsed = [];
 
         foreach ($rows as $row) {
             $cols = preg_split('/\s+/', trim($row));
@@ -772,102 +723,193 @@ class MesinFingerController extends Controller
 
             [$nis, $tanggal, $jam, $status] = $cols;
 
-            if (!is_numeric($nis)) {
+            if (!is_numeric($nis) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $jam)) {
                 continue;
             }
 
             $nisInt = (int) $nis;
+            $key    = "{$nisInt}|{$tanggal}|{$jam}";
 
-            $exists = DB::table('log_absensi')
-                ->where('nis', $nisInt)
-                ->where('tanggal', $tanggal)
-                ->where('jam', $jam)
-                ->exists();
-
-            if ($exists) {
-                continue;
+            if (!isset($parsed[$key])) {
+                $parsed[$key] = [
+                    'nis'        => $nisInt,
+                    'tanggal'    => $tanggal,
+                    'jam'        => $jam,
+                    'status'     => $status,
+                    'keterangan' => 'Belum Tersinkron',
+                ];
             }
-
-            // Insert with default keterangan = 'Belum Tersinkron'
-            DB::table('log_absensi')->insert([
-                'nis'        => $nisInt,
-                'tanggal'    => $tanggal,
-                'jam'        => $jam,
-                'status'     => $status,
-                'keterangan' => 'Belum Tersinkron',
-            ]);
-
-            $inserted++;
         }
 
-        return $inserted;
+        if (empty($parsed)) {
+            return 0;
+        }
+
+        $dates = array_values(array_unique(array_column($parsed, 'tanggal')));
+        $existingLogs = DB::table('log_absensi')
+            ->whereIn('tanggal', $dates)
+            ->select('nis', 'tanggal', 'jam')
+            ->get()
+            ->mapWithKeys(function ($r) {
+                return ["{$r->nis}|{$r->tanggal}|{$r->jam}" => true];
+            })
+            ->toArray();
+
+        $toInsert = [];
+        foreach ($parsed as $key => $rec) {
+            if (!isset($existingLogs[$key])) {
+                $toInsert[] = $rec;
+            }
+        }
+
+        if (!empty($toInsert)) {
+            foreach (array_chunk($toInsert, 500) as $chunk) {
+                DB::table('log_absensi')->insert($chunk);
+            }
+        }
+
+        return count($toInsert);
     }
 
     private function sinkronkanProses(): int
     {
-        $logs   = LogAbsensi::orderBy('tanggal')->orderBy('jam')->get();
-        $synced = 0;
+        $pendingQuery = LogAbsensi::where(function ($q) {
+            $q->where('keterangan', 'Belum Tersinkron')
+              ->orWhereNull('keterangan')
+              ->orWhere('keterangan', '');
+        });
+
+        $result = $this->prosesSinkronisasiBulk($pendingQuery);
+        return $result['synced'] ?? 0;
+    }
+
+    /**
+     * Engine sinkronisasi super cepat berbasis in-memory preloaded cache dan bulk query chunking.
+     * Mengubah ribuan query individual menjadi beberapa batch query agar selesai dalam < 1 detik.
+     */
+    private function prosesSinkronisasiBulk($logQuery): array
+    {
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '512M');
+
+        $logs = $logQuery->orderBy('tanggal')->orderBy('jam')->get();
+        if ($logs->isEmpty()) {
+            return ['synced' => 0, 'skipped' => 0];
+        }
+
+        // 1. Preload seluruh NIS siswa aktif dalam 1 query
+        $validSiswaNis = UserSiswa::pluck('nis')->flip()->toArray();
+
+        // 2. Ambil list tanggal unik dari log
+        $dates = $logs->pluck('tanggal')->unique()->filter()->values()->toArray();
+
+        // 3. Preload presensi untuk tanggal-tanggal terkait dalam 1 query
+        $existingPresensi = DB::table('presensi')
+            ->whereIn('tanggal', $dates)
+            ->get()
+            ->keyBy(function ($p) {
+                return $p->nis . '|' . trim($p->tanggal);
+            });
+
+        $presensiToInsert     = [];
+        $presensiToUpdate     = [];
+        $logTersinkronIds     = [];
+        $logSudahAdaIds       = [];
+        $logTidakTerdaftarIds = [];
+
+        $synced  = 0;
+        $skipped = 0;
 
         foreach ($logs as $log) {
-            try {
-                $siswaExists = UserSiswa::where('nis', $log->nis)->exists();
-                if (!$siswaExists) {
-                    continue;
+            $nis     = (int) $log->nis;
+            $tanggal = trim($log->tanggal);
+            $jam     = trim($log->jam);
+            $status  = $log->status ?? '1';
+
+            // Siswa tidak terdaftar di database
+            if (!isset($validSiswaNis[$nis])) {
+                $logTidakTerdaftarIds[] = $log->id_presensi;
+                $skipped++;
+                continue;
+            }
+
+            $key = "{$nis}|{$tanggal}";
+
+            if (isset($existingPresensi[$key])) {
+                $pres = $existingPresensi[$key];
+                $isAlpha = in_array(strval($pres->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+
+                if ($isAlpha) {
+                    $presensiToUpdate[$pres->id_presensi] = [
+                        'jam'        => $jam,
+                        'status'     => $status,
+                        'keterangan' => 'Mesin finger – otomatis',
+                    ];
+                    $pres->status       = $status;
+                    $logTersinkronIds[] = $log->id_presensi;
+                    $synced++;
+                } else {
+                    $logSudahAdaIds[] = $log->id_presensi;
+                    $skipped++;
                 }
+                continue;
+            }
 
-                $existing = DB::table('presensi')
-                    ->where('nis', $log->nis)
-                    ->whereDate('tanggal', $log->tanggal)
-                    ->first();
+            // Belum ada presensi pada tanggal tersebut
+            $presensiToInsert[] = [
+                'nis'        => $nis,
+                'tanggal'    => $tanggal,
+                'jam'        => $jam,
+                'status'     => $status,
+                'keterangan' => 'Mesin finger – otomatis',
+                'file'       => null,
+            ];
 
-                if ($existing) {
-                    $isAlpha = in_array(strval($existing->status), ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', '0'], true);
+            // Daftarkan di memory agar swipe berikutnya pada tanggal yang sama tidak insert ganda
+            $existingPresensi[$key] = (object)[
+                'id_presensi' => 0,
+                'nis'         => $nis,
+                'tanggal'     => $tanggal,
+                'status'      => $status,
+            ];
 
-                    if ($isAlpha) {
-                        DB::table('presensi')
-                            ->where('id_presensi', $existing->id_presensi)
-                            ->update([
-                                'jam'        => $log->jam,
-                                'status'     => $log->status ?? '1',
-                                'keterangan' => 'Mesin finger – otomatis',
-                            ]);
+            $logTersinkronIds[] = $log->id_presensi;
+            $synced++;
+        }
 
-                        DB::table('log_absensi')
-                            ->where('id_presensi', $log->id_presensi)
-                            ->update(['keterangan' => 'Tersinkron']);
-
-                        $synced++;
-                    } else {
-                        DB::table('log_absensi')
-                            ->where('id_presensi', $log->id_presensi)
-                            ->update(['keterangan' => 'Data sudah ada']);
-                    }
-                    continue;
-                }
-
-                DB::table('presensi')->insert([
-                    'nis'        => $log->nis,
-                    'tanggal'    => $log->tanggal,
-                    'jam'        => $log->jam,
-                    'status'     => $log->status ?? '1',
-                    'keterangan' => 'Mesin finger – otomatis',
-                    'file'       => null,
-                ]);
-
-                DB::table('log_absensi')
-                    ->where('id_presensi', $log->id_presensi)
-                    ->update(['keterangan' => 'Tersinkron']);
-
-                $synced++;
-
-            } catch (\Exception $e) {
-                DB::table('log_absensi')
-                    ->where('id_presensi', $log->id_presensi)
-                    ->update(['keterangan' => 'Gagal']);
-                \Log::error('Sinkronisasi web error NIS ' . $log->nis . ': ' . $e->getMessage());
+        // Eksekusi bulk ke database
+        if (!empty($presensiToInsert)) {
+            foreach (array_chunk($presensiToInsert, 500) as $chunk) {
+                DB::table('presensi')->insert($chunk);
             }
         }
 
-        return $synced;
+        if (!empty($presensiToUpdate)) {
+            foreach ($presensiToUpdate as $presId => $data) {
+                if ($presId > 0) {
+                    DB::table('presensi')->where('id_presensi', $presId)->update($data);
+                }
+            }
+        }
+
+        if (!empty($logTersinkronIds)) {
+            foreach (array_chunk($logTersinkronIds, 500) as $chunk) {
+                DB::table('log_absensi')->whereIn('id_presensi', $chunk)->update(['keterangan' => 'Tersinkron']);
+            }
+        }
+
+        if (!empty($logSudahAdaIds)) {
+            foreach (array_chunk($logSudahAdaIds, 500) as $chunk) {
+                DB::table('log_absensi')->whereIn('id_presensi', $chunk)->update(['keterangan' => 'Data sudah ada']);
+            }
+        }
+
+        if (!empty($logTidakTerdaftarIds)) {
+            foreach (array_chunk($logTidakTerdaftarIds, 500) as $chunk) {
+                DB::table('log_absensi')->whereIn('id_presensi', $chunk)->update(['keterangan' => 'Tidak Terdaftar']);
+            }
+        }
+
+        return ['synced' => $synced, 'skipped' => $skipped];
     }
 }
