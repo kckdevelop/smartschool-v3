@@ -250,6 +250,7 @@ class LmsController extends Controller
                 'tenggat'   => 'nullable|date',
                 'deadline'  => 'nullable|date',   // alias Flutter
                 'tipe'      => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz,kuis',
+                'file'      => 'nullable|file|max:20480',
             ]);
 
             // Mapping alias tipe agar sesuai dengan ENUM database ('baca_materi', 'kuis')
@@ -309,6 +310,7 @@ class LmsController extends Controller
                 'tenggat'  => 'nullable|date',
                 'deadline' => 'nullable|date',   // alias Flutter
                 'tipe'     => 'nullable|in:pdf,gambar,teks,baca_materi,materi,quis,quiz,kuis',
+                'file'     => 'nullable|file|max:20480',
             ]);
 
             $data = $request->only('judul', 'deskripsi', 'tipe');
