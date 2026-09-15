@@ -56,6 +56,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/guru/jurnal-hari-ini', [\App\Http\Controllers\Api\GuruDashboardController::class, 'jurnalHariIni']);
     Route::get('/guru/jurnal-guru', [\App\Http\Controllers\Api\GuruDashboardController::class, 'jurnalGuru']);
 
+    // Notifikasi (Flutter Mobile & Web)
+    Route::prefix('notifikasi')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\NotifikasiController::class, 'index']);
+        Route::get('/unread-count', [\App\Http\Controllers\Api\NotifikasiController::class, 'unreadCount']);
+        Route::post('/{id}/read', [\App\Http\Controllers\Api\NotifikasiController::class, 'markAsRead']);
+        Route::post('/read-all', [\App\Http\Controllers\Api\NotifikasiController::class, 'markAllAsRead']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\NotifikasiController::class, 'destroy']);
+    });
+
     // Profil Lengkap Siswa (Flutter Mobile)
     Route::get('/mobile/siswa/profil', [\App\Http\Controllers\Api\SiswaProfilController::class, 'show']);
     Route::post('/mobile/siswa/profil', [\App\Http\Controllers\Api\SiswaProfilController::class, 'update']);

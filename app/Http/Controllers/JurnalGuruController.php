@@ -352,8 +352,11 @@ class JurnalGuruController extends Controller
     // ─── Approve / Reject ────────────────────────────────────────────────────
     public function approve($id)
     {
-        $jurnal = Kemajuan::findOrFail($id);
+        $jurnal = Kemajuan::with(['mapel', 'kelas', 'guru'])->findOrFail($id);
         $jurnal->update(['status_approval' => 'approved']);
+
+        // Kirim notifikasi ke aplikasi guru
+        \App\Services\NotifikasiService::notifyJurnalApproved($jurnal);
 
         if (request()->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Jurnal berhasil disetujui.']);
@@ -363,8 +366,11 @@ class JurnalGuruController extends Controller
 
     public function reject($id)
     {
-        $jurnal = Kemajuan::findOrFail($id);
+        $jurnal = Kemajuan::with(['mapel', 'kelas', 'guru'])->findOrFail($id);
         $jurnal->update(['status_approval' => 'rejected']);
+
+        // Kirim notifikasi ke aplikasi guru
+        \App\Services\NotifikasiService::notifyJurnalRejected($jurnal);
 
         if (request()->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Jurnal berhasil ditolak.']);
