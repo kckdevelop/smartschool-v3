@@ -209,6 +209,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/tarik-mesin/{id}', [MesinFingerController::class, 'tarikSingleMesin'])->name('.tarik-mesin-single');
         Route::post('/cek-koneksi-semua', [MesinFingerController::class, 'cekKoneksiSemua'])->name('.cek-koneksi-semua');
         Route::post('/cek-koneksi/{id}', [MesinFingerController::class, 'cekKoneksiSingle'])->name('.cek-koneksi-single');
+        Route::post('/upload-dat', [MesinFingerController::class, 'uploadDat'])->name('.upload-dat');
     });
 
     // 11. Presensi Siswa

@@ -486,6 +486,137 @@ class MesinFingerController extends Controller
         return redirect()->route('atur-data.tarik-finger')->with('warning', "{$countConnected} mesin terhubung. Namun {$countDisconnected} mesin TIDAK TERHUBUNG ke Cloud Server: {$msgDisconnected}.");
     }
 
+    // ── Upload File .dat ──
+    public function uploadDat(Request $request)
+    {
+        $request->validate([
+            'dat_file' => 'required|file|max:51200', // maks 50 MB
+        ], [
+            'dat_file.required' => 'Pilih file .dat terlebih dahulu.',
+            'dat_file.file'     => 'File tidak valid.',
+            'dat_file.max'      => 'Ukuran file maksimal 50 MB.',
+        ]);
+
+        $file = $request->file('dat_file');
+        $ext  = strtolower($file->getClientOriginalExtension());
+
+        // Terima juga file tanpa ekstensi (nama seperti "attlog") atau .dat / .txt
+        if (!in_array($ext, ['dat', 'txt', ''])) {
+            return redirect()->route('atur-data.tarik-finger')
+                ->with('error', 'Format file tidak didukung. Gunakan file .dat dari mesin finger.');
+        }
+
+        $rawContent = file_get_contents($file->getRealPath());
+        if ($rawContent === false || trim($rawContent) === '') {
+            return redirect()->route('atur-data.tarik-finger')
+                ->with('error', 'File kosong atau tidak dapat dibaca.');
+        }
+
+        // Normalize line endings (support CRLF, CR, LF)
+        $rawContent = str_replace(["\r\n", "\r"], "\n", $rawContent);
+        $rows       = explode("\n", trim($rawContent));
+
+        $inserted = 0;
+        $skipped  = 0;
+        $invalid  = 0;
+
+        foreach ($rows as $row) {
+            $row = trim($row);
+            if ($row === '') {
+                continue;
+            }
+
+            $nis     = null;
+            $tanggal = null;
+            $jam     = null;
+            $status  = '1';
+
+            // Coba parsing format tab-delimited terlebih dahulu (standar ZKTeco / Solution attlog.dat)
+            if (strpos($row, "\t") !== false) {
+                $cols = explode("\t", $row);
+                $nis  = trim($cols[0] ?? '');
+                $dt   = trim($cols[1] ?? '');
+                $status = trim($cols[2] ?? '1');
+
+                // Jika kolom datetime mengandung spasi (format: YYYY-MM-DD HH:MM:SS)
+                if (preg_match('/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)/', $dt, $m)) {
+                    $tanggal = $m[1];
+                    $jam     = $m[2];
+                } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dt)) {
+                    $tanggal = $dt;
+                    $jam     = trim($cols[2] ?? '00:00:00');
+                    $status  = trim($cols[3] ?? '1');
+                }
+            }
+
+            // Fallback: split dengan whitespace (spasi atau tab ganda)
+            if (!$tanggal || !$jam) {
+                $cols = preg_split('/\s+/', $row);
+                if (count($cols) >= 3) {
+                    $nis     = trim($cols[0] ?? '');
+                    $tanggal = trim($cols[1] ?? '');
+                    $jam     = trim($cols[2] ?? '');
+                    $status  = trim($cols[3] ?? '1');
+                }
+            }
+
+            // Validasi NIS harus berupa angka
+            if (!is_numeric($nis)) {
+                $invalid++;
+                continue;
+            }
+
+            // Validasi format tanggal (YYYY-MM-DD) dan jam (HH:MM / HH:MM:SS)
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal) || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $jam)) {
+                $invalid++;
+                continue;
+            }
+
+            $nisInt  = (int) $nis;
+            $tanggal = trim($tanggal);
+            $jam     = trim($jam);
+            $status  = trim($status);
+
+            // Cek duplikat di log_absensi
+            $exists = DB::table('log_absensi')
+                ->where('nis', $nisInt)
+                ->where('tanggal', $tanggal)
+                ->where('jam', $jam)
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            DB::table('log_absensi')->insert([
+                'nis'        => $nisInt,
+                'tanggal'    => $tanggal,
+                'jam'        => $jam,
+                'status'     => $status,
+                'keterangan' => 'Belum Tersinkron',
+            ]);
+
+            $inserted++;
+        }
+
+        // Jalankan otomatis sinkronisasi ke tabel presensi
+        $synced = $this->sinkronkanProses();
+
+        $msg = "Upload .dat selesai: {$inserted} baris baru diimport, {$skipped} duplikat dilewati";
+        if ($invalid > 0) {
+            $msg .= ", {$invalid} baris tidak valid";
+        }
+        $msg .= ". Sinkronisasi presensi: {$synced} data berhasil disinkron.";
+
+        if ($inserted === 0 && $skipped === 0 && $invalid > 0) {
+            return redirect()->route('atur-data.tarik-finger')
+                ->with('error', 'Tidak ada baris data yang valid dalam file .dat yang diupload. Pastikan format file benar.');
+        }
+
+        return redirect()->route('atur-data.tarik-finger')->with('success', $msg);
+    }
+
     private function loginCloud(string $sn, string $password): ?string
     {
         // Step 1: GET default.asp to fetch initial ASP Session ID cookie

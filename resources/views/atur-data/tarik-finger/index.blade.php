@@ -284,6 +284,99 @@ input:checked + .switch-slider:before {
         </div>
     </div>
 
+    {{-- Upload File .dat --}}
+    <div class="card mb-6">
+        <div class="card-header" style="border-bottom: 1px solid #f1f5f9; padding: 16px 24px;">
+            <h3 class="card-title" style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.1rem; color: #1e293b;">
+                <i class="fa-solid fa-file-arrow-up" style="color: var(--color-primary)"></i>
+                Upload File .dat dari Mesin Finger
+            </h3>
+        </div>
+        <div class="card-body" style="padding: 24px;">
+            <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+
+                {{-- Left: Form Upload --}}
+                <form action="{{ route('atur-data.tarik-finger.upload-dat') }}" method="POST"
+                      enctype="multipart/form-data" id="form-upload-dat"
+                      style="flex: 1; min-width: 300px;"
+                      onsubmit="return confirmUploadDat(this)">
+                    @csrf
+
+                    {{-- Drag & Drop Zone --}}
+                    <div id="dat-drop-zone"
+                         onclick="document.getElementById('dat_file_input').click()"
+                         style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 36px 24px;
+                                text-align: center; cursor: pointer; transition: all 0.2s;
+                                background: #f8fafc; margin-bottom: 16px;"
+                         ondragover="event.preventDefault(); this.style.borderColor='var(--color-primary)'; this.style.background='#eff6ff';"
+                         ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
+                         ondrop="handleDatDrop(event)">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 12px; display: block;"></i>
+                        <p style="font-weight: 600; color: #1e293b; margin: 0 0 4px 0; font-size: 0.95rem;">
+                            Klik atau Seret File .dat ke Sini
+                        </p>
+                        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">
+                            Format: <code style="background:#e2e8f0; padding: 1px 6px; border-radius:4px;">.dat</code> &nbsp;|&nbsp; Maks. 50 MB
+                        </p>
+                        <input type="file" id="dat_file_input" name="dat_file" accept=".dat,.txt"
+                               style="display: none;" onchange="previewDatFile(this)">
+                    </div>
+
+                    {{-- File Preview --}}
+                    <div id="dat-file-preview" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 16px; margin-bottom:16px; display:none; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-file-lines" style="color:#16a34a; font-size:1.3rem;"></i>
+                        <div style="flex:1; min-width:0;">
+                            <p id="dat-file-name" style="margin:0; font-weight:600; color:#15803d; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></p>
+                            <p id="dat-file-size" style="margin:0; font-size:0.78rem; color:#86efac;"></p>
+                        </div>
+                        <button type="button" onclick="clearDatFile()" style="background:none; border:none; cursor:pointer; color:#94a3b8; padding:0; line-height:1;">
+                            <i class="fa-solid fa-xmark" style="font-size:1rem;"></i>
+                        </button>
+                    </div>
+
+                    @error('dat_file')
+                        <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; border-radius:8px; padding:10px 16px; margin-bottom:16px; font-size:0.85rem;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> {{ $message }}
+                        </div>
+                    @enderror
+
+                    <button type="submit" id="btn-upload-dat" class="btn btn-primary w-full" style="height:42px; font-size:0.95rem;">
+                        <i class="fa-solid fa-file-import"></i> Import & Proses File .dat
+                    </button>
+                </form>
+
+                {{-- Right: Info & Panduan --}}
+                <div style="flex: 1; min-width: 260px; max-width: 380px;">
+                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px;">
+                        <h5 style="font-weight: 700; color: #92400e; margin: 0 0 10px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-circle-info"></i> Format File .dat
+                        </h5>
+                        <p style="font-size: 0.82rem; color: #78350f; margin: 0 0 8px 0;">
+                            Setiap baris berisi data presensi dengan format tab-separated:
+                        </p>
+                        <code style="display: block; background: #fef3c7; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; color: #92400e; line-height: 1.7;">
+                            NIS &emsp; TANGGAL &emsp; JAM &emsp; STATUS ...<br>
+                            <span style="color:#b45309;">Contoh:</span><br>
+                            13993&emsp;2026-07-20&emsp;06:48:24&emsp;1&emsp;0&emsp;1
+                        </code>
+                    </div>
+                    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 16px 20px;">
+                        <h5 style="font-weight: 700; color: #0c4a6e; margin: 0 0 8px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-list-check"></i> Proses Otomatis
+                        </h5>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: #075985; line-height: 1.9;">
+                            <li>Parsing seluruh baris data dari file .dat</li>
+                            <li>Skip duplikat yang sudah ada di log absensi</li>
+                            <li>Simpan data baru ke <strong>log_absensi</strong></li>
+                            <li>Otomatis sinkronisasi ke tabel <strong>presensi</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     {{-- Sync Status Summary --}}
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
         @php
@@ -580,6 +673,73 @@ function confirmHapusSingle(namaMesin, form) {
         return true;
     }
     return false;
+}
+
+// ── Upload .dat helpers ──
+function previewDatFile(input) {
+    const preview = document.getElementById('dat-file-preview');
+    const nameEl  = document.getElementById('dat-file-name');
+    const sizeEl  = document.getElementById('dat-file-size');
+    const dropZone = document.getElementById('dat-drop-zone');
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        nameEl.textContent = file.name;
+        sizeEl.textContent = (file.size / 1024).toFixed(1) + ' KB';
+        preview.style.display = 'flex';
+        dropZone.style.borderColor = '#16a34a';
+        dropZone.style.background  = '#f0fdf4';
+    } else {
+        preview.style.display = 'none';
+        dropZone.style.borderColor = '#cbd5e1';
+        dropZone.style.background  = '#f8fafc';
+    }
+}
+
+function clearDatFile() {
+    const input    = document.getElementById('dat_file_input');
+    const preview  = document.getElementById('dat-file-preview');
+    const dropZone = document.getElementById('dat-drop-zone');
+    input.value = '';
+    preview.style.display = 'none';
+    dropZone.style.borderColor = '#cbd5e1';
+    dropZone.style.background  = '#f8fafc';
+}
+
+function handleDatDrop(event) {
+    event.preventDefault();
+    const dropZone = document.getElementById('dat-drop-zone');
+    dropZone.style.borderColor = '#cbd5e1';
+    dropZone.style.background  = '#f8fafc';
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const input = document.getElementById('dat_file_input');
+        // Assign via DataTransfer to set files on input
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        previewDatFile(input);
+    }
+}
+
+function confirmUploadDat(form) {
+    const input = document.getElementById('dat_file_input');
+    if (!input.files || input.files.length === 0) {
+        alert('Pilih file .dat terlebih dahulu!');
+        return false;
+    }
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        const loadingIcon  = loadingOverlay.querySelector('.fa-spinner');
+        const loadingTitle = loadingOverlay.querySelector('h3');
+        const loadingText  = loadingOverlay.querySelector('p');
+        if (loadingIcon)  loadingIcon.style.color = '#10b981';
+        if (loadingTitle) loadingTitle.textContent = 'Memproses File .dat';
+        if (loadingText)  loadingText.textContent  = 'Sedang mengimport dan menyinkronkan data presensi dari file .dat. Mohon tunggu...';
+        loadingOverlay.style.display = 'flex';
+    }
+    return true;
 }
 </script>
 @endpush
