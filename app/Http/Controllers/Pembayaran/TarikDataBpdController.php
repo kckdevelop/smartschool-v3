@@ -50,10 +50,14 @@ class TarikDataBpdController extends Controller
     public function fetch(Request $request): JsonResponse
     {
         // Perpanjang waktu eksekusi PHP karena proses multi-halaman bisa > 60 detik
-        // Catatan: set_time_limit diabaikan di PHP-FPM, gunakan ini_set sebagai fallback
         @set_time_limit(600);
         @ini_set('max_execution_time', 600);
         @ini_set('memory_limit', '512M');
+
+        // Bersihkan output buffer agar tidak ada karakter liar yang mencemari JSON response
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
 
         $setting = SettingPembayaran::getSetting();
 
@@ -98,10 +102,11 @@ class TarikDataBpdController extends Controller
 
             if (!$result['success']) {
                 return response()->json([
-                    'success' => false,
-                    'message' => $result['message'] ?? 'Gagal menarik data dari portal BPD DIY.',
-                    'data'    => [],
-                    'total'   => 0,
+                    'success'     => false,
+                    'message'     => $result['message'] ?? 'Gagal menarik data dari portal BPD DIY.',
+                    'data'        => [],
+                    'total'       => 0,
+                    'need_cookie' => $result['need_cookie'] ?? false,
                 ]);
             }
 
@@ -117,9 +122,10 @@ class TarikDataBpdController extends Controller
                 'summary' => $enriched['summary'],
                 'message' => count($enriched['data']) . ' dari ' . ($result['total'] ?? count($enriched['data'])) . ' data tagihan VA berhasil ditarik dari portal BPD DIY.',
             ]);
-        } catch (\Exception $e) {
-            Log::error('[TarikDataBpdController fetch] Exception: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+        } catch (\Throwable $e) {
+            Log::error('[TarikDataBpdController fetch] Error: ' . $e->getMessage(), [
+                'class' => get_class($e),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
             ]);
 
             return response()->json([
@@ -689,6 +695,11 @@ class TarikDataBpdController extends Controller
         @ini_set('max_execution_time', 600);
         @ini_set('memory_limit', '512M');
 
+        // Bersihkan output buffer
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+
         $setting = SettingPembayaran::getSetting();
 
         if ($setting->status_api !== 'aktif') {
@@ -719,9 +730,10 @@ class TarikDataBpdController extends Controller
             $result  = $service->pullAndReplaceDatabase($filters);
 
             return response()->json($result, $result['success'] ? 200 : 400);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('[TarikDataBpdController autoPullAndReplace] Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+                'class' => get_class($e),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
             ]);
 
             return response()->json([

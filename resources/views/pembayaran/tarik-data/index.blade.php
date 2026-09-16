@@ -640,6 +640,42 @@
     let rawBpdData = [];
     let isFetching = false;
 
+    /**
+     * Helper: parse JSON dari response dengan aman.
+     * Jika response bukan JSON (misal HTML error page, empty body, timeout),
+     * akan throw error yang jelas supaya tidak muncul "Unexpected end of JSON input".
+     */
+    async function safeJson(res) {
+        const contentType = res.headers.get('Content-Type') || '';
+        const text = await res.text();
+
+        if (!text || text.trim() === '') {
+            throw new Error('Server tidak mengembalikan data apapun (response kosong). Kemungkinan timeout atau server error.');
+        }
+
+        // Jika response adalah HTML (error page Laravel, redirect ke login, dll)
+        if (text.trim().startsWith('<') || contentType.includes('text/html')) {
+            // Coba extract pesan error dari HTML
+            const titleMatch = text.match(/<title[^>]*>(.*?)<\/title>/i);
+            const title = titleMatch ? titleMatch[1].trim() : 'HTML Error Page';
+
+            // Cek apakah redirect ke halaman login (session expired)
+            if (text.includes('login') || text.includes('Login') || res.url.includes('/login')) {
+                throw new Error('Session habis / tidak terautentikasi. Silakan refresh halaman dan login kembali.');
+            }
+
+            throw new Error('Server mengembalikan halaman HTML, bukan JSON. Kemungkinan terjadi error server (500) atau session expired. Detail: ' + title);
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // Tampilkan 200 karakter pertama untuk debug
+            const preview = text.substring(0, 200).replace(/[\r\n]+/g, ' ');
+            throw new Error('Response bukan format JSON yang valid. Pratinjau: ' + preview);
+        }
+    }
+
     // Inisialisasi halaman
     document.addEventListener('DOMContentLoaded', function () {
         initBookmarklet();
@@ -717,7 +753,7 @@
                 search: search
             })
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(data => {
             btnConfirm.disabled = false;
             btnCancel.disabled = false;
@@ -767,7 +803,7 @@
                 "Accept": "application/json"
             }
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Ya, Kosongkan Data Sekarang';
@@ -839,7 +875,7 @@
             },
             body: formData
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(response => {
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Unggah & Muat Data';
@@ -890,7 +926,7 @@
                 "Accept": "application/json"
             }
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Tes Auto-Login';
@@ -920,7 +956,7 @@
                 "Accept": "application/json"
             }
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Jalankan Auto-Login Sekarang';
@@ -972,7 +1008,7 @@
             },
             body: JSON.stringify({ session_cookie: cookieVal })
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(data => {
             btnSave.disabled = false;
             btnSave.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Cookie';
@@ -1058,7 +1094,7 @@
                 length: 0  // 0 = ambil semua data
             })
         })
-        .then(res => res.json())
+        .then(res => safeJson(res))
         .then(response => {
             clearTimeout(timeoutId);
             isFetching = false;
