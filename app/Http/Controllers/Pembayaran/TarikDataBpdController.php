@@ -50,7 +50,10 @@ class TarikDataBpdController extends Controller
     public function fetch(Request $request): JsonResponse
     {
         // Perpanjang waktu eksekusi PHP karena proses multi-halaman bisa > 60 detik
-        set_time_limit(300);
+        // Catatan: set_time_limit diabaikan di PHP-FPM, gunakan ini_set sebagai fallback
+        @set_time_limit(600);
+        @ini_set('max_execution_time', 600);
+        @ini_set('memory_limit', '512M');
 
         $setting = SettingPembayaran::getSetting();
 
@@ -682,7 +685,9 @@ class TarikDataBpdController extends Controller
      */
     public function autoPullAndReplace(Request $request): JsonResponse
     {
-        set_time_limit(300);
+        @set_time_limit(600);
+        @ini_set('max_execution_time', 600);
+        @ini_set('memory_limit', '512M');
 
         $setting = SettingPembayaran::getSetting();
 
