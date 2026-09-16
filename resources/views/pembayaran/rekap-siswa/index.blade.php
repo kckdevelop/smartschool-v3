@@ -154,6 +154,10 @@
                                     <div style="font-size: 0.78rem; color: {{ $row['spp_bayar'] >= $row['spp_nominal'] ? '#10b981' : '#ef4444' }};">
                                         Bayar: Rp {{ number_format($row['spp_bayar'], 0, ',', '.') }}
                                     </div>
+                                @elseif($row['spp_has_record'])
+                                    {{-- Record ada di BPD DIY tapi nominal Rp 0 --}}
+                                    <div style="font-weight: 600; color: var(--text-muted); font-size: 0.82rem;">Rp 0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">VA terdaftar</div>
                                 @else
                                     <span style="color: var(--text-muted); font-size: 0.82rem;">—</span>
                                 @endif
@@ -166,6 +170,10 @@
                                     <div style="font-size: 0.78rem; color: {{ $row['non_spp_bayar'] >= $row['non_spp_nominal'] ? '#10b981' : '#ef4444' }};">
                                         Bayar: Rp {{ number_format($row['non_spp_bayar'], 0, ',', '.') }}
                                     </div>
+                                @elseif($row['non_spp_has_record'])
+                                    {{-- Record ada di BPD DIY tapi nominal Rp 0 --}}
+                                    <div style="font-weight: 600; color: var(--text-muted); font-size: 0.82rem;">Rp 0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">VA terdaftar</div>
                                 @else
                                     <span style="color: var(--text-muted); font-size: 0.82rem;">—</span>
                                 @endif
@@ -178,6 +186,10 @@
                                     <div style="font-size: 0.78rem; color: {{ $row['tunggakan_bayar'] >= $row['tunggakan_nominal'] ? '#10b981' : '#ef4444' }};">
                                         Bayar: Rp {{ number_format($row['tunggakan_bayar'], 0, ',', '.') }}
                                     </div>
+                                @elseif($row['tunggakan_has_record'])
+                                    {{-- Record ada di BPD DIY tapi nominal Rp 0 --}}
+                                    <div style="font-weight: 600; color: var(--text-muted); font-size: 0.82rem;">Rp 0</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">VA terdaftar</div>
                                 @else
                                     <span style="color: var(--text-muted); font-size: 0.82rem;">—</span>
                                 @endif
@@ -187,7 +199,16 @@
                             <td style="padding: 12px 14px; text-align: right;">
                                 @if($row['total_nominal'] > 0)
                                     <div style="font-weight: 800; color: #1e293b;">Rp {{ number_format($row['total_nominal'], 0, ',', '.') }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $row['tagihan_count'] }} item tagihan</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                        {{ $row['tagihan_count'] }} item tagihan
+                                        @php $allCount = $row['tagihan_items']->count(); @endphp
+                                        @if($allCount > $row['tagihan_count'])
+                                            <span style="color: #94a3b8;">(+{{ $allCount - $row['tagihan_count'] }} Rp 0)</span>
+                                        @endif
+                                    </div>
+                                @elseif($row['tagihan_items']->count() > 0)
+                                    <span style="color: var(--text-muted); font-size: 0.82rem;">Rp 0</span>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $row['tagihan_items']->count() }} VA terdaftar</div>
                                 @else
                                     <span style="color: var(--text-muted); font-size: 0.82rem;">Rp 0</span>
                                 @endif

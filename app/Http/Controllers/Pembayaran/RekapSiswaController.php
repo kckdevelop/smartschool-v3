@@ -64,35 +64,45 @@ class RekapSiswaController extends Controller
 
             $tagihanList = TagihanPembayaran::where('nis', $siswa->nis)->get();
 
-            $sppNominal = $tagihanList->where('jenis_tagihan', 'spp')->sum('nominal');
-            $sppBayar = $tagihanList->where('jenis_tagihan', 'spp')->sum('nominal_terbayar');
+            $sppItems      = $tagihanList->where('jenis_tagihan', 'spp');
+            $nonSppItems   = $tagihanList->where('jenis_tagihan', 'non_spp');
+            $tunggakanItems = $tagihanList->where('jenis_tagihan', 'tunggakan');
 
-            $nonSppNominal = $tagihanList->where('jenis_tagihan', 'non_spp')->sum('nominal');
-            $nonSppBayar = $tagihanList->where('jenis_tagihan', 'non_spp')->sum('nominal_terbayar');
+            $sppNominal = $sppItems->sum('nominal');
+            $sppBayar   = $sppItems->sum('nominal_terbayar');
 
-            $tunggakanNominal = $tagihanList->where('jenis_tagihan', 'tunggakan')->sum('nominal');
-            $tunggakanBayar = $tagihanList->where('jenis_tagihan', 'tunggakan')->sum('nominal_terbayar');
+            $nonSppNominal = $nonSppItems->sum('nominal');
+            $nonSppBayar   = $nonSppItems->sum('nominal_terbayar');
 
-            $totalNominal = $tagihanList->sum('nominal');
-            $totalBayar = $tagihanList->sum('nominal_terbayar');
+            $tunggakanNominal = $tunggakanItems->sum('nominal');
+            $tunggakanBayar   = $tunggakanItems->sum('nominal_terbayar');
+
+            $totalNominal   = $tagihanList->sum('nominal');
+            $totalBayar     = $tagihanList->sum('nominal_terbayar');
             $sisaPembayaran = max(0, $totalNominal - $totalBayar);
 
+            // Hitung count hanya item yang nominal > 0 agar tidak membingungkan
+            $tagihanCountDisplay = $tagihanList->where('nominal', '>', 0)->count();
+
             $rekapSiswa[] = [
-                'siswa'             => $siswa,
-                'va_spp'            => $vaSpp,
-                'va_non_spp'        => $vaNonSpp,
-                'va_tunggakan'      => $vaTunggakan,
-                'spp_nominal'       => $sppNominal,
-                'spp_bayar'         => $sppBayar,
-                'non_spp_nominal'   => $nonSppNominal,
-                'non_spp_bayar'     => $nonSppBayar,
-                'tunggakan_nominal' => $tunggakanNominal,
-                'tunggakan_bayar'   => $tunggakanBayar,
-                'total_nominal'     => $totalNominal,
-                'total_bayar'       => $totalBayar,
-                'sisa_pembayaran'   => $sisaPembayaran,
-                'tagihan_count'     => $tagihanList->count(),
-                'tagihan_items'     => $tagihanList,
+                'siswa'              => $siswa,
+                'va_spp'             => $vaSpp,
+                'va_non_spp'         => $vaNonSpp,
+                'va_tunggakan'       => $vaTunggakan,
+                'spp_nominal'        => $sppNominal,
+                'spp_bayar'          => $sppBayar,
+                'spp_has_record'     => $sppItems->count() > 0,
+                'non_spp_nominal'    => $nonSppNominal,
+                'non_spp_bayar'      => $nonSppBayar,
+                'non_spp_has_record' => $nonSppItems->count() > 0,
+                'tunggakan_nominal'  => $tunggakanNominal,
+                'tunggakan_bayar'    => $tunggakanBayar,
+                'tunggakan_has_record' => $tunggakanItems->count() > 0,
+                'total_nominal'      => $totalNominal,
+                'total_bayar'        => $totalBayar,
+                'sisa_pembayaran'    => $sisaPembayaran,
+                'tagihan_count'      => $tagihanCountDisplay,
+                'tagihan_items'      => $tagihanList,
             ];
         }
 
