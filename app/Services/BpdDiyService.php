@@ -290,6 +290,10 @@ class BpdDiyService
             'parent'           => '',
         ];
 
+        $order = [
+            ['column' => '2', 'dir' => 'asc'] // Urutkan berdasarkan virtualAccountNo agar pagination deterministik & tidak ada baris yang terlewat
+        ];
+
         // ── 4. Ambil halaman pertama untuk mengetahui total record ──
         $allRows    = [];
         $totalRemote = 0;
@@ -299,6 +303,7 @@ class BpdDiyService
             $firstPayload = [
                 'draw'    => $draw,
                 'columns' => $cols,
+                'order'   => $order,
                 'start'   => 0,
                 'length'  => $pageSize,
                 'search'  => $searchParams,
@@ -374,6 +379,7 @@ class BpdDiyService
                 $batchPayload = [
                     'draw'    => $draw++,
                     'columns' => $cols,
+                    'order'   => $order,
                     'start'   => $start,
                     'length'  => $batchSize,
                     'search'  => $searchParams,
@@ -1086,7 +1092,7 @@ class BpdDiyService
 
         $cleanString = function ($str) {
             $str = strtoupper(trim((string)$str));
-            $str = preg_replace('/[\'"`\.\-]/', '', $str);
+            $str = preg_replace('/[\\\\\'"`\.\-]/', '', $str);
             $str = preg_replace('/\s+/', ' ', $str);
             return trim($str);
         };

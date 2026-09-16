@@ -242,7 +242,7 @@ class TarikDataBpdController extends Controller
 
         $cleanString = function ($str) {
             $str = strtoupper(trim((string)$str));
-            $str = preg_replace('/[\'"`\.\-]/', '', $str);
+            $str = preg_replace('/[\\\\\'"`\.\-]/', '', $str);
             $str = preg_replace('/\s+/', ' ', $str);
             return trim($str);
         };
@@ -431,7 +431,7 @@ class TarikDataBpdController extends Controller
 
         $cleanString = function ($str) {
             $str = strtoupper(trim((string)$str));
-            $str = preg_replace('/[\'"`\.\-]/', '', $str);
+            $str = preg_replace('/[\\\\\'"`\.\-]/', '', $str);
             $str = preg_replace('/\s+/', ' ', $str);
             return trim($str);
         };
