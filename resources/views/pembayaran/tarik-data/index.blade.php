@@ -113,11 +113,11 @@
                             <i class="fa-solid fa-calendar-check" style="color: #3b82f6;"></i> Tahun VA
                         </label>
                         <input type="number" id="filter_tahun" class="form-control"
-                               value="{{ $currentTahun }}" placeholder="{{ $currentTahun }}"
+                               value="" placeholder="Semua Tahun (Opsional, cth: 2026)"
                                oninput="updatePrefixInfo()"
                                style="font-weight: 700; color: #1e40af;">
                         <small id="prefix_info_badge" style="font-size: 0.73rem; color: #64748b; margin-top: 4px; display: block;">
-                            Awalan VA: <strong id="current_prefix_text" style="color: #2563eb; font-family: monospace;">{{ $instPrefix . $currentTahun }}</strong>
+                            Awalan VA: <strong id="current_prefix_text" style="color: #2563eb; font-family: monospace;">Semua Data VA</strong>
                         </small>
                     </div>
 
@@ -183,7 +183,7 @@
 
                     <div style="font-size: 0.82rem; color: #64748b;">
                         <i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i>
-                        Hanya menarik data VA tahun <strong id="filter_tahun_hint" style="color: #1e40af;">{{ $currentTahun }}</strong> dengan awalan <code id="filter_prefix_hint" style="color: #2563eb;">{{ $instPrefix . $currentTahun }}</code>.
+                        Filter: <strong id="filter_tahun_hint" style="color: #1e40af;">Semua Tahun</strong> (<code id="filter_prefix_hint" style="color: #2563eb;">Semua Data Portal BPD DIY</code>).
                     </div>
                 </div>
             </form>
@@ -683,14 +683,14 @@
 
     function updatePrefixInfo() {
         const basePrefix = "{{ $instPrefix }}";
-        const tahun = document.getElementById('filter_tahun').value.trim();
-        const fullPrefix = basePrefix + tahun;
+        const tahun = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '';
+        const fullPrefix = tahun ? (basePrefix + tahun) : 'Semua Data Tagihan VA';
         const badge = document.getElementById('current_prefix_text');
         const hintTahun = document.getElementById('filter_tahun_hint');
         const hintPrefix = document.getElementById('filter_prefix_hint');
         if (badge) badge.innerText = fullPrefix;
-        if (hintTahun) hintTahun.innerText = tahun || '(Semua)';
-        if (hintPrefix) hintPrefix.innerText = fullPrefix || '(Semua)';
+        if (hintTahun) hintTahun.innerText = tahun || 'Semua Tahun';
+        if (hintPrefix) hintPrefix.innerText = fullPrefix;
     }
 
     function initBookmarklet() {
@@ -704,9 +704,9 @@
     }
 
     function confirmAutoPullReplace() {
-        const tahun = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '{{ $currentTahun }}';
+        const tahun = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '';
         const txtTahun = document.getElementById('modal_auto_pull_tahun_text');
-        if (txtTahun) txtTahun.innerText = tahun || '(Semua)';
+        if (txtTahun) txtTahun.innerText = tahun || 'Semua Tahun (Seluruh Data Portal BPD DIY)';
 
         const progressBox = document.getElementById('auto-pull-progress-box');
         if (progressBox) progressBox.style.display = 'none';
@@ -723,7 +723,7 @@
     }
 
     function executeAutoPullAndReplace() {
-        const tahun     = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '{{ $currentTahun }}';
+        const tahun     = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '';
         const status    = document.getElementById('filter_status') ? document.getElementById('filter_status').value : 'semua';
         const parentVa  = document.getElementById('filter_parent_va') ? document.getElementById('filter_parent_va').value : '';
         const search    = document.getElementById('filter_search') ? document.getElementById('filter_search').value.trim() : '';
@@ -1048,7 +1048,7 @@
         document.getElementById('filter_status').value = 'semua';
         document.getElementById('filter_search').value = '';
         if (document.getElementById('filter_tahun')) {
-            document.getElementById('filter_tahun').value = '{{ $currentTahun }}';
+            document.getElementById('filter_tahun').value = '';
         }
         updatePrefixInfo();
     }
@@ -1060,7 +1060,7 @@
         const status  = document.getElementById('filter_status').value;
         const parentVa= document.getElementById('filter_parent_va').value;
         const search  = document.getElementById('filter_search').value.trim();
-        const tahun   = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '{{ $currentTahun }}';
+        const tahun   = document.getElementById('filter_tahun') ? document.getElementById('filter_tahun').value.trim() : '';
 
         // UI states
         isFetching = true;
@@ -1073,9 +1073,9 @@
         document.getElementById('summary-container').style.display = 'none';
         document.getElementById('table-card').style.display = 'none';
 
-        // Timeout 3 menit untuk multi-page fetch (9000+ record butuh waktu)
+        // Timeout 5 menit untuk multi-page fetch (9000+ record butuh waktu ~60-90s)
         const controller = new AbortController();
-        const timeoutId  = setTimeout(() => controller.abort(), 180000);
+        const timeoutId  = setTimeout(() => controller.abort(), 300000);
 
         fetch("{{ route('pembayaran.tarik-data.fetch') }}", {
             method: "POST",

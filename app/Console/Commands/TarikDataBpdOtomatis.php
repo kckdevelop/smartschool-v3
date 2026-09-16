@@ -39,7 +39,7 @@ class TarikDataBpdOtomatis extends Command
             return self::FAILURE;
         }
 
-        $tahun = trim((string) ($this->option('tahun') ?: date('Y')));
+        $tahun = trim((string) ($this->option('tahun') ?: ''));
         $statusTransaksi = (string) ($this->option('status') ?: 'semua');
         $force = (bool) $this->option('force');
 
@@ -48,8 +48,8 @@ class TarikDataBpdOtomatis extends Command
         $vaPrefix = !empty($tahun) ? ($prefixInstitusi . $tahun) : '';
 
         $this->line("• Mitra ID      : <comment>{$idInstitusi}</comment>");
-        $this->line("• Tahun VA      : <comment>{$tahun}</comment>");
-        $this->line("• Awalan VA     : <comment>{$vaPrefix}</comment>");
+        $this->line("• Tahun VA      : <comment>" . ($tahun ?: 'Semua Tahun (Seluruh Data Portal BPD)') . "</comment>");
+        $this->line("• Awalan VA     : <comment>" . ($vaPrefix ?: 'Semua Awalan VA') . "</comment>");
         $this->line("• Filter Status : <comment>{$statusTransaksi}</comment>");
         $this->newLine();
 

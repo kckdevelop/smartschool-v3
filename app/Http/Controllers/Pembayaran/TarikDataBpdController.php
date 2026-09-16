@@ -80,7 +80,7 @@ class TarikDataBpdController extends Controller
             ]);
         }
 
-        $tahun = trim((string) $request->input('tahun', date('Y')));
+        $tahun = trim((string) $request->input('tahun', ''));
         $idInstitusi = $setting->id_institusi ?? '9990029';
         $prefixInstitusi = str_starts_with($idInstitusi, '999') ? $idInstitusi : ('999' . $idInstitusi);
         $vaPrefix = !empty($tahun) ? ($prefixInstitusi . $tahun) : '';
@@ -152,7 +152,7 @@ class TarikDataBpdController extends Controller
             $setting = SettingPembayaran::getSetting();
             $service = new BpdDiyService($setting);
 
-            $tahun = trim((string) $request->input('tahun', date('Y')));
+            $tahun = trim((string) $request->input('tahun', ''));
             $idInstitusi = $setting->id_institusi ?? '9990029';
             $prefixInstitusi = str_starts_with($idInstitusi, '999') ? $idInstitusi : ('999' . $idInstitusi);
             $vaPrefix = !empty($tahun) ? ($prefixInstitusi . $tahun) : '';
@@ -709,7 +709,7 @@ class TarikDataBpdController extends Controller
             ]);
         }
 
-        $tahun = trim((string) $request->input('tahun', date('Y')));
+        $tahun = trim((string) $request->input('tahun', ''));
         $idInstitusi = $setting->id_institusi ?? '9990029';
         $prefixInstitusi = str_starts_with($idInstitusi, '999') ? $idInstitusi : ('999' . $idInstitusi);
         $vaPrefix = !empty($tahun) ? ($prefixInstitusi . $tahun) : '';
