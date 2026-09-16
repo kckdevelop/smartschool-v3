@@ -23,6 +23,11 @@ use App\Http\Controllers\Ismuba\LaporanIsmubaController;
 use App\Http\Controllers\Ismuba\JadwalPengajianController;
 use App\Http\Controllers\Ismuba\DashboardIsmubaController;
 use App\Http\Controllers\PublicPresensiController;
+use App\Http\Controllers\Pembayaran\KonfigurasiController;
+use App\Http\Controllers\Pembayaran\LaporanTransaksiVaController;
+use App\Http\Controllers\Pembayaran\RekapKelasController;
+use App\Http\Controllers\Pembayaran\RekapSiswaController;
+use App\Http\Controllers\Pembayaran\TarikDataBpdController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -504,7 +509,57 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{id_soal}', [\App\Http\Controllers\Lms\SoalController::class, 'destroy'])->name('destroy');
         });
     });
+
+    // ─── Menu Pembayaran (Setting API Tagihan BPD DIY VA) ────────────────────
+    Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+        // 1. Setting Konfigurasi
+        Route::prefix('konfigurasi')->name('konfigurasi.')->group(function () {
+            Route::get('/',            [KonfigurasiController::class, 'index'])->name('index');
+            Route::post('/',           [KonfigurasiController::class, 'update'])->name('update');
+            Route::post('/test',       [KonfigurasiController::class, 'testConnection'])->name('test');
+            Route::post('/save-cookie',[KonfigurasiController::class, 'saveCookie'])->name('save-cookie');
+        });
+
+        // 2. Rekap Data Tagihan Per Kelas
+        Route::prefix('rekap-kelas')->name('rekap-kelas.')->group(function () {
+            Route::get('/', [RekapKelasController::class, 'index'])->name('index');
+            Route::post('/generate', [RekapKelasController::class, 'generateClassBilling'])->name('generate');
+        });
+
+        // 3. Rekap Tagihan Per Siswa
+        Route::prefix('rekap-siswa')->name('rekap-siswa.')->group(function () {
+            Route::get('/', [RekapSiswaController::class, 'index'])->name('index');
+            Route::get('/fetch-bpd', [RekapSiswaController::class, 'fetchFromBpd'])->name('fetch-bpd');
+            Route::post('/', [RekapSiswaController::class, 'store'])->name('store');
+            Route::post('/sync-bpd', [RekapSiswaController::class, 'syncFromBpd'])->name('sync-bpd');
+            Route::post('/{id}', [RekapSiswaController::class, 'update'])->name('update');
+            Route::post('/{id}/status', [RekapSiswaController::class, 'updateStatus'])->name('update-status');
+            Route::delete('/{id}', [RekapSiswaController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/slip', [RekapSiswaController::class, 'cetakSlip'])->name('slip');
+            Route::get('/cetak-kelas', [RekapSiswaController::class, 'cetakRekapKelas'])->name('cetak-kelas');
+        });
+
+        // 4. Tarik Data Tagihan VA BPD DIY
+        Route::prefix('tarik-data')->name('tarik-data.')->group(function () {
+            Route::get('/',              [TarikDataBpdController::class, 'index'])->name('index');
+            Route::post('/fetch',        [TarikDataBpdController::class, 'fetch'])->name('fetch');
+            Route::post('/sync',         [TarikDataBpdController::class, 'sync'])->name('sync');
+            Route::post('/save-cookie',  [TarikDataBpdController::class, 'saveCookie'])->name('save-cookie');
+            Route::post('/upload-excel', [TarikDataBpdController::class, 'uploadExcel'])->name('upload-excel');
+            Route::post('/auto-login',   [TarikDataBpdController::class, 'autoLogin'])->name('auto-login');
+            Route::post('/clear-database',[TarikDataBpdController::class, 'clearDatabase'])->name('clear-database');
+            Route::post('/auto-pull-replace',[TarikDataBpdController::class, 'autoPullAndReplace'])->name('auto-pull-replace');
+        });
+
+        // 5. Laporan Transaksi VA BPD DIY (Read-only, tanpa simpan ke DB)
+        Route::prefix('laporan-transaksi')->name('laporan-transaksi.')->group(function () {
+            Route::get('/',              [LaporanTransaksiVaController::class, 'index'])->name('index');
+            Route::post('/fetch',        [LaporanTransaksiVaController::class, 'fetch'])->name('fetch');
+            Route::post('/clear-database',[LaporanTransaksiVaController::class, 'clearDatabase'])->name('clear-database');
+        });
+    });
 });
+
 
 
 

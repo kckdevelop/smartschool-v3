@@ -289,8 +289,29 @@
                 </li>
 
                 {{-- ══════════════════════════════════════
+                     MENU PEMBAYARAN & VA BPD DIY
+                ═══════════════════════════════════════ --}}
+                <li class="nav-group {{ request()->is('pembayaran*') ? 'active' : '' }}" id="group-pembayaran">
+                    <button class="nav-group-toggle" data-target="submenu-pembayaran" aria-expanded="{{ request()->is('pembayaran*') ? 'true' : 'false' }}">
+                        <span class="nav-group-left">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                            <span>Pembayaran</span>
+                        </span>
+                        <i class="fa-solid {{ request()->is('pembayaran*') ? 'fa-minus' : 'fa-plus' }} nav-group-arrow"></i>
+                    </button>
+                    <ul class="nav-submenu {{ request()->is('pembayaran*') ? 'open' : '' }}" id="submenu-pembayaran">
+                        <li><a href="{{ route('pembayaran.konfigurasi.index') }}" class="nav-sub-link {{ request()->routeIs('pembayaran.konfigurasi.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Setting Konfigurasi</a></li>
+                        <li><a href="{{ route('pembayaran.tarik-data.index') }}" class="nav-sub-link {{ request()->routeIs('pembayaran.tarik-data.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Tarik Data VA BPD DIY</a></li>
+                        <li><a href="{{ route('pembayaran.laporan-transaksi.index') }}" class="nav-sub-link {{ request()->routeIs('pembayaran.laporan-transaksi.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Laporan Transaksi VA</a></li>
+                        <li><a href="{{ route('pembayaran.rekap-kelas.index') }}" class="nav-sub-link {{ request()->routeIs('pembayaran.rekap-kelas.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Rekap Tagihan Per Kelas</a></li>
+                        <li><a href="{{ route('pembayaran.rekap-siswa.index') }}" class="nav-sub-link {{ request()->routeIs('pembayaran.rekap-siswa.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Rekap Tagihan Per Siswa</a></li>
+                    </ul>
+                </li>
+
+                {{-- ══════════════════════════════════════
                      ATUR USER
                 ═══════════════════════════════════════ --}}
+
                 <li>
                     <a href="{{ route('atur-data.user') }}"
                        class="sidebar-link {{ request()->routeIs('atur-data.user*') ? 'active' : '' }}"

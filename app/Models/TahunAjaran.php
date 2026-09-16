@@ -15,6 +15,15 @@ class TahunAjaran extends Model
         'status',
     ];
 
+    protected $appends = [
+        'tahun_ajaran',
+    ];
+
+    public function getTahunAjaranAttribute()
+    {
+        return $this->tahun;
+    }
+
     // Relations
     public function semester()
     {
