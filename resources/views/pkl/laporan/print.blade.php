@@ -92,7 +92,7 @@
             <div>Kepala Sekolah,</div>
             <div class="ttd-space"></div>
             <div class="nama-ttd">{{ $sekolah?->kepala_sekolah ?? '( ________________________ )' }}</div>
-            <div style="font-size:9pt; margin-top:2px;">NIP. {{ $sekolah?->nip_kepsek ?? '-' }}</div>
+            <div style="font-size:9pt; margin-top:2px;">NBM. {{ $sekolah?->nbm ?? '-' }}</div>
         </div>
     </div>
 </div>

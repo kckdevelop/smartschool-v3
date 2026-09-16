@@ -322,7 +322,7 @@
                 @endif
             </div>
             <div><strong>{{ $sekolah->kepala_sekolah ?? 'Harimawan, S.Pd.T., M.S.I.' }}</strong></div>
-            <div>NBM. {{ $sekolah->nip ?? '907793' }}</div>
+            <div>NBM. {{ $sekolah->nbm ?? '907793' }}</div>
         </div>
     </div>
 </div>

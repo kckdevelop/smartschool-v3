@@ -31,14 +31,14 @@ class SekolahController extends Controller
             'npsn'           => 'required|integer',
             'nama_sekolah'   => 'required|string|max:255',
             'kepala_sekolah' => 'required|string|max:255',
-            'nip'            => 'nullable|string|max:50',
+            'nbm'            => 'nullable|string|max:50',
             'status'         => 'required|in:negeri,swasta',
             'alamat_sekolah' => 'nullable|string',
             'ijin'           => 'nullable|in:ya,tidak',
         ]);
 
         $data = $request->only([
-            'npsn', 'nama_sekolah', 'kepala_sekolah', 'nip',
+            'npsn', 'nama_sekolah', 'kepala_sekolah', 'nbm',
             'status', 'alamat_sekolah', 'ijin',
         ]);
 
@@ -90,14 +90,14 @@ class SekolahController extends Controller
             'npsn'               => 'sometimes|required|integer',
             'nama_sekolah'       => 'sometimes|required|string|max:255',
             'kepala_sekolah'     => 'sometimes|required|string|max:255',
-            'nip'                => 'nullable|string|max:50',
+            'nbm'                => 'nullable|string|max:50',
             'status'             => 'sometimes|required|in:negeri,swasta',
             'alamat_sekolah'     => 'nullable|string',
             'ijin'               => 'nullable|in:ya,tidak',
         ]);
 
         $data = $request->only([
-            'npsn', 'nama_sekolah', 'kepala_sekolah', 'nip',
+            'npsn', 'nama_sekolah', 'kepala_sekolah', 'nbm',
             'status', 'alamat_sekolah', 'ijin',
         ]);
 

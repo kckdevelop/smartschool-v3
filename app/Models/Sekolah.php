@@ -14,7 +14,7 @@ class Sekolah extends Model
         'npsn',
         'nama_sekolah',
         'kepala_sekolah',
-        'nip',
+        'nbm',
         'status',
         'alamat_sekolah',
         'kota',

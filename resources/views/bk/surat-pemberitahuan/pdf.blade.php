@@ -201,7 +201,7 @@
                     Wali Kelas,
                 </div>
                 <div class="sign-name">{{ $surat->siswa?->kelas?->guru?->nama_guru ?? 'Wali Kelas' }}</div>
-                <div class="sign-nip">NIP. {{ $surat->siswa?->kelas?->guru?->no_id ?? '-' }}</div>
+                <div class="sign-nip">NBM. {{ $surat->siswa?->kelas?->guru?->no_id ?? '-' }}</div>
             </td>
             <td style="width: 33%;">
                 <div class="sign-title">
@@ -209,7 +209,7 @@
                     Guru BK,
                 </div>
                 <div class="sign-name">{{ $surat->guru?->nama_guru ?? 'Guru Bimbingan Konseling' }}</div>
-                <div class="sign-nip">NIP. {{ $surat->guru?->no_id ?? '-' }}</div>
+                <div class="sign-nip">NBM. {{ $surat->guru?->no_id ?? '-' }}</div>
             </td>
         </tr>
         <tr>
@@ -219,7 +219,7 @@
                     Kepala Sekolah
                 </div>
                 <div class="sign-name">{{ $sekolah?->kepala_sekolah ?? 'Kepala Sekolah Smart School' }}</div>
-                <div class="sign-nip">NIP. {{ $sekolah?->nip ?? '-' }}</div>
+                <div class="sign-nip">NBM. {{ $sekolah?->nbm ?? '-' }}</div>
             </td>
         </tr>
     </table>

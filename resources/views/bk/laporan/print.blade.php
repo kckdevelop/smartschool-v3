@@ -450,7 +450,7 @@
             <div class="signature-block">
                 <div class="sig-title">Mengetahui,<br>Wali Kelas {{ $selectedKelasLabel }}</div>
                 <div class="sig-name">{{ $waliKelasName }}</div>
-                <div class="sig-nip">NIP. {{ $waliKelasNip }}</div>
+                <div class="sig-nip">NBM. {{ $waliKelasNip }}</div>
             </div>
 
             {{-- Right: Guru BK (dynamic) --}}
@@ -458,7 +458,7 @@
                 <div class="sig-date">{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</div>
                 <div class="sig-title">Guru Bimbingan Konseling (BK)</div>
                 <div class="sig-name" id="sig-guru-nama">_____________________</div>
-                <div class="sig-nip"  id="sig-guru-nip">NIP. _____________________</div>
+                <div class="sig-nip"  id="sig-guru-nip">NBM. _____________________</div>
             </div>
         </div>
 
@@ -470,7 +470,7 @@
             const sel = document.getElementById('select-guru-bk');
             const opt = sel.options[sel.selectedIndex];
             document.getElementById('sig-guru-nama').textContent = opt.dataset.nama || '_____________________';
-            document.getElementById('sig-guru-nip').textContent  = 'NIP. ' + (opt.dataset.nip || '_____________________');
+            document.getElementById('sig-guru-nip').textContent  = 'NBM. ' + (opt.dataset.nip || '_____________________');
         }
 
         // Run on page load to set the first teacher

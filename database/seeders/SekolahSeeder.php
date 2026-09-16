@@ -24,7 +24,7 @@ class SekolahSeeder extends Seeder
     'npsn' => 20400383,
     'nama_sekolah' => 'SMK Muhammadiyah 1 Bantul',
     'kepala_sekolah' => 'Harimawan,S.Pd.T.,M.S.I.',
-    'nip' => '907793',
+    'nbm' => '907793',
     'status' => 'swasta',
     'alamat_sekolah' => 'Jalan Parangtritis KM 12, Manding, Trirenggo, Kecamatan Bantul, Kabupaten Bantul, Daerah Istimewa Yogyakarta',
     'kota' => 'Bantul',

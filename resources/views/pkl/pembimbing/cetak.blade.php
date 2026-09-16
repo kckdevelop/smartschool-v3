@@ -363,7 +363,7 @@
             <div>Kepala Sekolah,</div>
             <div class="ttd-space"></div>
             <div class="ttd-name">{{ $sekolah?->kepala_sekolah ?? '( ______________________ )' }}</div>
-            <div class="ttd-nip">NIP. {{ $sekolah?->nip ?? '-' }}</div>
+            <div class="ttd-nip">NBM. {{ $sekolah?->nbm ?? '-' }}</div>
         </div>
     </div>
     @endif

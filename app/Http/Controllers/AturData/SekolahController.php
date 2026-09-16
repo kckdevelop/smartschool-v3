@@ -21,7 +21,7 @@ class SekolahController extends Controller
             'npsn'           => 'required|integer',
             'nama_sekolah'   => 'required|string|max:255',
             'kepala_sekolah' => 'required|string|max:255',
-            'nip'            => 'nullable|string|max:50',
+            'nbm'            => 'nullable|string|max:50',
             'status'         => 'required|in:negeri,swasta',
             'alamat_sekolah' => 'nullable|string',
             'kota'           => 'nullable|string|max:100',
@@ -30,7 +30,7 @@ class SekolahController extends Controller
             'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        $data = $request->only(['npsn','nama_sekolah','kepala_sekolah','nip','status','alamat_sekolah','kota']);
+        $data = $request->only(['npsn','nama_sekolah','kepala_sekolah','nbm','status','alamat_sekolah','kota']);
         if ($request->hasFile('logo'))               $data['logo'] = $request->file('logo')->store('sekolah/logo','public');
         if ($request->hasFile('kop'))                $data['kop']  = $request->file('kop')->store('sekolah/kop','public');
         if ($request->hasFile('ttd_kepala_sekolah')) $data['ttd_kepala_sekolah'] = $request->file('ttd_kepala_sekolah')->store('sekolah/ttd','public');
@@ -46,7 +46,7 @@ class SekolahController extends Controller
             'npsn'               => 'required|integer',
             'nama_sekolah'       => 'required|string|max:255',
             'kepala_sekolah'     => 'required|string|max:255',
-            'nip'                => 'nullable|string|max:50',
+            'nbm'                => 'nullable|string|max:50',
             'status'             => 'required|in:negeri,swasta',
             'alamat_sekolah'     => 'nullable|string',
             'kota'               => 'nullable|string|max:100',
@@ -55,7 +55,7 @@ class SekolahController extends Controller
             'ttd_kepala_sekolah' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        $data = $request->only(['npsn','nama_sekolah','kepala_sekolah','nip','status','alamat_sekolah','kota']);
+        $data = $request->only(['npsn','nama_sekolah','kepala_sekolah','nbm','status','alamat_sekolah','kota']);
         
         // Handle Logo file update / deletion
         if ($request->input('delete_logo') == '1') {

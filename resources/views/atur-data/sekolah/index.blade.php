@@ -47,8 +47,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">NBM Kepala Sekolah</label>
-                        <input type="text" name="nip" class="form-control"
-                               value="{{ old('nip', $sekolah->nip ?? '') }}">
+                        <input type="text" name="nbm" class="form-control"
+                               value="{{ old('nbm', $sekolah->nbm ?? '') }}">
                     </div>
                     <div class="form-group" style="grid-column:1/-1">
                         <label class="form-label">Alamat Sekolah</label>
