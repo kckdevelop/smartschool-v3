@@ -1,33 +1,28 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace AppHttpControllersApi;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\UserSiswa;
-use App\Models\Presensi;
-use App\Models\LmsTugas;
-use App\Models\LmsPengumpulan;
-use App\Models\LmsKursus;
-use Carbon\Carbon;
+use AppHttpControllersController;
+use IlluminateHttpRequest;
+use AppModelsUserSiswa;
+use AppModelsPresensi;
+use AppModelsLmsTugas;
+use AppModelsLmsPengumpulan;
+use AppModelsLmsKursus;
+use AppModelsTagihanPembayaran;
+use AppModelsSettingPembayaran;
+use AppModelsTahunAjaran;
+use CarbonCarbon;
 
 class WaliController extends Controller
 {
     /**
      * Dashboard ringkasan untuk wali yang sedang login.
      * Endpoint: GET /api/wali/dashboard
-     *
-     * Returns:
-     *  - info siswa & kelas
-     *  - presensi hari ini
-     *  - rekap presensi bulan ini
-     *  - jumlah tagihan belum lunas
      */
     public function dashboard(Request $request)
     {
         $user = $request->user();
-
-        // Untuk wali, NIS disimpan sebagai 'nis_siswa' di token ability / user object
         $nis = $user->nis ?? null;
 
         if (!$nis) {
@@ -73,12 +68,10 @@ class WaliController extends Controller
         // Tugas yang belum dikerjakan dari LMS (semua kursus di kelas siswa)
         $tugas = [];
         if ($siswa && $siswa->id_kelas) {
-            // Semua tugas dari kursus yang ada di kelas siswa
             $semuaTugas = LmsTugas::with(['kursus.guru'])
                 ->whereHas('kursus', fn($q) => $q->where('id_kelas', $siswa->id_kelas))
                 ->get();
 
-            // NIS siswa yang sudah mengumpulkan
             $sudahKumpul = LmsPengumpulan::where('nis', $nis)
                 ->whereIn('id_tugas', $semuaTugas->pluck('id_tugas'))
                 ->pluck('id_tugas')
@@ -151,7 +144,7 @@ class WaliController extends Controller
 
         $siswa = UserSiswa::with('kelas')->where('nis', $nis)->first();
 
-        // ── Semester aktif ────────────────────────────────────────────────────
+        // Semester aktif
         $activeSemester = \App\Models\Semester::where('status', 'aktif')->first();
         if ($activeSemester) {
             $awal         = $activeSemester->awal
@@ -167,7 +160,7 @@ class WaliController extends Controller
             $namaSemester = 'Ganjil';
         }
 
-        // ── Rekap presensi total semester ─────────────────────────────────────
+        // Rekap presensi total semester
         $rekapTotal = Presensi::where('nis', $nis)
             ->whereBetween('tanggal', [$awal, $akhir])
             ->selectRaw("
@@ -179,7 +172,7 @@ class WaliController extends Controller
             ")
             ->first();
 
-        // ── Rekap presensi per-bulan dalam semester ────────────────────────────
+        // Rekap presensi per-bulan dalam semester
         $presensiData = Presensi::where('nis', $nis)
             ->whereBetween('tanggal', [$awal, $akhir])
             ->selectRaw("
@@ -214,7 +207,7 @@ class WaliController extends Controller
                 ];
             });
 
-        // ── Rekap tugas & nilai ────────────────────────────────────────────────
+        // Rekap tugas & nilai
         $rekapTugas = [];
         if ($siswa && $siswa->id_kelas) {
             $kursusAll = LmsKursus::with('guru')
@@ -250,7 +243,6 @@ class WaliController extends Controller
                     ];
                 });
 
-                // Statistik ringkasan kursus
                 $sudahKumpul = $tugasMapped->where('status', '!=', 'belum')->count();
                 $sudahDinilai = $tugasMapped->where('status', 'dinilai')->count();
                 $nilaiValues = $tugasMapped->pluck('nilai')->filter()->map(fn($v) => (float) $v);
@@ -288,127 +280,119 @@ class WaliController extends Controller
     }
 
     /**
-     * Daftar tagihan pembayaran untuk siswa yang terkait dengan wali.
+     * Daftar tagihan pembayaran untuk siswa (berdasarkan NIS login atau parameter query nis).
      * Endpoint: GET /api/wali/tagihan
-     *
-     * Note: Karena tabel SPP/tagihan pembayaran belum tersedia di database,
-     * endpoint ini mengembalikan data dummy yang realistis.
-     * Ganti dengan query ke tabel tagihan_spp jika sudah tersedia.
      */
     public function tagihan(Request $request)
     {
         $user = $request->user();
-        $nis  = $user->nis ?? null;
+        $nis  = trim((string) $request->query('nis', $user->nis ?? ''));
 
-        if (!$nis) {
+        if (empty($nis)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data siswa tidak ditemukan.',
-            ], 403);
+                'message' => 'Parameter NIS siswa tidak ditemukan.',
+            ], 400);
         }
 
         $siswa = UserSiswa::with('kelas')->where('nis', $nis)->first();
         $namaSiswa = $siswa ? $siswa->nama_siswa : 'Siswa';
+        $namaKelas = $siswa?->kelas?->nama_kelas ?? '-';
 
-        // ─── DATA DUMMY (Ganti dengan query nyata jika tabel sudah tersedia) ───
-        // Contoh implementasi nyata:
-        // $tagihan = TagihanSpp::where('nis', $nis)->orderByDesc('tahun')->orderByDesc('bulan')->get();
-        $tahunAjaran = '2025/2026';
-        $bulanList = [
-            ['no' => 7,  'nama' => 'Juli',     'status' => 'lunas',  'tanggal_bayar' => '2025-07-05', 'jumlah' => 250000],
-            ['no' => 8,  'nama' => 'Agustus',  'status' => 'lunas',  'tanggal_bayar' => '2025-08-03', 'jumlah' => 250000],
-            ['no' => 9,  'nama' => 'September','status' => 'lunas',  'tanggal_bayar' => '2025-09-07', 'jumlah' => 250000],
-            ['no' => 10, 'nama' => 'Oktober',  'status' => 'lunas',  'tanggal_bayar' => '2025-10-04', 'jumlah' => 250000],
-            ['no' => 11, 'nama' => 'November', 'status' => 'lunas',  'tanggal_bayar' => '2025-11-02', 'jumlah' => 250000],
-            ['no' => 12, 'nama' => 'Desember', 'status' => 'lunas',  'tanggal_bayar' => '2025-12-06', 'jumlah' => 250000],
-            ['no' => 1,  'nama' => 'Januari',  'status' => 'lunas',  'tanggal_bayar' => '2026-01-04', 'jumlah' => 250000],
-            ['no' => 2,  'nama' => 'Februari', 'status' => 'lunas',  'tanggal_bayar' => '2026-02-01', 'jumlah' => 250000],
-            ['no' => 3,  'nama' => 'Maret',    'status' => 'lunas',  'tanggal_bayar' => '2026-03-05', 'jumlah' => 250000],
-            ['no' => 4,  'nama' => 'April',    'status' => 'lunas',  'tanggal_bayar' => '2026-04-06', 'jumlah' => 250000],
-            ['no' => 5,  'nama' => 'Mei',      'status' => 'belum',  'tanggal_bayar' => null,          'jumlah' => 250000],
-            ['no' => 6,  'nama' => 'Juni',     'status' => 'belum',  'tanggal_bayar' => null,          'jumlah' => 250000],
-        ];
+        $setting = SettingPembayaran::getSetting();
+        $tahunAjaranObj = TahunAjaran::where('status', 'aktif')->first();
+        $tahunAjaran = $tahunAjaranObj ? $tahunAjaranObj->tahun : (date('Y') . '/' . (date('Y') + 1));
 
-        $tagihanList = array_map(function ($item, $index) use ($tahunAjaran, $nis) {
+        $tahunVal = date('Y');
+        if ($tahunAjaranObj && !empty($tahunAjaranObj->tahun)) {
+            $parts = explode('/', $tahunAjaranObj->tahun);
+            $tahunVal = trim($parts[0]);
+        }
+
+        // Generate 3 Nomor Virtual Account BPD DIY
+        $vaSpp = TagihanPembayaran::generateVaNumber($setting->id_institusi, $tahunVal, $nis, $setting->kode_spp, $setting->format_tahun);
+        $vaNonSpp = TagihanPembayaran::generateVaNumber($setting->id_institusi, $tahunVal, $nis, $setting->kode_non_spp, $setting->format_tahun);
+        $vaTunggakan = TagihanPembayaran::generateVaNumber($setting->id_institusi, $tahunVal, $nis, $setting->kode_tunggakan, $setting->format_tahun);
+
+        // Ambil data tagihan aktual dari tabel database tagihan_pembayaran
+        $tagihanDb = TagihanPembayaran::where('nis', $nis)->get();
+
+        $sppItems       = $tagihanDb->where('jenis_tagihan', 'spp');
+        $nonSppItems    = $tagihanDb->where('jenis_tagihan', 'non_spp');
+        $tunggakanItems = $tagihanDb->where('jenis_tagihan', 'tunggakan');
+
+        $sppNominal       = (float) $sppItems->sum('nominal');
+        $sppBayar         = (float) $sppItems->sum('nominal_terbayar');
+        $nonSppNominal    = (float) $nonSppItems->sum('nominal');
+        $nonSppBayar      = (float) $nonSppItems->sum('nominal_terbayar');
+        $tunggakanNominal = (float) $tunggakanItems->sum('nominal');
+        $tunggakanBayar   = (float) $tunggakanItems->sum('nominal_terbayar');
+
+        $totalNominal     = (float) $tagihanDb->sum('nominal');
+        $totalBayar       = (float) $tagihanDb->sum('nominal_terbayar');
+        $sisaPembayaran   = max(0, $totalNominal - $totalBayar);
+
+        $tagihanList = $tagihanDb->map(function ($item) {
+            $nom = (float) $item->nominal;
+            $bayar = (float) $item->nominal_terbayar;
+            $sisa = max(0, $nom - $bayar);
             return [
-                'id'            => $index + 1,
-                'nis'           => $nis,
-                'jenis'         => 'SPP',
-                'keterangan'    => "SPP Bulan {$item['nama']} {$tahunAjaran}",
-                'bulan'         => $item['no'],
-                'nama_bulan'    => $item['nama'],
-                'tahun_ajaran'  => $tahunAjaran,
-                'jumlah'        => $item['jumlah'],
-                'status'        => $item['status'],
-                'tanggal_bayar' => $item['tanggal_bayar'],
+                'id'               => $item->id,
+                'trx_id'           => $item->trx_id,
+                'nis'              => $item->nis,
+                'nama_tagihan'     => $item->nama_tagihan ?? ($item->jenis_tagihan ? strtoupper($item->jenis_tagihan) : 'Tagihan'),
+                'jenis_tagihan'    => $item->jenis_tagihan,
+                'jenis'            => $item->jenis_tagihan,
+                'keterangan'       => $item->nama_tagihan ?? 'Tagihan',
+                'nomor_va'         => $item->nomor_va,
+                'nominal'          => $nom,
+                'jumlah'           => $nom,
+                'nominal_terbayar' => $bayar,
+                'sisa_pembayaran'  => $sisa,
+                'status'           => $item->status,
+                'tanggal_tagihan'  => $item->tanggal_tagihan ? Carbon::parse($item->tanggal_tagihan)->toDateString() : null,
+                'tanggal_bayar'    => $item->tanggal_bayar ? Carbon::parse($item->tanggal_bayar)->toDateTimeString() : null,
+                'keterangan_det'   => $item->keterangan,
             ];
-        }, $bulanList, array_keys($bulanList));
+        })->values();
 
-        // Tambah tagihan lain (contoh: seragam, buku, dll)
-        $tagihanLain = [
-            [
-                'id'            => 101,
-                'nis'           => $nis,
-                'jenis'         => 'Seragam',
-                'keterangan'    => 'Pembelian Seragam Sekolah 2025/2026',
-                'bulan'         => null,
-                'nama_bulan'    => null,
-                'tahun_ajaran'  => $tahunAjaran,
-                'jumlah'        => 450000,
-                'status'        => 'lunas',
-                'tanggal_bayar' => '2025-07-10',
-            ],
-            [
-                'id'            => 102,
-                'nis'           => $nis,
-                'jenis'         => 'Buku',
-                'keterangan'    => 'Pembelian Buku Pelajaran Semester Ganjil',
-                'bulan'         => null,
-                'nama_bulan'    => null,
-                'tahun_ajaran'  => $tahunAjaran,
-                'jumlah'        => 375000,
-                'status'        => 'lunas',
-                'tanggal_bayar' => '2025-07-12',
-            ],
-        ];
-
-        $allTagihan = array_merge($tagihanList, $tagihanLain);
-
-        $totalTagihan  = array_sum(array_column($allTagihan, 'jumlah'));
-        $totalLunas    = array_sum(array_map(fn($t) => $t['status'] === 'lunas' ? $t['jumlah'] : 0, $allTagihan));
-        $totalBelumBayar = $totalTagihan - $totalLunas;
-        $jumlahBelumBayar = count(array_filter($allTagihan, fn($t) => $t['status'] !== 'lunas'));
-
-        // Breakdown per jenis
-        $sppItems    = array_filter($allTagihan, fn($t) => strtolower($t['jenis']) === 'spp');
-        $nonSppItems = array_filter($allTagihan, fn($t) => strtolower($t['jenis']) !== 'spp');
-
-        $totalSpp       = array_sum(array_column($sppItems, 'jumlah'));
-        $totalNonSpp    = array_sum(array_column($nonSppItems, 'jumlah'));
-
-        // Tunggakan = SPP yang belum dibayar
-        $tunggakanItems = array_filter($sppItems, fn($t) => $t['status'] !== 'lunas');
-        $totalTunggakan = array_sum(array_column($tunggakanItems, 'jumlah'));
-        $jumlahTunggakan = count($tunggakanItems);
+        $jumlahBelumLunas = $tagihanDb->filter(fn($t) => $t->status !== 'lunas' && ($t->nominal - $t->nominal_terbayar) > 0)->count();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'nis'              => $nis,
-                'nama_siswa'       => $namaSiswa,
-                'tahun_ajaran'     => $tahunAjaran,
-                'last_update'      => Carbon::now()->locale('id')->translatedFormat('d F Y, H:i') . ' WIB',
+                'nis'                => $nis,
+                'nama_siswa'         => $namaSiswa,
+                'nama_kelas'         => $namaKelas,
+                'tahun_ajaran'       => $tahunAjaran,
+                'va_spp'             => $vaSpp,
+                'va_non_spp'         => $vaNonSpp,
+                'va_tunggakan'       => $vaTunggakan,
+                'last_update'        => Carbon::now()->locale('id')->translatedFormat('d F Y, H:i') . ' WIB',
                 'ringkasan' => [
-                    'total_tagihan'     => $totalTagihan,
-                    'total_lunas'       => $totalLunas,
-                    'total_belum_bayar' => $totalBelumBayar,
-                    'jumlah_belum_bayar'=> $jumlahBelumBayar,
-                    'total_spp'         => $totalSpp,
-                    'total_non_spp'     => $totalNonSpp,
-                    'total_tunggakan'   => $totalTunggakan,
-                    'jumlah_tunggakan'  => $jumlahTunggakan,
+                    'total_tagihan'      => $totalNominal,
+                    'total_terbayar'     => $totalBayar,
+                    'total_lunas'        => $totalBayar,
+                    'total_nominal'      => $totalNominal,
+                    'total_bayar'        => $totalBayar,
+                    'sisa_tagihan'       => $sisaPembayaran,
+                    'total_belum_bayar'  => $sisaPembayaran,
+                    'sisa_pembayaran'    => $sisaPembayaran,
+                    'jumlah_belum_bayar' => $jumlahBelumLunas,
+                    'total_spp'          => $sppNominal,
+                    'spp_nominal'        => $sppNominal,
+                    'spp_terbayar'       => $sppBayar,
+                    'spp_bayar'          => $sppBayar,
+                    'total_non_spp'      => $nonSppNominal,
+                    'non_spp_nominal'    => $nonSppNominal,
+                    'non_spp_terbayar'   => $nonSppBayar,
+                    'non_spp_bayar'      => $nonSppBayar,
+                    'total_tunggakan'    => $tunggakanNominal,
+                    'tunggakan_nominal'  => $tunggakanNominal,
+                    'tunggakan_terbayar' => $tunggakanBayar,
+                    'tunggakan_bayar'    => $tunggakanBayar,
                 ],
-                'tagihan' => $allTagihan,
+                'tagihan'            => $tagihanList,
             ],
         ]);
     }
