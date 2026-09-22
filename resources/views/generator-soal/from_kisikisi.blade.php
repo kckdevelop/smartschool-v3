@@ -132,10 +132,13 @@
                                         @php
                                             $geminiDisabled = ($sekolah->gemini_status !== 'aktif' || empty($sekolah->gemini_key) || $sekolah->gemini_quota <= 0);
                                             $groqDisabled = ($sekolah->groq_status !== 'aktif' || empty($sekolah->groq_key) || $sekolah->groq_quota <= 0);
-                                            $defaultModel = $sekolah->llm_model ?? 'gemini-2.5-flash';
+                                            $defaultModel = $sekolah->llm_model ?? 'gemini-2.0-flash';
+                                            if ($defaultModel === 'gemini-2.5-flash') {
+                                                $defaultModel = 'gemini-2.0-flash';
+                                            }
                                         @endphp
                                         <optgroup label="Google Gemini" id="optgroup-gemini">
-                                            <option value="gemini-2.5-flash" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-2.5-flash' ? 'selected' : '' }}>gemini-2.5-flash (Gemini 2.5 Flash Terbaru - Gratis)</option>
+                                            <option value="gemini-2.0-flash" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-2.0-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis)</option>
                                             <option value="gemini-1.5-flash" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis)</option>
                                             <option value="gemini-1.5-pro" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-1.5-pro' ? 'selected' : '' }}>gemini-1.5-pro (Gemini 1.5 Pro - Gratis)</option>
                                         </optgroup>

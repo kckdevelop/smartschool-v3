@@ -20,7 +20,7 @@ class LlmService
             if ($sekolah->gemini_status === 'aktif' && !empty($sekolah->gemini_key)) {
                 $this->provider = 'gemini';
                 $this->apiKey = $sekolah->gemini_key;
-                $this->model = $sekolah->gemini_model ?? 'gemini-1.5-flash';
+                $this->model = $this->sanitizeModelName($sekolah->gemini_model ?? 'gemini-2.0-flash');
             }
             // Else use groq if active and has key
             elseif ($sekolah->groq_status === 'aktif' && !empty($sekolah->groq_key)) {
@@ -32,12 +32,23 @@ class LlmService
             else {
                 $this->provider = $sekolah->llm_provider ?? 'gemini';
                 $this->apiKey = $sekolah->llm_api_key;
-                $this->model = $sekolah->llm_model ?? 'gemini-1.5-flash';
+                $this->model = $this->sanitizeModelName($sekolah->llm_model ?? 'gemini-2.0-flash');
             }
         } else {
             $this->provider = 'gemini';
-            $this->model = 'gemini-1.5-flash';
+            $this->model = 'gemini-2.0-flash';
         }
+    }
+
+    /**
+     * Sanitize model name to prevent calling deprecated/unavailable models.
+     */
+    public function sanitizeModelName($modelName)
+    {
+        if (empty($modelName) || $modelName === 'gemini-2.5-flash') {
+            return 'gemini-2.0-flash';
+        }
+        return $modelName;
     }
 
     public function getProvider()
@@ -58,7 +69,7 @@ class LlmService
         $sekolah = Sekolah::first();
         if (!$sekolah) return;
 
-        $this->model = $modelName;
+        $this->model = $this->sanitizeModelName($modelName);
         if (str_starts_with($modelName, 'gemini')) {
             $this->provider = 'gemini';
             $this->apiKey = $sekolah->gemini_key;
@@ -360,9 +371,11 @@ class LlmService
     protected function callLlm($prompt)
     {
         if ($this->provider === 'gemini') {
-            // Daftar model fallback: jika model utama high demand, coba model berikutnya
+            $effectiveModel = $this->sanitizeModelName($this->model);
+            // Daftar model fallback: jika model utama high demand / unavailable, coba model berikutnya
             $modelChain = array_unique(array_filter([
-                $this->model,
+                $effectiveModel,
+                'gemini-2.0-flash',
                 'gemini-1.5-flash',
                 'gemini-1.5-pro',
             ]));
@@ -373,14 +386,19 @@ class LlmService
                     return $this->callGemini($prompt, $modelName);
                 } catch (\Exception $e) {
                     $lastException = $e;
-                    $isHighDemand = stripos($e->getMessage(), 'high demand') !== false
-                        || stripos($e->getMessage(), 'overloaded') !== false
-                        || stripos($e->getMessage(), 'sedang sibuk') !== false
-                        || stripos($e->getMessage(), 'resource has been exhausted') !== false;
+                    $msgLower = strtolower($e->getMessage());
+                    $isRetryable = stripos($msgLower, 'high demand') !== false
+                        || stripos($msgLower, 'overloaded') !== false
+                        || stripos($msgLower, 'sedang sibuk') !== false
+                        || stripos($msgLower, 'resource has been exhausted') !== false
+                        || stripos($msgLower, 'no longer available') !== false
+                        || stripos($msgLower, 'not available') !== false
+                        || stripos($msgLower, 'decommissioned') !== false
+                        || stripos($msgLower, 'update your code') !== false;
 
-                    if ($isHighDemand && $modelName !== end($modelChain)) {
-                        Log::warning("Model {$modelName} high demand, fallback ke model berikutnya.");
-                        sleep(3); // jeda singkat sebelum model fallback
+                    if ($isRetryable && $modelName !== end($modelChain)) {
+                        Log::warning("Model {$modelName} gagal ({$e->getMessage()}), fallback ke model berikutnya.");
+                        sleep(1); // jeda singkat sebelum model fallback
                         continue;
                     }
                     throw $e;
@@ -399,10 +417,10 @@ class LlmService
      */
     protected function callGemini($prompt, $modelName = null)
     {
-        $modelName = $modelName ?? $this->model;
+        $modelName = $this->sanitizeModelName($modelName ?? $this->model);
 
         // Detect model generation to pick the right endpoint & config
-        $isGemini2  = str_starts_with($modelName, 'gemini-2') || str_starts_with($modelName, 'gemini-exp');
+        $isGemini2  = str_starts_with($modelName, 'gemini-2') || str_starts_with($modelName, 'gemini-3') || str_starts_with($modelName, 'gemini-exp');
         $apiVersion = $isGemini2 ? 'v1beta' : 'v1';
         $url        = "https://generativelanguage.googleapis.com/{$apiVersion}/models/{$modelName}:generateContent?key={$this->apiKey}";
 

@@ -45,7 +45,7 @@
                             </div>
                             <div>
                                 <div style="font-weight: 700; font-size: 0.95rem;">Google Gemini</div>
-                                <div style="font-size: 0.78rem; color: var(--text-secondary);">Gemini 2.5 Flash Terbaru</div>
+                                <div style="font-size: 0.78rem; color: var(--text-secondary);">Gemini 2.0 Flash Terbaru</div>
                             </div>
                         </div>
                         <div>
@@ -85,7 +85,7 @@
                         <div>
                             <label class="field-label">Model Default (saat Generate)</label>
                             <select name="gemini_model" class="llm-select">
-                                <option value="gemini-2.5-flash" {{ $geminiModel == 'gemini-2.5-flash' ? 'selected' : '' }}>gemini-2.5-flash (Gemini 2.5 Flash Terbaru - Gratis)</option>
+                                <option value="gemini-2.0-flash" {{ $geminiModel == 'gemini-2.0-flash' || $geminiModel == 'gemini-2.5-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis)</option>
                                 <option value="gemini-1.5-flash" {{ $geminiModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis)</option>
                                 <option value="gemini-1.5-pro" {{ $geminiModel == 'gemini-1.5-pro' ? 'selected' : '' }}>gemini-1.5-pro (Gemini 1.5 Pro - Gratis)</option>
                             </select>

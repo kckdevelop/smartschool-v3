@@ -46,7 +46,7 @@ class SekolahSeeder extends Seeder
     'groq_quota' => 92,
     'gemini_key' => 'DUMMY_GEMINI_KEY',
     'gemini_status' => 'aktif',
-    'gemini_model' => 'gemini-2.5-flash',
+    'gemini_model' => 'gemini-2.0-flash',
     'gemini_quota' => 86,
     'wa_token' => 'hwoCLXmzdXreEukcgApW',
     'wa_status' => 'aktif',
