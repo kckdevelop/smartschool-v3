@@ -2,7 +2,7 @@
 
 @section('title', 'Pengaturan LLM — SmartSchool')
 @section('header_title', 'Pengaturan')
-@section('header_subtitle', 'Profil sekolah & konfigurasi')
+@section('header_subtitle', 'Profil sekolah & konfigurasi LLM Service')
 
 @section('content')
 <div class="page-content">
@@ -11,6 +11,12 @@
     @php
         $sekolah = \App\Models\Sekolah::first();
         
+        $customKey    = old('custom_key', $sekolah->custom_key ?? 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83');
+        $customUrl    = old('custom_url', $sekolah->custom_url ?? 'https://eyay.afdaan.web.id/v1');
+        $customStatus = old('custom_status', $sekolah->custom_status ?? 'aktif');
+        $customModel  = old('custom_model', $sekolah->custom_model ?? 'Assistant-smart');
+        $customQuota  = old('custom_quota', $sekolah->custom_quota ?? 9999);
+
         $groqKey    = old('groq_key', $sekolah->groq_key ?? '');
         $groqStatus = old('groq_status', $sekolah->groq_status ?? 'nonaktif');
         $groqModel  = old('groq_model', $sekolah->groq_model ?? 'llama-3.3-70b-versatile');
@@ -18,7 +24,7 @@
 
         $geminiKey    = old('gemini_key', $sekolah->gemini_key ?? '');
         $geminiStatus = old('gemini_status', $sekolah->gemini_status ?? 'nonaktif');
-        $geminiModel  = old('gemini_model', $sekolah->gemini_model ?? 'gemini-1.5-flash');
+        $geminiModel  = old('gemini_model', $sekolah->gemini_model ?? 'gemini-2.0-flash');
         $geminiQuota  = old('gemini_quota', $sekolah->gemini_quota ?? 100);
     @endphp
 
@@ -28,14 +34,97 @@
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 10px;">
             <i class="fa-solid fa-circle-info" style="color: #3b82f6; margin-top: 2px; flex-shrink: 0;"></i>
             <p style="margin: 0; font-size: 0.85rem; color: #1e40af; line-height: 1.6;">
-                API key disimpan di database server dan digunakan saat generate soal. Jika kosong, sistem akan menggunakan Template Lokal.
+                Konfigurasi API key & LLM Service disimpan secara terpusat di server dan digunakan untuk generate soal & kisi-kisi.
             </p>
-        </div>        <form action="{{ route('generator-soal.pengaturan.store') }}" method="POST" id="llm-form">
+        </div>
+
+        <form action="{{ route('generator-soal.pengaturan.store') }}" method="POST" id="llm-form">
             @csrf
 
             <div style="display: flex; flex-direction: column; gap: 20px;">
 
-                {{-- ══════ GOOGLE GEMINI CARD ══════ --}}
+                {{-- ══════ SERVER CUSTOM LLM CARD (PRIMARY) ══════ --}}
+                <div class="llm-card {{ $customStatus === 'aktif' ? 'active-border' : '' }}" id="card-custom">
+                    <div class="llm-card-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            {{-- Custom Server logo --}}
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fa-solid fa-server" style="color: #fff; font-size: 1.15rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.95rem;">Server Custom LLM (eyay.afdaan.web.id)</div>
+                                <div style="font-size: 0.78rem; color: var(--text-secondary);">Service High Performance OpenAI-Compatible Proxy API</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-badge {{ $customStatus === 'aktif' ? 'active-badge' : 'inactive-badge' }}" id="badge-custom">
+                                {{ $customStatus === 'aktif' ? 'Aktif' : 'Nonaktif' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="llm-card-body">
+                        {{-- Base URL --}}
+                        <div class="mb-3">
+                            <label class="field-label">Endpoint Base URL API</label>
+                            <input type="text" name="custom_url" class="api-key-input" id="url-custom"
+                                placeholder="https://eyay.afdaan.web.id/v1"
+                                value="{{ $customUrl }}"
+                                required>
+                        </div>
+
+                        {{-- API Key --}}
+                        <div class="mb-3">
+                            <label class="field-label">API Key Server Custom</label>
+                            <div class="api-key-wrapper">
+                                <input type="password" name="custom_key" class="api-key-input" id="key-custom"
+                                    placeholder="sk-8e3b65f406c3bd98-a0ejmb-62ab1e83"
+                                    value="{{ $customKey }}"
+                                    autocomplete="off">
+                                <button type="button" class="eye-btn" onclick="toggleEye('key-custom', this)">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Details --}}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="mb-3">
+                            <div>
+                                <label class="field-label">Status Provider</label>
+                                <select name="custom_status" class="llm-select status-select" id="status-custom" data-target="custom">
+                                    <option value="aktif" {{ $customStatus === 'aktif' ? 'selected' : '' }}>Aktif (Utama)</option>
+                                    <option value="nonaktif" {{ $customStatus === 'nonaktif' ? 'selected' : '' }}>Nonaktif</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Kuota Generate (Sisa)</label>
+                                <input type="number" name="custom_quota" class="api-key-input" value="{{ $customQuota }}" min="0">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="field-label">Model Default (saat Generate)</label>
+                            <select name="custom_model" class="llm-select">
+                                <option value="Assistant-smart" {{ $customModel == 'Assistant-smart' ? 'selected' : '' }}>Assistant-smart (Smart AI — Recommended) ⭐</option>
+                                <option value="ag/gemini-3.6-flash-medium" {{ $customModel == 'ag/gemini-3.6-flash-medium' ? 'selected' : '' }}>ag/gemini-3.6-flash-medium (Gemini 3.6 Flash)</option>
+                                <option value="ag/gemini-3.8-flash" {{ $customModel == 'ag/gemini-3.8-flash' ? 'selected' : '' }}>ag/gemini-3.8-flash (Gemini 3.8 Flash)</option>
+                                <option value="ag/gemini-3.7-flash-high" {{ $customModel == 'ag/gemini-3.7-flash-high' ? 'selected' : '' }}>ag/gemini-3.7-flash-high (Gemini 3.7 Flash High)</option>
+                                <option value="Worker" {{ $customModel == 'Worker' ? 'selected' : '' }}>Worker (Worker Model)</option>
+                                <option value="Planner" {{ $customModel == 'Planner' ? 'selected' : '' }}>Planner (Planner Model)</option>
+                                <option value="Assistant-daily" {{ $customModel == 'Assistant-daily' ? 'selected' : '' }}>Assistant-daily (Daily Assistant)</option>
+                                <option value="Assistant-deep" {{ $customModel == 'Assistant-deep' ? 'selected' : '' }}>Assistant-deep (Deep Assistant)</option>
+                                <option value="guts/gemini-3.6-flash" {{ $customModel == 'guts/gemini-3.6-flash' ? 'selected' : '' }}>guts/gemini-3.6-flash (Gemini 3.6 Flash Guts)</option>
+                                <option value="guts/claude-sonnet-4.5" {{ $customModel == 'guts/claude-sonnet-4.5' ? 'selected' : '' }}>guts/claude-sonnet-4.5 (Claude Sonnet 4.5)</option>
+                                <option value="guts/gpt-5.5" {{ $customModel == 'guts/gpt-5.5' ? 'selected' : '' }}>guts/gpt-5.5 (GPT 5.5)</option>
+                                <option value="cbcn/glm-5.2" {{ $customModel == 'cbcn/glm-5.2' ? 'selected' : '' }}>cbcn/glm-5.2 (GLM 5.2)</option>
+                                <option value="cbcn/deepseek-v4.1-flash" {{ $customModel == 'cbcn/deepseek-v4.1-flash' ? 'selected' : '' }}>cbcn/deepseek-v4.1-flash (DeepSeek V4.1 Flash)</option>
+                                <option value="cx/gpt-5.6-sol" {{ $customModel == 'cx/gpt-5.6-sol' ? 'selected' : '' }}>cx/gpt-5.6-sol (GPT 5.6 Sol)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ══════ GOOGLE GEMINI CARD (OFFICIAL) ══════ --}}
                 <div class="llm-card {{ $geminiStatus === 'aktif' ? 'active-border' : '' }}" id="card-gemini">
                     <div class="llm-card-header">
                         <div style="display: flex; align-items: center; gap: 12px;">
@@ -44,8 +133,8 @@
                                 <i class="fa-solid fa-star" style="color: #fff; font-size: 1.15rem;"></i>
                             </div>
                             <div>
-                                <div style="font-weight: 700; font-size: 0.95rem;">Google Gemini</div>
-                                <div style="font-size: 0.78rem; color: var(--text-secondary);">Gemini 2.0 Flash Terbaru</div>
+                                <div style="font-weight: 700; font-size: 0.95rem;">Google Gemini (Official Direct API)</div>
+                                <div style="font-size: 0.78rem; color: var(--text-secondary);">Direct API Google Cloud Generative Language</div>
                             </div>
                         </div>
                         <div>
@@ -85,11 +174,7 @@
                         <div>
                             <label class="field-label">Model Default (saat Generate)</label>
                             <select name="gemini_model" class="llm-select">
-                                <option value="Assistant-smart" {{ $geminiModel == 'Assistant-smart' ? 'selected' : '' }}>Assistant-smart (Server Custom eyay.afdaan.web.id - Recommended)</option>
-                                <option value="ag/gemini-3.6-flash-medium" {{ $geminiModel == 'ag/gemini-3.6-flash-medium' ? 'selected' : '' }}>ag/gemini-3.6-flash-medium (Server Custom eyay.afdaan.web.id)</option>
-                                <option value="Worker" {{ $geminiModel == 'Worker' ? 'selected' : '' }}>Worker (Server Custom eyay.afdaan.web.id)</option>
-                                <option value="Planner" {{ $geminiModel == 'Planner' ? 'selected' : '' }}>Planner (Server Custom eyay.afdaan.web.id)</option>
-                                <option value="gemini-2.0-flash" {{ $geminiModel == 'gemini-2.0-flash' || $geminiModel == 'gemini-2.5-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis)</option>
+                                <option value="gemini-2.0-flash" {{ $geminiModel == 'gemini-2.0-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis)</option>
                                 <option value="gemini-1.5-flash" {{ $geminiModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis)</option>
                                 <option value="gemini-1.5-pro" {{ $geminiModel == 'gemini-1.5-pro' ? 'selected' : '' }}>gemini-1.5-pro (Gemini 1.5 Pro - Gratis)</option>
                             </select>
@@ -185,7 +270,7 @@
     overflow: hidden;
 }
 .llm-card.active-border {
-    border-color: #a855f7; /* Purple active border matching reference */
+    border-color: #a855f7;
     box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
@@ -208,7 +293,7 @@
     border-radius: 20px;
 }
 .active-badge { background: #d1fae5; color: #065f46; }
-.inactive-badge { background: #f3f4f6; color: #6b7280; border: 1px solid var(--border-color); }
+.inactive-badge { background: #f3f4f6; color: #6b7280; border: 1.5px solid var(--border-color); }
 
 .field-label {
     font-size: 0.8rem;
@@ -286,13 +371,14 @@ document.querySelectorAll('.status-select').forEach(select => {
         const isAktif = this.value === 'aktif';
         
         if (isAktif) {
-            // Deactivate the other
-            const otherTarget = target === 'gemini' ? 'groq' : 'gemini';
-            const otherSelect = document.getElementById(`status-${otherTarget}`);
-            otherSelect.value = 'nonaktif';
-            
-            // Trigger style update
-            updateStatusStyle(otherTarget, false);
+            // Deactivate others
+            ['custom', 'gemini', 'groq'].forEach(t => {
+                if (t !== target) {
+                    const el = document.getElementById(`status-${t}`);
+                    if (el) el.value = 'nonaktif';
+                    updateStatusStyle(t, false);
+                }
+            });
             updateStatusStyle(target, true);
         } else {
             updateStatusStyle(target, false);
@@ -305,6 +391,8 @@ function updateStatusStyle(target, isAktif) {
     const badge = document.getElementById(`badge-${target}`);
     const keyInput = document.getElementById(`key-${target}`);
     
+    if (!card || !badge || !keyInput) return;
+
     if (isAktif) {
         card.classList.add('active-border');
         badge.className = 'status-badge active-badge';
@@ -318,10 +406,13 @@ function updateStatusStyle(target, isAktif) {
     }
 }
 
-// Initial key input required triggers
 document.addEventListener('DOMContentLoaded', () => {
-    updateStatusStyle('gemini', document.getElementById('status-gemini').value === 'aktif');
-    updateStatusStyle('groq', document.getElementById('status-groq').value === 'aktif');
+    ['custom', 'gemini', 'groq'].forEach(t => {
+        const el = document.getElementById(`status-${t}`);
+        if (el) {
+            updateStatusStyle(t, el.value === 'aktif');
+        }
+    });
 });
 </script>
 @endsection

@@ -38,6 +38,11 @@ class Sekolah extends Model
         'gemini_status',
         'gemini_model',
         'gemini_quota',
+        'custom_key',
+        'custom_url',
+        'custom_status',
+        'custom_model',
+        'custom_quota',
         'wa_token',
         'wa_status',
         'wa_template_presensi',
@@ -50,6 +55,7 @@ class Sekolah extends Model
         'sync_otomatis'     => 'boolean',
         'groq_quota'        => 'integer',
         'gemini_quota'      => 'integer',
+        'custom_quota'      => 'integer',
     ];
 
     public function getLogoUrlAttribute(): ?string

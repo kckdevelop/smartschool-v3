@@ -271,10 +271,15 @@ class GeneratorSoalController extends Controller
         }
 
         $request->validate([
-            'groq_key'    => 'nullable|string|max:1000',
-            'groq_status' => 'required|string|in:aktif,nonaktif',
-            'groq_model'  => 'required|string|max:100',
-            'groq_quota'  => 'required|integer|min:0',
+            'custom_key'    => 'nullable|string|max:1000',
+            'custom_url'    => 'required|string|max:255',
+            'custom_status' => 'required|string|in:aktif,nonaktif',
+            'custom_model'  => 'required|string|max:100',
+            'custom_quota'  => 'required|integer|min:0',
+            'groq_key'      => 'nullable|string|max:1000',
+            'groq_status'   => 'required|string|in:aktif,nonaktif',
+            'groq_model'    => 'required|string|max:100',
+            'groq_quota'    => 'required|integer|min:0',
             'gemini_key'    => 'nullable|string|max:1000',
             'gemini_status' => 'required|string|in:aktif,nonaktif',
             'gemini_model'  => 'required|string|max:100',
@@ -282,11 +287,15 @@ class GeneratorSoalController extends Controller
         ]);
 
         // Auto determine main llm_provider for backward compatibility
-        $provider = 'gemini';
-        $apiKey = $request->gemini_key;
-        $model = $request->gemini_model;
+        $provider = 'custom';
+        $apiKey = $request->custom_key ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+        $model = $request->custom_model;
 
-        if ($request->gemini_status === 'aktif') {
+        if ($request->custom_status === 'aktif') {
+            $provider = 'custom';
+            $apiKey = $request->custom_key ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+            $model = $request->custom_model;
+        } elseif ($request->gemini_status === 'aktif') {
             $provider = 'gemini';
             $apiKey = $request->gemini_key;
             $model = $request->gemini_model;
@@ -300,6 +309,11 @@ class GeneratorSoalController extends Controller
             'llm_provider'  => $provider,
             'llm_api_key'   => $apiKey,
             'llm_model'     => $model,
+            'custom_key'    => $request->custom_key,
+            'custom_url'    => $request->custom_url,
+            'custom_status' => $request->custom_status,
+            'custom_model'  => $request->custom_model,
+            'custom_quota'  => $request->custom_quota,
             'groq_key'      => $request->groq_key,
             'groq_status'   => $request->groq_status,
             'groq_model'    => $request->groq_model,
