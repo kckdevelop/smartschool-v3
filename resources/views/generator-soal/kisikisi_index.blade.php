@@ -61,6 +61,12 @@
                                     $defaultModel = 'gemini-2.0-flash';
                                 }
                             @endphp
+                            <optgroup label="Server Custom (eyay.afdaan.web.id)">
+                                <option value="Assistant-smart" {{ $defaultModel == 'Assistant-smart' ? 'selected' : '' }}>Assistant-smart (Smart AI — Recommended) ⭐</option>
+                                <option value="ag/gemini-3.6-flash-medium" {{ $defaultModel == 'ag/gemini-3.6-flash-medium' ? 'selected' : '' }}>ag/gemini-3.6-flash-medium (Gemini 3.6 Flash)</option>
+                                <option value="Worker" {{ $defaultModel == 'Worker' ? 'selected' : '' }}>Worker (Worker Model)</option>
+                                <option value="Planner" {{ $defaultModel == 'Planner' ? 'selected' : '' }}>Planner (Planner Model)</option>
+                            </optgroup>
                             <optgroup label="Google Gemini">
                                 <option value="gemini-2.0-flash" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-2.0-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis){{ $geminiText }}</option>
                                 <option value="gemini-1.5-flash" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis){{ $geminiText }}</option>

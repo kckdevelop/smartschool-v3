@@ -85,6 +85,10 @@
                         <div>
                             <label class="field-label">Model Default (saat Generate)</label>
                             <select name="gemini_model" class="llm-select">
+                                <option value="Assistant-smart" {{ $geminiModel == 'Assistant-smart' ? 'selected' : '' }}>Assistant-smart (Server Custom eyay.afdaan.web.id - Recommended)</option>
+                                <option value="ag/gemini-3.6-flash-medium" {{ $geminiModel == 'ag/gemini-3.6-flash-medium' ? 'selected' : '' }}>ag/gemini-3.6-flash-medium (Server Custom eyay.afdaan.web.id)</option>
+                                <option value="Worker" {{ $geminiModel == 'Worker' ? 'selected' : '' }}>Worker (Server Custom eyay.afdaan.web.id)</option>
+                                <option value="Planner" {{ $geminiModel == 'Planner' ? 'selected' : '' }}>Planner (Server Custom eyay.afdaan.web.id)</option>
                                 <option value="gemini-2.0-flash" {{ $geminiModel == 'gemini-2.0-flash' || $geminiModel == 'gemini-2.5-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis)</option>
                                 <option value="gemini-1.5-flash" {{ $geminiModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis)</option>
                                 <option value="gemini-1.5-pro" {{ $geminiModel == 'gemini-1.5-pro' ? 'selected' : '' }}>gemini-1.5-pro (Gemini 1.5 Pro - Gratis)</option>

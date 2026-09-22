@@ -11,13 +11,25 @@ class LlmService
     protected $provider;
     protected $apiKey;
     protected $model;
+    protected $customUrl = 'https://eyay.afdaan.web.id/v1';
 
     public function __construct()
     {
         $sekolah = Sekolah::first();
         if ($sekolah) {
+            // Check if custom proxy key or custom provider is configured
+            if (
+                $sekolah->llm_provider === 'custom' ||
+                str_starts_with($sekolah->gemini_key ?? '', 'sk-8e3b65f4') ||
+                str_starts_with($sekolah->groq_key ?? '', 'sk-8e3b65f4') ||
+                str_starts_with($sekolah->llm_api_key ?? '', 'sk-8e3b65f4')
+            ) {
+                $this->provider = 'custom';
+                $this->apiKey = $sekolah->gemini_key ?: ($sekolah->llm_api_key ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83');
+                $this->model = $sekolah->gemini_model ?? ($sekolah->llm_model ?? 'Assistant-smart');
+            }
             // Use gemini if active and has key
-            if ($sekolah->gemini_status === 'aktif' && !empty($sekolah->gemini_key)) {
+            elseif ($sekolah->gemini_status === 'aktif' && !empty($sekolah->gemini_key)) {
                 $this->provider = 'gemini';
                 $this->apiKey = $sekolah->gemini_key;
                 $this->model = $this->sanitizeModelName($sekolah->gemini_model ?? 'gemini-2.0-flash');
@@ -30,13 +42,14 @@ class LlmService
             }
             // Fallback to legacy database settings
             else {
-                $this->provider = $sekolah->llm_provider ?? 'gemini';
-                $this->apiKey = $sekolah->llm_api_key;
-                $this->model = $this->sanitizeModelName($sekolah->llm_model ?? 'gemini-2.0-flash');
+                $this->provider = $sekolah->llm_provider ?? 'custom';
+                $this->apiKey = $sekolah->llm_api_key ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+                $this->model = $sekolah->llm_model ?? 'Assistant-smart';
             }
         } else {
-            $this->provider = 'gemini';
-            $this->model = 'gemini-2.0-flash';
+            $this->provider = 'custom';
+            $this->apiKey = 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+            $this->model = 'Assistant-smart';
         }
     }
 
@@ -67,24 +80,30 @@ class LlmService
     public function useModel($modelName)
     {
         $sekolah = Sekolah::first();
-        if (!$sekolah) return;
-
         $this->model = $this->sanitizeModelName($modelName);
+
+        // Check if model belongs to custom server or key is custom proxy
+        $isCustomModel = in_array($modelName, ['Assistant-smart', 'Worker', 'Planner', 'Assistant-daily', 'Assistant-deep'])
+            || str_starts_with($modelName, 'ag/') || str_starts_with($modelName, 'guts/') || str_starts_with($modelName, 'cbcn/') || str_starts_with($modelName, 'cx/') || str_starts_with($modelName, 'cc/');
+
+        $currentKey = $sekolah->gemini_key ?? ($sekolah->groq_key ?? ($sekolah->llm_api_key ?? 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83'));
+        $isCustomKey = str_starts_with($currentKey, 'sk-8e3b65f4');
+
+        if ($isCustomModel || $isCustomKey || ($sekolah && $sekolah->llm_provider === 'custom')) {
+            $this->provider = 'custom';
+            $this->apiKey = $currentKey ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+            return;
+        }
+
         if (str_starts_with($modelName, 'gemini')) {
             $this->provider = 'gemini';
-            $this->apiKey = $sekolah->gemini_key;
+            $this->apiKey = $sekolah->gemini_key ?? 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
         } elseif (str_starts_with($modelName, 'llama') || str_starts_with($modelName, 'mixtral') || str_starts_with($modelName, 'gemma')) {
             $this->provider = 'groq';
-            $this->apiKey = $sekolah->groq_key;
+            $this->apiKey = $sekolah->groq_key ?? 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
         } else {
-            // Fallback based on active status
-            if ($sekolah->gemini_status === 'aktif') {
-                $this->provider = 'gemini';
-                $this->apiKey = $sekolah->gemini_key;
-            } else {
-                $this->provider = 'groq';
-                $this->apiKey = $sekolah->groq_key;
-            }
+            $this->provider = 'custom';
+            $this->apiKey = $currentKey ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
         }
     }
 
@@ -370,6 +389,10 @@ class LlmService
      */
     protected function callLlm($prompt)
     {
+        if ($this->provider === 'custom' || str_starts_with($this->apiKey ?? '', 'sk-8e3b65f4')) {
+            return $this->callCustomApi($prompt);
+        }
+
         if ($this->provider === 'gemini') {
             $effectiveModel = $this->sanitizeModelName($this->model);
             // Daftar model fallback: jika model utama high demand / unavailable, coba model berikutnya
@@ -620,5 +643,89 @@ class LlmService
 
         Log::error('LlmService callGroq: semua percobaan gagal.');
         throw $lastException ?? new \Exception('Gagal menghubungi API Groq setelah beberapa percobaan.');
+    }
+
+    /**
+     * Call Custom OpenAI-compatible proxy API (https://eyay.afdaan.web.id/v1).
+     */
+    protected function callCustomApi($prompt, $modelName = null)
+    {
+        $targetModel = $modelName ?? $this->model;
+        if (empty($targetModel) || $targetModel === 'gemini-2.5-flash') {
+            $targetModel = 'Assistant-smart';
+        }
+
+        $url = rtrim($this->customUrl ?? 'https://eyay.afdaan.web.id/v1', '/') . '/chat/completions';
+        $apiKey = $this->apiKey ?: 'sk-8e3b65f406c3bd98-a0ejmb-62ab1e83';
+
+        $modelChain = array_unique(array_filter([
+            $targetModel,
+            'Assistant-smart',
+            'ag/gemini-3.6-flash-medium',
+            'Worker',
+            'Planner'
+        ]));
+
+        $lastException = null;
+        foreach ($modelChain as $model) {
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type'  => 'application/json',
+                ])->timeout(240)->post($url, [
+                    'model'       => $model,
+                    'stream'      => false,
+                    'temperature' => 0.7,
+                    'messages'    => [
+                        [
+                            'role'    => 'system',
+                            'content' => 'Anda adalah guru profesional pembuat soal ujian dan kisi-kisi penilaian sekolah Indonesia. Anda selalu memformat jawaban dalam format JSON sesuai yang diminta.'
+                        ],
+                        [
+                            'role'    => 'user',
+                            'content' => $prompt
+                        ]
+                    ]
+                ]);
+
+                if ($response->failed()) {
+                    $status   = $response->status();
+                    $errorData = $response->json();
+                    $errorMsg  = $errorData['error']['message'] ?? $response->body();
+
+                    Log::error("[Custom LLM API - {$model}] Error {$status}: {$errorMsg}");
+
+                    if ($model !== end($modelChain)) {
+                        sleep(1);
+                        continue;
+                    }
+                    throw new \Exception("Custom LLM API Error: " . $errorMsg);
+                }
+
+                $result = $response->json();
+                $text   = $result['choices'][0]['message']['content'] ?? '';
+
+                if (empty($text)) {
+                    throw new \Exception('Gagal mendapatkan respons teks dari Custom LLM API.');
+                }
+
+                if ($model !== $this->model) {
+                    Log::info("[Custom LLM Fallback] Berhasil menggunakan model {$model}.");
+                }
+
+                return $text;
+
+            } catch (\Exception $e) {
+                $lastException = $e;
+                if ($model !== end($modelChain)) {
+                    Log::warning("[Custom LLM API] Model {$model} gagal ({$e->getMessage()}), mencoba model fallback...");
+                    sleep(1);
+                    continue;
+                }
+                throw $e;
+            }
+        }
+
+        throw $lastException ?? new \Exception('Gagal memproses permintaan ke Custom LLM API.');
     }
 }

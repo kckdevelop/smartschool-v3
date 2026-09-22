@@ -64,7 +64,13 @@
                                     $defaultModel = 'gemini-2.0-flash';
                                 }
                             @endphp
-                             <optgroup label="Google Gemini" id="optgroup-gemini">
+                             <optgroup label="Server Custom (eyay.afdaan.web.id)" id="optgroup-custom">
+                                <option value="Assistant-smart" data-provider="custom" {{ $defaultModel == 'Assistant-smart' ? 'selected' : '' }}>Assistant-smart (Smart AI — Recommended) ⭐</option>
+                                <option value="ag/gemini-3.6-flash-medium" data-provider="custom" {{ $defaultModel == 'ag/gemini-3.6-flash-medium' ? 'selected' : '' }}>ag/gemini-3.6-flash-medium (Gemini 3.6 Flash)</option>
+                                <option value="Worker" data-provider="custom" {{ $defaultModel == 'Worker' ? 'selected' : '' }}>Worker (Worker Model)</option>
+                                <option value="Planner" data-provider="custom" {{ $defaultModel == 'Planner' ? 'selected' : '' }}>Planner (Planner Model)</option>
+                            </optgroup>
+                            <optgroup label="Google Gemini" id="optgroup-gemini">
                                 <option value="gemini-2.0-flash" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-2.0-flash' ? 'selected' : '' }}>gemini-2.0-flash (Gemini 2.0 Flash Terbaru - Gratis){{ $geminiText }}</option>
                                 <option value="gemini-1.5-flash" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-1.5-flash' ? 'selected' : '' }}>gemini-1.5-flash (Gemini 1.5 Flash - Gratis){{ $geminiText }}</option>
                                 <option value="gemini-1.5-pro" data-provider="gemini" data-original-disabled="{{ $geminiDisabled ? 'true' : 'false' }}" {{ $geminiDisabled ? 'disabled' : '' }} {{ $defaultModel == 'gemini-1.5-pro' ? 'selected' : '' }}>gemini-1.5-pro (Gemini 1.5 Pro - Gratis){{ $geminiText }}</option>
