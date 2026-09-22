@@ -390,7 +390,21 @@ class LlmService
     protected function callLlm($prompt)
     {
         if ($this->provider === 'custom' || str_starts_with($this->apiKey ?? '', 'sk-8e3b65f4')) {
-            return $this->callCustomApi($prompt);
+            try {
+                return $this->callCustomApi($prompt);
+            } catch (\Exception $e) {
+                Log::warning("[LlmService] Custom API error ({$e->getMessage()}), fallback ke Gemini API...");
+                try {
+                    $sekolah = Sekolah::first();
+                    $this->apiKey = $sekolah->gemini_key ?: $this->apiKey;
+                    return $this->callGemini($prompt, 'gemini-2.0-flash');
+                } catch (\Exception $geminiErr) {
+                    Log::warning("[LlmService] Gemini API fallback error ({$geminiErr->getMessage()}), fallback ke Groq API...");
+                    $sekolah = Sekolah::first();
+                    $this->apiKey = $sekolah->groq_key ?: $this->apiKey;
+                    return $this->callGroq($prompt);
+                }
+            }
         }
 
         if ($this->provider === 'gemini') {
@@ -460,7 +474,10 @@ class LlmService
             try {
                 $response = Http::withHeaders([
                     'Content-Type' => 'application/json',
-                ])->timeout(240)->post($url, [
+                ])->withOptions([
+                    'connect_timeout' => 60,
+                    'timeout'         => 300,
+                ])->post($url, [
                     'contents' => [
                         [
                             'parts' => [
@@ -569,7 +586,10 @@ class LlmService
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type'  => 'application/json',
-                ])->timeout(90)->post($url, $body);
+                ])->withOptions([
+                    'connect_timeout' => 60,
+                    'timeout'         => 300,
+                ])->post($url, $body);
 
                 if ($response->failed()) {
                     $status    = $response->status();
@@ -668,61 +688,81 @@ class LlmService
 
         $lastException = null;
         foreach ($modelChain as $model) {
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type'  => 'application/json',
-                ])->timeout(240)->post($url, [
-                    'model'       => $model,
-                    'stream'      => false,
-                    'temperature' => 0.7,
-                    'messages'    => [
-                        [
-                            'role'    => 'system',
-                            'content' => 'Anda adalah guru profesional pembuat soal ujian dan kisi-kisi penilaian sekolah Indonesia. Anda selalu memformat jawaban dalam format JSON sesuai yang diminta.'
-                        ],
-                        [
-                            'role'    => 'user',
-                            'content' => $prompt
+            $maxAttempts = 2;
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $apiKey,
+                        'Content-Type'  => 'application/json',
+                    ])->withOptions([
+                        'connect_timeout' => 60,
+                        'timeout'         => 300,
+                    ])->post($url, [
+                        'model'       => $model,
+                        'stream'      => false,
+                        'temperature' => 0.7,
+                        'messages'    => [
+                            [
+                                'role'    => 'system',
+                                'content' => 'Anda adalah guru profesional pembuat soal ujian dan kisi-kisi penilaian sekolah Indonesia. Anda selalu memformat jawaban dalam format JSON sesuai yang diminta.'
+                            ],
+                            [
+                                'role'    => 'user',
+                                'content' => $prompt
+                            ]
                         ]
-                    ]
-                ]);
+                    ]);
 
-                if ($response->failed()) {
-                    $status   = $response->status();
-                    $errorData = $response->json();
-                    $errorMsg  = $errorData['error']['message'] ?? $response->body();
+                    if ($response->failed()) {
+                        $status   = $response->status();
+                        $errorData = $response->json();
+                        $errorMsg  = $errorData['error']['message'] ?? $response->body();
 
-                    Log::error("[Custom LLM API - {$model}] Error {$status}: {$errorMsg}");
+                        Log::error("[Custom LLM API - {$model}] Error {$status}: {$errorMsg}");
 
-                    if ($model !== end($modelChain)) {
-                        sleep(1);
+                        if ($attempt < $maxAttempts) {
+                            sleep(2);
+                            continue;
+                        }
+
+                        if ($model !== end($modelChain)) {
+                            sleep(1);
+                            break; // Coba model berikutnya di $modelChain
+                        }
+                        throw new \Exception("Custom LLM API Error: " . $errorMsg);
+                    }
+
+                    $result = $response->json();
+                    $text   = $result['choices'][0]['message']['content'] ?? '';
+
+                    if (empty($text)) {
+                        throw new \Exception('Gagal mendapatkan respons teks dari Custom LLM API.');
+                    }
+
+                    if ($model !== $this->model) {
+                        Log::info("[Custom LLM Fallback] Berhasil menggunakan model {$model}.");
+                    }
+
+                    return $text;
+
+                } catch (\Exception $e) {
+                    $lastException = $e;
+                    $msgLower = strtolower($e->getMessage());
+                    $isTimeout = stripos($msgLower, 'curl error 28') !== false || stripos($msgLower, 'timed out') !== false;
+
+                    if ($isTimeout && $attempt < $maxAttempts) {
+                        Log::warning("[Custom LLM API] Timeout model {$model} (attempt {$attempt}/{$maxAttempts}), retry in 2s...");
+                        sleep(2);
                         continue;
                     }
-                    throw new \Exception("Custom LLM API Error: " . $errorMsg);
+
+                    if ($model !== end($modelChain)) {
+                        Log::warning("[Custom LLM API] Model {$model} gagal ({$e->getMessage()}), mencoba model fallback berikutnya...");
+                        sleep(1);
+                        break; // Coba model berikutnya
+                    }
+                    throw $e;
                 }
-
-                $result = $response->json();
-                $text   = $result['choices'][0]['message']['content'] ?? '';
-
-                if (empty($text)) {
-                    throw new \Exception('Gagal mendapatkan respons teks dari Custom LLM API.');
-                }
-
-                if ($model !== $this->model) {
-                    Log::info("[Custom LLM Fallback] Berhasil menggunakan model {$model}.");
-                }
-
-                return $text;
-
-            } catch (\Exception $e) {
-                $lastException = $e;
-                if ($model !== end($modelChain)) {
-                    Log::warning("[Custom LLM API] Model {$model} gagal ({$e->getMessage()}), mencoba model fallback...");
-                    sleep(1);
-                    continue;
-                }
-                throw $e;
             }
         }
 
