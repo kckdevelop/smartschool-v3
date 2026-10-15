@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 12mm 16mm 14mm 16mm;
         }
         * {
             margin: 0;
@@ -27,6 +27,13 @@
         }
         .page-siswa:last-child {
             page-break-after: avoid;
+        }
+        @media print {
+            body { background: none; }
+            .page-siswa {
+                padding: 0;
+                width: 100%;
+            }
         }
 
         table {
@@ -235,8 +242,8 @@
 
     {{-- KOP SEKOLAH --}}
     @if(!empty($kopSrc))
-        <div class="kop-surat-container kop-uploaded" style="width: 100%; text-align: center; margin-bottom: 6px;">
-            <img src="{{ $kopSrc }}" alt="Kop Surat Sekolah" style="width: 100%; max-height: 110px; object-fit: contain; display: block; margin: 0 auto;">
+        <div class="kop-surat-container kop-uploaded" style="width: 100%; text-align: center; margin-bottom: 6px; overflow: hidden;">
+            <img src="{{ $kopSrc }}" alt="Kop Surat Sekolah" style="display: block; width: 100%; max-width: 100%; height: auto; max-height: 110px; object-fit: contain; margin: 0 auto;">
         </div>
     @elseif(!empty($logoSrc))
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; border: none;">
