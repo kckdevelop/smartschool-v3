@@ -1,18 +1,18 @@
 <?php
 
-namespace AppHttpControllersApi;
+namespace App\Http\Controllers\Api;
 
-use AppHttpControllersController;
-use IlluminateHttpRequest;
-use AppModelsUserSiswa;
-use AppModelsPresensi;
-use AppModelsLmsTugas;
-use AppModelsLmsPengumpulan;
-use AppModelsLmsKursus;
-use AppModelsTagihanPembayaran;
-use AppModelsSettingPembayaran;
-use AppModelsTahunAjaran;
-use CarbonCarbon;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\UserSiswa;
+use App\Models\Presensi;
+use App\Models\LmsTugas;
+use App\Models\LmsPengumpulan;
+use App\Models\LmsKursus;
+use App\Models\TagihanPembayaran;
+use App\Models\SettingPembayaran;
+use App\Models\TahunAjaran;
+use Carbon\Carbon;
 
 class WaliController extends Controller
 {

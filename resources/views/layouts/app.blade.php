@@ -289,6 +289,22 @@
                 </li>
 
                 {{-- ══════════════════════════════════════
+                     MENU WALI KELAS
+                ═══════════════════════════════════════ --}}
+                <li class="nav-group {{ request()->is('wali-kelas*') ? 'active' : '' }}" id="group-wali-kelas">
+                    <button class="nav-group-toggle" data-target="submenu-wali-kelas" aria-expanded="{{ request()->is('wali-kelas*') ? 'true' : 'false' }}">
+                        <span class="nav-group-left">
+                            <i class="fa-solid fa-chalkboard-teacher"></i>
+                            <span>Wali Kelas</span>
+                        </span>
+                        <i class="fa-solid {{ request()->is('wali-kelas*') ? 'fa-minus' : 'fa-plus' }} nav-group-arrow"></i>
+                    </button>
+                    <ul class="nav-submenu {{ request()->is('wali-kelas*') ? 'open' : '' }}" id="submenu-wali-kelas">
+                        <li><a href="{{ route('wali-kelas.cetak-hasil-belajar.index') }}" class="nav-sub-link {{ request()->is('wali-kelas/cetak-hasil-belajar*') ? 'active' : '' }}"><i class="fa-solid fa-file-lines"></i> Cetak Hasil Belajar</a></li>
+                    </ul>
+                </li>
+
+                {{-- ══════════════════════════════════════
                      MENU PEMBAYARAN & VA BPD DIY
                 ═══════════════════════════════════════ --}}
                 <li class="nav-group {{ request()->is('pembayaran*') ? 'active' : '' }}" id="group-pembayaran">

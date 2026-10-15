@@ -1,0 +1,150 @@
+<?php
+
+namespace App\Http\Controllers\WaliKelas;
+
+use App\Http\Controllers\Controller;
+use App\Models\Kelas;
+use App\Models\UserSiswa;
+use App\Models\Presensi;
+use App\Models\Btaq;
+use App\Models\KunjunganUks;
+use App\Models\Sekolah;
+use App\Models\Semester;
+use App\Models\TahunAjaran;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class WaliKelasController extends Controller
+{
+    /**
+     * Halaman Daftar Kelas (Index Cetak Hasil Belajar)
+     */
+    public function index()
+    {
+        $sekolah   = Sekolah::first();
+        $kelasList = Kelas::with('jurusan', 'guru')
+            ->aktif()
+            ->orderBy('tingkat')
+            ->orderBy('rombel')
+            ->get();
+
+        $semester = Semester::where('status', 'aktif')->with('tahunAjaran')->first();
+
+        return view('wali-kelas.cetak-hasil-belajar.index', compact(
+            'sekolah', 'kelasList', 'semester'
+        ));
+    }
+
+    /**
+     * Halaman Daftar Siswa Per Kelas
+     */
+    public function siswa(Request $request, $idKelas)
+    {
+        $sekolah  = Sekolah::first();
+        $kelas    = Kelas::with('jurusan', 'guru')->findOrFail($idKelas);
+        $semester = Semester::where('status', 'aktif')->with('tahunAjaran')->first();
+
+        $siswaList = UserSiswa::with('detail')
+            ->where('id_kelas', $idKelas)
+            ->where('status', 'aktif')
+            ->orderBy('nama_siswa')
+            ->get();
+
+        return view('wali-kelas.cetak-hasil-belajar.siswa', compact(
+            'sekolah', 'kelas', 'siswaList', 'semester'
+        ));
+    }
+
+    /**
+     * Preview Raport Siswa (HTML di browser)
+     */
+    public function preview(Request $request, $nis)
+    {
+        $sekolah  = Sekolah::first();
+        $semester = Semester::where('status', 'aktif')->with('tahunAjaran')->first();
+
+        $siswa = UserSiswa::with(['detail', 'kelas.jurusan', 'kelas.guru'])->findOrFail($nis);
+
+        [$presensi, $btaq, $kunjunganUks] = $this->loadDataRaport($siswa, $semester);
+
+        return view('wali-kelas.cetak-hasil-belajar.preview', compact(
+            'sekolah', 'siswa', 'semester', 'presensi', 'btaq', 'kunjunganUks'
+        ) + ['isPdf' => false, 'isPreview' => true]);
+    }
+
+    /**
+     * Download / Cetak Raport Siswa (PDF)
+     */
+    public function downloadPdf(Request $request, $nis)
+    {
+        $sekolah  = Sekolah::first();
+        $semester = Semester::where('status', 'aktif')->with('tahunAjaran')->first();
+
+        $siswa = UserSiswa::with(['detail', 'kelas.jurusan', 'kelas.guru'])->findOrFail($nis);
+
+        [$presensi, $btaq, $kunjunganUks] = $this->loadDataRaport($siswa, $semester);
+
+        $pdf = Pdf::loadView('wali-kelas.cetak-hasil-belajar.pdf', compact(
+            'sekolah', 'siswa', 'semester', 'presensi', 'btaq', 'kunjunganUks'
+        ) + ['isPdf' => true])->setPaper('a4', 'portrait');
+
+        $namaSiswa = str_replace(' ', '_', $siswa->nama_siswa);
+        $filename  = "Raport_{$namaSiswa}_{$siswa->nis}.pdf";
+
+        return $pdf->download($filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function loadDataRaport(UserSiswa $siswa, ?Semester $semester): array
+    {
+        $awal  = $semester?->awal  ?? Carbon::now()->startOfYear();
+        $akhir = $semester?->akhir ?? Carbon::now();
+
+        // ── Presensi ──────────────────────────────────────────────────────────
+        $presensiRaw = Presensi::where('nis', $siswa->nis)
+            ->whereBetween('tanggal', [$awal, $akhir])
+            ->get();
+
+        $presensi = [
+            'hadir'   => $presensiRaw->where('status', 'H')->count(),
+            'izin'    => $presensiRaw->where('status', 'I')->count(),
+            'sakit'   => $presensiRaw->where('status', 'S')->count(),
+            'alpha'   => $presensiRaw->where('status', 'A')->count(),
+            'total'   => $presensiRaw->count(),
+            'riwayat' => $presensiRaw->sortByDesc('tanggal')->take(30)->values(),
+        ];
+
+        // ── BTAQ ──────────────────────────────────────────────────────────────
+        $btaqRaw = Btaq::with(['guru'])
+            ->where('nis', $siswa->nis)
+            ->whereBetween('tanggal', [$awal, $akhir])
+            ->orderByDesc('tanggal')
+            ->get();
+
+        $btaq = [
+            'total'      => $btaqRaw->count(),
+            'level_iqro' => $btaqRaw->where('level', 'iqro')->count(),
+            'level_quran'=> $btaqRaw->where('level', 'quran')->count(),
+            'terakhir'   => $btaqRaw->first(),
+            'riwayat'    => $btaqRaw->take(20)->values(),
+        ];
+
+        // ── Kunjungan UKS ─────────────────────────────────────────────────────
+        $uksRaw = KunjunganUks::with('riwayatObat')
+            ->where('nis', $siswa->nis)
+            ->whereBetween('tanggal', [$awal, $akhir])
+            ->orderByDesc('tanggal')
+            ->get();
+
+        $kunjunganUks = [
+            'total'   => $uksRaw->count(),
+            'riwayat' => $uksRaw->take(20)->values(),
+        ];
+
+        return [$presensi, $btaq, $kunjunganUks];
+    }
+}

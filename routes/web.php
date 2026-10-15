@@ -28,6 +28,7 @@ use App\Http\Controllers\Pembayaran\LaporanTransaksiVaController;
 use App\Http\Controllers\Pembayaran\RekapKelasController;
 use App\Http\Controllers\Pembayaran\RekapSiswaController;
 use App\Http\Controllers\Pembayaran\TarikDataBpdController;
+use App\Http\Controllers\WaliKelas\WaliKelasController as WaliKelasRaportController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -558,6 +559,22 @@ Route::middleware('auth')->group(function () {
             Route::post('/clear-database',[LaporanTransaksiVaController::class, 'clearDatabase'])->name('clear-database');
         });
     });
+
+    // =========================================================================
+    //  WALI KELAS — CETAK HASIL BELAJAR
+    // =========================================================================
+    Route::prefix('wali-kelas')->name('wali-kelas.')->group(function () {
+
+        // Cetak Hasil Belajar
+        Route::prefix('cetak-hasil-belajar')->name('cetak-hasil-belajar.')->group(function () {
+            Route::get('/',                         [WaliKelasRaportController::class, 'index'])->name('index');
+            Route::get('/kelas/{idKelas}/siswa',    [WaliKelasRaportController::class, 'siswa'])->name('siswa');
+            Route::get('/siswa/{nis}/preview',      [WaliKelasRaportController::class, 'preview'])->name('preview');
+            Route::get('/siswa/{nis}/download-pdf', [WaliKelasRaportController::class, 'downloadPdf'])->name('download');
+        });
+
+    });
+
 });
 
 
