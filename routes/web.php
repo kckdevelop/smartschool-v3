@@ -571,6 +571,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/kelas/{idKelas}/siswa',    [WaliKelasRaportController::class, 'siswa'])->name('siswa');
             Route::get('/siswa/{nis}/preview',      [WaliKelasRaportController::class, 'preview'])->name('preview');
             Route::get('/siswa/{nis}/download-pdf', [WaliKelasRaportController::class, 'downloadPdf'])->name('download');
+            Route::get('/kelas/{idKelas}/download-semua', [WaliKelasRaportController::class, 'downloadPdfKelas'])->name('download-semua');
         });
 
     });

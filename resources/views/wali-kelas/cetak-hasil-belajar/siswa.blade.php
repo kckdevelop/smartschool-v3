@@ -41,6 +41,17 @@
         display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
     .table-toolbar h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
+    .btn-download-all {
+        background: linear-gradient(135deg, #15803d, #16a34a);
+        color: #fff; border: none; border-radius: 10px;
+        padding: 9px 18px; font-size: .85rem; font-weight: 700;
+        cursor: pointer; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 7px;
+        box-shadow: 0 2px 8px rgba(22,163,74,.25);
+        transition: opacity .2s, transform .1s;
+    }
+    .btn-download-all:hover { opacity: .88; color: #fff; text-decoration: none; transform: translateY(-1px); }
+    .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .search-box {
         border: 1px solid #e2e8f0; border-radius: 8px;
         padding: 7px 14px; font-size: .875rem; outline: none;
@@ -152,7 +163,15 @@
 <div class="table-card">
     <div class="table-toolbar">
         <h3><i class="fa-solid fa-users fa-sm" style="color:#2d6a9f;"></i> Daftar Siswa</h3>
-        <input type="text" class="search-box" id="searchSiswa" placeholder="🔍 Cari nama / NIS..." oninput="filterSiswa(this.value)">
+        <div class="toolbar-right">
+            <input type="text" class="search-box" id="searchSiswa" placeholder="🔍 Cari nama / NIS..." oninput="filterSiswa(this.value)">
+            @if($siswaList->isNotEmpty())
+            <a href="{{ route('wali-kelas.cetak-hasil-belajar.download-semua', $kelas->id_kelas) }}"
+               class="btn-download-all" id="btnDownloadSemua" title="Download PDF semua siswa dalam satu file">
+                <i class="fa-solid fa-file-zipper"></i> Download Semua Raport
+            </a>
+            @endif
+        </div>
     </div>
     <table class="data-table" id="tabelSiswa">
         <thead>
@@ -221,6 +240,22 @@ function filterSiswa(q) {
         const name = row.dataset.name || '';
         const nis  = String(row.dataset.nis || '');
         row.style.display = (name.includes(q) || nis.includes(q)) ? '' : 'none';
+    });
+}
+
+// ── Download semua: tampilkan loading state ───────────────────────────────────
+const btnDownload = document.getElementById('btnDownloadSemua');
+if (btnDownload) {
+    btnDownload.addEventListener('click', function () {
+        this.style.opacity = '0.65';
+        this.style.pointerEvents = 'none';
+        this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+        // Kembalikan tombol setelah 20 detik (fallback jika download terlalu lama)
+        setTimeout(() => {
+            this.style.opacity = '';
+            this.style.pointerEvents = '';
+            this.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download Semua Raport';
+        }, 20000);
     });
 }
 </script>

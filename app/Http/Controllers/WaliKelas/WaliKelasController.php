@@ -95,6 +95,40 @@ class WaliKelasController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * Download Raport Semua Siswa dalam 1 Kelas (1 file PDF)
+     */
+    public function downloadPdfKelas(Request $request, $idKelas)
+    {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        $sekolah  = Sekolah::first();
+        $semester = Semester::where('status', 'aktif')->with('tahunAjaran')->first();
+        $kelas    = Kelas::with('jurusan', 'guru')->findOrFail($idKelas);
+
+        $siswaList = UserSiswa::with(['detail', 'kelas.jurusan', 'kelas.guru'])
+            ->where('id_kelas', $idKelas)
+            ->where('status', 'aktif')
+            ->orderBy('nama_siswa')
+            ->get();
+
+        // Siapkan data raport per siswa
+        $dataRaport = $siswaList->map(function ($siswa) use ($semester) {
+            [$presensi, $btaq, $kunjunganUks] = $this->loadDataRaport($siswa, $semester);
+            return compact('siswa', 'presensi', 'btaq', 'kunjunganUks');
+        });
+
+        $pdf = Pdf::loadView('wali-kelas.cetak-hasil-belajar.pdf-kelas', compact(
+            'sekolah', 'semester', 'kelas', 'dataRaport'
+        ) + ['isPdf' => true])->setPaper('a4', 'portrait');
+
+        $namaKelas = str_replace([' ', '/'], '_', $kelas->nama_kelas);
+        $filename  = "Raport_Kelas_{$namaKelas}.pdf";
+
+        return $pdf->download($filename);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     //  PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────────────────────
