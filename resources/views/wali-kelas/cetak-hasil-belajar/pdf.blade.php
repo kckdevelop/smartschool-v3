@@ -9,10 +9,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 10.5pt;
+            font-size: 9pt;
             color: #000;
             background: #fff;
-            line-height: 1.4;
+            line-height: 1.25;
         }
 
         /* ── Page ─────────────────────────────────────────────── */
@@ -20,126 +20,124 @@
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 15mm 18mm 18mm;
+            padding: 10mm 14mm 14mm;
         }
 
         /* ── Divider ──────────────────────────────────────────── */
         .divider-double {
             border: none;
-            border-top: 3px double #000;
-            margin: 6px 0 12px;
+            border-top: 2.5px double #000;
+            margin: 4px 0 8px;
         }
         .divider-single {
             border: none;
-            border-top: 1px solid #aaa;
-            margin: 10px 0;
+            border-top: 1px solid #ccc;
+            margin: 8px 0;
         }
 
         /* ── Judul ────────────────────────────────────────────── */
         .judul-raport {
             text-align: center;
-            margin: 10px 0 16px;
+            margin: 6px 0 10px;
         }
         .judul-raport h2 {
-            font-size: 13pt;
+            font-size: 11.5pt;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
         .judul-raport p {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #444;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         /* ── Section Title ────────────────────────────────────── */
         .section-title {
-            font-size: 10pt;
+            font-size: 8.5pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border-left: 4px solid #1a5276;
-            padding-left: 8px;
-            margin: 16px 0 10px;
+            letter-spacing: 0.03em;
+            border-left: 3px solid #1a5276;
+            padding-left: 6px;
+            margin: 10px 0 6px;
             color: #1a5276;
         }
 
-        /* ── Data Siswa Table ─────────────────────────────────── */
+        /* ── Data Siswa Table (Compact & Space Saving) ────────── */
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9.5pt;
-            margin-bottom: 6px;
+            font-size: 8pt;
+            margin-bottom: 4px;
         }
         .info-table td {
-            padding: 4px 8px;
-            vertical-align: top;
+            padding: 2px 4px;
+            vertical-align: middle;
         }
         .info-table .lbl {
-            width: 140px;
+            width: 95px;
             color: #444;
             font-weight: normal;
         }
-        .info-table .sep { width: 12px; color: #666; }
+        .info-table .sep { width: 8px; color: #666; text-align: center; }
         .info-table .val { font-weight: bold; color: #000; }
 
         /* ── Presensi Stats ───────────────────────────────────── */
-        .prs-stats {
-            display: flex; /* DomPDF tidak support flex sepenuhnya, pakai table fallback */
-        }
         .prs-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 9pt;
+            margin-bottom: 8px;
+            font-size: 7.5pt;
         }
         .prs-table td {
             text-align: center;
-            padding: 8px 6px;
-            border: 1px solid #e0e0e0;
+            padding: 4px 3px;
+            border: 1px solid #d0d7de;
             vertical-align: middle;
         }
-        .prs-table .val { font-size: 15pt; font-weight: bold; line-height: 1; display: block; }
-        .prs-table .lbl { font-size: 8pt; font-weight: 600; display: block; margin-top: 2px; }
+        .prs-table .val { font-size: 11pt; font-weight: bold; line-height: 1; display: block; }
+        .prs-table .lbl { font-size: 6.5pt; font-weight: 600; display: block; margin-top: 1px; }
         .prs-h { background: #d5f5e3; color: #1e8449; }
         .prs-i { background: #d6eaf8; color: #1a5276; }
         .prs-s { background: #fef9c3; color: #7d6608; }
         .prs-a { background: #fadbd8; color: #922b21; }
         .prs-t { background: #f2f3f4; color: #2c3e50; }
 
-        /* ── Data Table ───────────────────────────────────────── */
+        /* ── Data Table (Compact for 1 Page Fit) ──────────────── */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5pt;
-            margin-bottom: 14px;
+            font-size: 7pt;
+            margin-bottom: 8px;
+            line-height: 1.15;
         }
         .data-table th {
             background: #eaf0fb;
             color: #1a3a5c;
             font-weight: bold;
-            font-size: 8pt;
-            padding: 6px 8px;
+            font-size: 6.8pt;
+            padding: 3.5px 5px;
             border: 1px solid #c5cfe3;
             text-align: center;
         }
         .data-table td {
-            padding: 5px 8px;
+            padding: 2.2px 5px;
             border: 1px solid #dce3ed;
             color: #000;
-            vertical-align: top;
+            vertical-align: middle;
         }
-        .data-table tbody tr:nth-child(even) { background: #f7f9fc; }
+        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
         .data-table .tc { text-align: center; }
 
         /* ── BTAQ Stats ───────────────────────────────────────── */
         .btaq-stats-table {
-            width: 260px;
+            width: 240px;
             border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 10px;
+            font-size: 7.5pt;
+            margin-bottom: 6px;
         }
-        .btaq-stats-table td { padding: 6px 10px; border: 1px solid #dce3ed; }
+        .btaq-stats-table td { padding: 3px 6px; border: 1px solid #dce3ed; }
         .btaq-stats-table .lbl { color: #555; }
         .btaq-stats-table .val { font-weight: bold; }
 
@@ -147,40 +145,41 @@
         .uks-note {
             background: #fff0f0;
             border: 1px solid #f5c6c6;
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-size: 8.5pt;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 7.5pt;
             color: #7b0000;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         /* ── TTD ──────────────────────────────────────────────── */
-        .ttd-wrap { margin-top: 36px; text-align: right; }
-        .ttd-block { display: inline-block; text-align: center; min-width: 200px; font-size: 9.5pt; }
-        .ttd-space { height: 68px; }
+        .ttd-wrap { margin-top: 18px; text-align: right; }
+        .ttd-block { display: inline-block; text-align: center; min-width: 180px; font-size: 8pt; }
+        .ttd-space { height: 48px; }
         .ttd-name  { font-weight: bold; text-decoration: underline; }
 
         /* ── Badges ───────────────────────────────────────────── */
         .badge {
             display: inline-block;
             border-radius: 3px;
-            padding: 1px 7px;
-            font-size: 7.5pt;
+            padding: 1px 5px;
+            font-size: 6.5pt;
             font-weight: bold;
         }
         .badge-hadir  { background: #d5f5e3; color: #1e8449; }
         .badge-izin   { background: #d6eaf8; color: #1a5276; }
         .badge-sakit  { background: #fef9c3; color: #7d6608; }
         .badge-alpha  { background: #fadbd8; color: #922b21; }
+        .badge-muted  { background: #f2f3f4; color: #555555; }
         .badge-iqro   { background: #d6eaf8; color: #1a5276; }
         .badge-quran  { background: #fef9c3; color: #7d6608; }
 
-        .empty-note { font-style: italic; color: #888; font-size: 9pt; padding: 8px 0; }
+        .empty-note { font-style: italic; color: #888; font-size: 7.5pt; padding: 4px 0; }
 
         @page { margin: 0; }
 
         @media print {
-            body { font-size: 10pt; }
+            body { font-size: 8.5pt; }
         }
     </style>
 </head>
@@ -227,21 +226,21 @@
         <tr>
             <td class="lbl">Jenis Kelamin</td>
             <td class="sep">:</td>
-            <td>{{ $siswa->jenkel === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
+            <td class="val">{{ $siswa->jenkel === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
             <td class="lbl">Wali Kelas</td>
             <td class="sep">:</td>
-            <td>{{ optional(optional($siswa->kelas)->guru)->nama_guru ?? '—' }}</td>
+            <td class="val">{{ optional(optional($siswa->kelas)->guru)->nama_guru ?? '—' }}</td>
         </tr>
         <tr>
             <td class="lbl">Tempat, Tgl Lahir</td>
             <td class="sep">:</td>
-            <td>
+            <td class="val">
                 {{ $siswa->tempat_lahir ?? '—' }},
                 {{ $siswa->tgl_lahir ? \Carbon\Carbon::parse($siswa->tgl_lahir)->translatedFormat('d F Y') : '—' }}
             </td>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td>{{ optional($siswa->detail)->alamat ?? '—' }}</td>
+            <td class="val">{{ optional($siswa->detail)->alamat ?? '—' }}</td>
         </tr>
     </table>
     <div class="divider-single"></div>
@@ -287,14 +286,33 @@
         <tbody>
             @foreach($presensi['riwayat'] as $idx => $p)
             @php
-                $statusMap = ['H'=>['Hadir','badge-hadir'],'I'=>['Izin','badge-izin'],
-                              'S'=>['Sakit','badge-sakit'],'A'=>['Alpha','badge-alpha']];
-                [$label,$cls] = $statusMap[$p->status] ?? [$p->status,''];
+                $st = strval($p->status);
+                if (in_array($st, ['1', 'Hadir', 'hadir', 'H', 'h'], true)) {
+                    $label = 'Hadir';
+                    $cls   = 'badge-hadir';
+                    $jam   = $p->jam ?? '—';
+                } elseif (in_array($st, ['2', 'Sakit', 'sakit', 'S', 's'], true)) {
+                    $label = 'Sakit';
+                    $cls   = 'badge-sakit';
+                    $jam   = '—';
+                } elseif (in_array($st, ['3', 'Izin', 'izin', 'I', 'i'], true)) {
+                    $label = 'Izin';
+                    $cls   = 'badge-izin';
+                    $jam   = '—';
+                } elseif (in_array($st, ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', 'a'], true)) {
+                    $label = 'Alpha';
+                    $cls   = 'badge-alpha';
+                    $jam   = '—';
+                } else {
+                    $label = $p->status ?: '—';
+                    $cls   = 'badge-muted';
+                    $jam   = '—';
+                }
             @endphp
             <tr>
                 <td class="tc">{{ $idx + 1 }}</td>
                 <td>{{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d F Y') }}</td>
-                <td class="tc">{{ $p->jam ?? '—' }}</td>
+                <td class="tc">{{ $jam }}</td>
                 <td class="tc"><span class="badge {{ $cls }}">{{ $label }}</span></td>
                 <td>{{ $p->keterangan ?? '—' }}</td>
             </tr>

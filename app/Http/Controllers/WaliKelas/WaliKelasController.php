@@ -109,13 +109,31 @@ class WaliKelasController extends Controller
             ->whereBetween('tanggal', [$awal, $akhir])
             ->get();
 
+        $hadir = 0;
+        $sakit = 0;
+        $izin  = 0;
+        $alpha = 0;
+
+        foreach ($presensiRaw as $p) {
+            $st = strval($p->status);
+            if (in_array($st, ['1', 'Hadir', 'hadir', 'H', 'h'], true)) {
+                $hadir++;
+            } elseif (in_array($st, ['2', 'Sakit', 'sakit', 'S', 's'], true)) {
+                $sakit++;
+            } elseif (in_array($st, ['3', 'Izin', 'izin', 'I', 'i'], true)) {
+                $izin++;
+            } elseif (in_array($st, ['4', 'Alfa', 'alfa', 'Alpha', 'alpha', 'A', 'a'], true)) {
+                $alpha++;
+            }
+        }
+
         $presensi = [
-            'hadir'   => $presensiRaw->where('status', 'H')->count(),
-            'izin'    => $presensiRaw->where('status', 'I')->count(),
-            'sakit'   => $presensiRaw->where('status', 'S')->count(),
-            'alpha'   => $presensiRaw->where('status', 'A')->count(),
+            'hadir'   => $hadir,
+            'izin'    => $izin,
+            'sakit'   => $sakit,
+            'alpha'   => $alpha,
             'total'   => $presensiRaw->count(),
-            'riwayat' => $presensiRaw->sortByDesc('tanggal')->take(30)->values(),
+            'riwayat' => $presensiRaw->sortByDesc('tanggal')->values(),
         ];
 
         // ── BTAQ ──────────────────────────────────────────────────────────────
