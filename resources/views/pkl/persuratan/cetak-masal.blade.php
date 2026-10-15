@@ -183,13 +183,18 @@
         .btn-print { background: #10b981; color: #fff; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
         .btn-back  { background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1 !important; }
 
+        @page {
+            size: A4;
+            margin: 15mm 20mm 15mm 25mm;
+        }
         @media print {
             body { background: none; }
             .no-print { display: none; }
             .surat-page { 
                 margin: 0; 
                 box-shadow: none; 
-                padding: 15mm 20mm 15mm 25mm;
+                padding: 0;
+                width: 100%;
             }
         }
     </style>
@@ -245,10 +250,11 @@
             </table>
         </div>
 
-        {{-- KOP SURAT --}}
+        {{-- KOP SURAT (setelah clearfix header ISO) --}}
+        <div style="clear:both;"></div>
         @if($sekolah && $sekolah->kop && file_exists(storage_path('app/public/' . $sekolah->kop)))
-            <div style="width:100%; text-align:center; margin-bottom:12px;">
-                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="width:100%; max-height:130px; object-fit:contain;">
+            <div style="width:100%; text-align:center; margin-bottom:12px; overflow:hidden;">
+                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="display:block; width:100%; max-width:100%; height:auto; max-height:130px; object-fit:contain;">
             </div>
         @else
             <div class="kop-wrapper">
@@ -362,10 +368,11 @@
             </table>
         </div>
 
-        {{-- KOP SURAT --}}
+        {{-- KOP SURAT (setelah clearfix header ISO) --}}
+        <div style="clear:both;"></div>
         @if($sekolah && $sekolah->kop && file_exists(storage_path('app/public/' . $sekolah->kop)))
-            <div style="width:100%; text-align:center; margin-bottom:12px;">
-                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="width:100%; max-height:130px; object-fit:contain;">
+            <div style="width:100%; text-align:center; margin-bottom:12px; overflow:hidden;">
+                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="display:block; width:100%; max-width:100%; height:auto; max-height:130px; object-fit:contain;">
             </div>
         @else
             <div class="kop-wrapper">
@@ -493,10 +500,11 @@
             </table>
         </div>
 
-        {{-- KOP SURAT --}}
+        {{-- KOP SURAT (setelah clearfix header ISO) --}}
+        <div style="clear:both;"></div>
         @if($sekolah && $sekolah->kop && file_exists(storage_path('app/public/' . $sekolah->kop)))
-            <div style="width:100%; text-align:center; margin-bottom:12px;">
-                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="width:100%; max-height:130px; object-fit:contain;">
+            <div style="width:100%; text-align:center; margin-bottom:12px; overflow:hidden;">
+                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="display:block; width:100%; max-width:100%; height:auto; max-height:130px; object-fit:contain;">
             </div>
         @else
             <div class="kop-wrapper">
@@ -612,10 +620,11 @@
             </table>
         </div>
 
-        {{-- KOP SURAT --}}
+        {{-- KOP SURAT (setelah clearfix header ISO) --}}
+        <div style="clear:both;"></div>
         @if($sekolah && $sekolah->kop && file_exists(storage_path('app/public/' . $sekolah->kop)))
-            <div style="width:100%; text-align:center; margin-bottom:12px;">
-                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="width:100%; max-height:130px; object-fit:contain;">
+            <div style="width:100%; text-align:center; margin-bottom:12px; overflow:hidden;">
+                <img src="{{ asset('storage/' . $sekolah->kop) }}" style="display:block; width:100%; max-width:100%; height:auto; max-height:130px; object-fit:contain;">
             </div>
         @else
             <div class="kop-wrapper">
