@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm 14mm 12mm 14mm;
+            margin: 0;
         }
 
         /* ── Reset & Base ─────────────────────────────────────── */
@@ -19,10 +19,10 @@
             background: #fff;
             line-height: 1.25;
             margin: 0;
-            padding: 0;
+            padding: 12mm 16mm 14mm 16mm;
         }
 
-        /* ── Page Wrapper (Flexible 100% to respect page margins) ── */
+        /* ── Page Wrapper (Flexible 100% inside padded body) ─────── */
         .page {
             width: 100%;
             margin: 0;
