@@ -194,7 +194,7 @@
                 <td>
                     <div class="btn-group-actions" style="justify-content:center;">
                         <a href="{{ route('wali-kelas.cetak-hasil-belajar.preview', $siswa->nis) }}"
-                           class="btn-preview" target="_blank" title="Preview Raport">
+                           class="btn-preview" title="Preview Raport">
                             <i class="fa-solid fa-eye"></i> Preview
                         </a>
                         <a href="{{ route('wali-kelas.cetak-hasil-belajar.download', $siswa->nis) }}"
