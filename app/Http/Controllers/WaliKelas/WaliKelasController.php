@@ -137,18 +137,65 @@ class WaliKelasController extends Controller
         ];
 
         // ── BTAQ ──────────────────────────────────────────────────────────────
-        $btaqRaw = Btaq::with(['guru', 'iqroAwal', 'iqroAkhir', 'alquranAwal', 'alquranAkhir'])
+        // Ambil data BTAQ semester ini secara kronologis untuk menghubungkan sesi awal -> akhir
+        $btaqChronological = Btaq::with(['guru', 'iqroAwal', 'iqroAkhir', 'alquranAwal', 'alquranAkhir'])
             ->where('nis', $siswa->nis)
             ->whereBetween('tanggal', [$awal, $akhir])
-            ->orderByDesc('tanggal')
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('id_btaq', 'asc')
             ->get();
 
+        // Cari sesi BTAQ terakhir sebelum awal semester ini jika ada
+        $firstTanggal = $btaqChronological->first()?->tanggal;
+        $prevBtaq = null;
+        if ($firstTanggal) {
+            $prevBtaq = Btaq::with(['guru', 'iqroAwal', 'iqroAkhir', 'alquranAwal', 'alquranAkhir'])
+                ->where('nis', $siswa->nis)
+                ->where('tanggal', '<', $firstTanggal)
+                ->orderByDesc('tanggal')
+                ->orderByDesc('id_btaq')
+                ->first();
+        }
+
+        foreach ($btaqChronological as $b) {
+            $isIqro = (stripos($b->level ?? '', 'iqr') !== false);
+            $prevIsIqro = $prevBtaq ? (stripos($prevBtaq->level ?? '', 'iqr') !== false) : null;
+
+            // 1. Tentukan AWAL bacaan
+            if (!empty($b->awal) && !empty($b->akhir) && (string)$b->awal !== (string)$b->akhir) {
+                // Jika di database sudah tersimpan nilai awal yang valid dan berbeda dari akhir
+                $b->awal_display = $b->awal_formatted;
+            } elseif ($prevBtaq && $isIqro === $prevIsIqro) {
+                // Sesi lanjutan pada level yang sama: awal = akhir sesi sebelumnya
+                $b->awal_display = $prevBtaq->akhir_formatted;
+            } else {
+                // Sesi pertama kali atau baru naik ke level Al-Qur'an
+                if ($isIqro) {
+                    $jilid = $b->iqroAkhir?->jilid ?? 1;
+                    $b->awal_display = "Jilid {$jilid}, Hal. 1";
+                } else {
+                    $surat = $b->alquranAkhir?->surat ?? 'Al-Baqarah';
+                    $b->awal_display = "QS. {$surat}: 1";
+                }
+            }
+
+            // 2. Tentukan AKHIR bacaan
+            $b->akhir_display = $b->akhir_formatted;
+
+            // Update sesi sebelumnya untuk iterasi berikutnya
+            $prevBtaq = $b;
+        }
+
+        $riwayatBtaq = $btaqChronological->sortByDesc(function ($item) {
+            return $item->tanggal . '_' . str_pad($item->id_btaq, 8, '0', STR_PAD_LEFT);
+        })->values();
+
         $btaq = [
-            'total'       => $btaqRaw->count(),
-            'level_iqro'  => $btaqRaw->filter(fn($b) => stripos($b->level ?? '', 'iqr') !== false)->count(),
-            'level_quran' => $btaqRaw->filter(fn($b) => stripos($b->level ?? '', 'qur') !== false)->count(),
-            'terakhir'    => $btaqRaw->first(),
-            'riwayat'     => $btaqRaw->values(),
+            'total'       => $riwayatBtaq->count(),
+            'level_iqro'  => $riwayatBtaq->filter(fn($b) => stripos($b->level ?? '', 'iqr') !== false)->count(),
+            'level_quran' => $riwayatBtaq->filter(fn($b) => stripos($b->level ?? '', 'qur') !== false)->count(),
+            'terakhir'    => $riwayatBtaq->first(),
+            'riwayat'     => $riwayatBtaq,
         ];
 
         // ── Kunjungan UKS ─────────────────────────────────────────────────────

@@ -315,8 +315,8 @@
                                 {{ $b->level }}
                             </span>
                         </td>
-                        <td>{{ $b->awal_formatted }}</td>
-                        <td>{{ $b->akhir_formatted }}</td>
+                        <td>{{ $b->awal_display ?? $b->awal_formatted }}</td>
+                        <td>{{ $b->akhir_display ?? $b->akhir_formatted }}</td>
                         <td>{{ optional($b->guru)->nama_guru ?? '—' }}</td>
                     </tr>
                     @endforeach

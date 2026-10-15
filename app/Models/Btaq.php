@@ -65,11 +65,23 @@ class Btaq extends Model
 
     public function getAwalFormattedAttribute(): string
     {
+        if (isset($this->attributes['awal_display']) && !empty($this->attributes['awal_display'])) {
+            return $this->attributes['awal_display'];
+        }
+        if (property_exists($this, 'awal_display') && !empty($this->awal_display)) {
+            return $this->awal_display;
+        }
         return $this->formatBtaqTarget($this->awal, $this->iqroAwal, $this->alquranAwal);
     }
 
     public function getAkhirFormattedAttribute(): string
     {
+        if (isset($this->attributes['akhir_display']) && !empty($this->attributes['akhir_display'])) {
+            return $this->attributes['akhir_display'];
+        }
+        if (property_exists($this, 'akhir_display') && !empty($this->akhir_display)) {
+            return $this->akhir_display;
+        }
         return $this->formatBtaqTarget($this->akhir, $this->iqroAkhir, $this->alquranAkhir);
     }
 
