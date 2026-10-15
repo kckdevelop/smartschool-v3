@@ -5,22 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raport — {{ $siswa->nama_siswa }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm 14mm 12mm 14mm;
+        }
+
         /* ── Reset & Base ─────────────────────────────────────── */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 9pt;
+            font-size: 8.5pt;
             color: #000;
             background: #fff;
             line-height: 1.25;
+            margin: 0;
+            padding: 0;
         }
 
-        /* ── Page ─────────────────────────────────────────────── */
+        /* ── Page Wrapper (Flexible 100% to respect page margins) ── */
         .page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 10mm 14mm 14mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        tr {
+            page-break-inside: avoid;
         }
 
         /* ── Divider ──────────────────────────────────────────── */
@@ -175,8 +189,6 @@
         .badge-quran  { background: #fef9c3; color: #7d6608; }
 
         .empty-note { font-style: italic; color: #888; font-size: 7.5pt; padding: 4px 0; }
-
-        @page { margin: 0; }
 
         @media print {
             body { font-size: 8.5pt; }
