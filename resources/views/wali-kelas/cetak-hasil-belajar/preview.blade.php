@@ -275,18 +275,18 @@
 
             {{-- BTAQ ────────────────────────────────────────────────── --}}
             <div class="section-title"><i class="fa-solid fa-book-open fa-sm"></i> Riwayat BTAQ</div>
-            <div style="display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
-                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px 18px; text-align:center; min-width:90px;">
-                    <div style="font-size:1.4rem; font-weight:800; color:#166534;">{{ $btaq['total'] }}</div>
-                    <div style="font-size:.75rem; color:#166534; font-weight:600;">Total Sesi</div>
+            <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:8px 14px; text-align:center; min-width:80px; flex:1;">
+                    <div style="font-size:1.35rem; font-weight:800; color:#166534;">{{ $btaq['total'] }}</div>
+                    <div style="font-size:.72rem; color:#166534; font-weight:600;">Total Sesi</div>
                 </div>
-                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 18px; text-align:center; min-width:90px;">
-                    <div style="font-size:1.4rem; font-weight:800; color:#1d4ed8;">{{ $btaq['level_iqro'] }}</div>
-                    <div style="font-size:.75rem; color:#1d4ed8; font-weight:600;">Level Iqro</div>
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:8px 14px; text-align:center; min-width:80px; flex:1;">
+                    <div style="font-size:1.35rem; font-weight:800; color:#1d4ed8;">{{ $btaq['level_iqro'] }}</div>
+                    <div style="font-size:.72rem; color:#1d4ed8; font-weight:600;">Level Iqro</div>
                 </div>
-                <div style="background:#fefce8; border:1px solid #fde68a; border-radius:10px; padding:12px 18px; text-align:center; min-width:90px;">
-                    <div style="font-size:1.4rem; font-weight:800; color:#854d0e;">{{ $btaq['level_quran'] }}</div>
-                    <div style="font-size:.75rem; color:#854d0e; font-weight:600;">Level Al-Qur'an</div>
+                <div style="background:#fefce8; border:1px solid #fde68a; border-radius:10px; padding:8px 14px; text-align:center; min-width:80px; flex:1;">
+                    <div style="font-size:1.35rem; font-weight:800; color:#854d0e;">{{ $btaq['level_quran'] }}</div>
+                    <div style="font-size:.72rem; color:#854d0e; font-weight:600;">Level Al-Qur'an</div>
                 </div>
             </div>
 
@@ -294,9 +294,9 @@
             <table class="mini-table">
                 <thead>
                     <tr>
-                        <th style="width:30px;" class="tc">No</th>
-                        <th>Tanggal</th>
-                        <th>Level</th>
+                        <th style="width:36px;" class="tc">No</th>
+                        <th style="width:140px;">Tanggal</th>
+                        <th style="width:90px;" class="tc">Level</th>
                         <th>Awal</th>
                         <th>Akhir</th>
                         <th>Guru</th>
@@ -304,16 +304,19 @@
                 </thead>
                 <tbody>
                     @foreach($btaq['riwayat'] as $idx => $b)
+                    @php
+                        $isIqro = (stripos($b->level ?? '', 'iqr') !== false);
+                    @endphp
                     <tr>
                         <td class="tc">{{ $idx + 1 }}</td>
                         <td>{{ \Carbon\Carbon::parse($b->tanggal)->translatedFormat('d F Y') }}</td>
-                        <td>
-                            <span style="background:{{ $b->level==='iqro'?'#dbeafe':'#fef9c3' }}; color:{{ $b->level==='iqro'?'#1d4ed8':'#854d0e' }}; border-radius:12px; padding:2px 10px; font-size:.75rem; font-weight:700; text-transform:capitalize;">
+                        <td class="tc">
+                            <span style="background:{{ $isIqro ? '#dbeafe' : '#fef9c3' }}; color:{{ $isIqro ? '#1d4ed8' : '#854d0e' }}; border-radius:10px; padding:2px 9px; font-size:.7rem; font-weight:700; display:inline-block;">
                                 {{ $b->level }}
                             </span>
                         </td>
-                        <td>{{ $b->awal ?? '—' }}</td>
-                        <td>{{ $b->akhir ?? '—' }}</td>
+                        <td>{{ $b->awal_formatted }}</td>
+                        <td>{{ $b->akhir_formatted }}</td>
                         <td>{{ optional($b->guru)->nama_guru ?? '—' }}</td>
                     </tr>
                     @endforeach

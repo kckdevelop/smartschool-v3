@@ -361,16 +361,19 @@
         </thead>
         <tbody>
             @foreach($btaq['riwayat'] as $idx => $b)
+            @php
+                $isIqro = (stripos($b->level ?? '', 'iqr') !== false);
+            @endphp
             <tr>
                 <td class="tc">{{ $idx + 1 }}</td>
                 <td>{{ \Carbon\Carbon::parse($b->tanggal)->translatedFormat('d F Y') }}</td>
                 <td class="tc">
-                    <span class="badge {{ $b->level==='iqro'?'badge-iqro':'badge-quran' }}" style="text-transform:capitalize;">
+                    <span class="badge {{ $isIqro ? 'badge-iqro' : 'badge-quran' }}" style="text-transform:capitalize;">
                         {{ $b->level }}
                     </span>
                 </td>
-                <td class="tc">{{ $b->awal ?? '—' }}</td>
-                <td class="tc">{{ $b->akhir ?? '—' }}</td>
+                <td class="tc">{{ $b->awal_formatted }}</td>
+                <td class="tc">{{ $b->akhir_formatted }}</td>
                 <td>{{ optional($b->guru)->nama_guru ?? '—' }}</td>
             </tr>
             @endforeach

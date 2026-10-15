@@ -137,18 +137,18 @@ class WaliKelasController extends Controller
         ];
 
         // ── BTAQ ──────────────────────────────────────────────────────────────
-        $btaqRaw = Btaq::with(['guru'])
+        $btaqRaw = Btaq::with(['guru', 'iqroAwal', 'iqroAkhir', 'alquranAwal', 'alquranAkhir'])
             ->where('nis', $siswa->nis)
             ->whereBetween('tanggal', [$awal, $akhir])
             ->orderByDesc('tanggal')
             ->get();
 
         $btaq = [
-            'total'      => $btaqRaw->count(),
-            'level_iqro' => $btaqRaw->where('level', 'iqro')->count(),
-            'level_quran'=> $btaqRaw->where('level', 'quran')->count(),
-            'terakhir'   => $btaqRaw->first(),
-            'riwayat'    => $btaqRaw->take(20)->values(),
+            'total'       => $btaqRaw->count(),
+            'level_iqro'  => $btaqRaw->filter(fn($b) => stripos($b->level ?? '', 'iqr') !== false)->count(),
+            'level_quran' => $btaqRaw->filter(fn($b) => stripos($b->level ?? '', 'qur') !== false)->count(),
+            'terakhir'    => $btaqRaw->first(),
+            'riwayat'     => $btaqRaw->values(),
         ];
 
         // ── Kunjungan UKS ─────────────────────────────────────────────────────

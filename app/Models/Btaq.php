@@ -62,4 +62,50 @@ class Btaq extends Model
     {
         return $this->belongsTo(TabelAlquran::class, 'akhir', 'id');
     }
+
+    public function getAwalFormattedAttribute(): string
+    {
+        return $this->formatBtaqTarget($this->awal, $this->iqroAwal, $this->alquranAwal);
+    }
+
+    public function getAkhirFormattedAttribute(): string
+    {
+        return $this->formatBtaqTarget($this->akhir, $this->iqroAkhir, $this->alquranAkhir);
+    }
+
+    protected function formatBtaqTarget($rawVal, $iqroRel, $quranRel): string
+    {
+        if ((is_null($rawVal) || $rawVal === '') && !$iqroRel && !$quranRel) {
+            return '—';
+        }
+
+        $isIqro = (stripos($this->level ?? '', 'iqra') !== false || stripos($this->level ?? '', 'iqro') !== false);
+
+        if ($isIqro) {
+            $iqro = $iqroRel;
+            if (!$iqro && is_numeric($rawVal)) {
+                $iqro = TabelIqro::find($rawVal);
+            }
+            if ($iqro) {
+                $res = "Jilid {$iqro->jilid}, Hal. {$iqro->halaman}";
+                if (!empty($iqro->baris)) {
+                    $res .= ", Baris {$iqro->baris}";
+                }
+                return $res;
+            }
+            if (is_numeric($rawVal)) {
+                return "Hal. {$rawVal}";
+            }
+            return (string) $rawVal;
+        } else {
+            $quran = $quranRel;
+            if (!$quran && is_numeric($rawVal)) {
+                $quran = TabelAlquran::find($rawVal);
+            }
+            if ($quran) {
+                return "QS. {$quran->surat}: {$quran->ayat}";
+            }
+            return (string) $rawVal;
+        }
+    }
 }
