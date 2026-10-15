@@ -213,8 +213,32 @@ class BtaqController extends Controller
             }
         }
 
+        $awalId = $recordId;
+        if ($lastBtaq) {
+            $lastIsIqro = (stripos($lastBtaq->level, 'Iqra') !== false || stripos($lastBtaq->level, 'Iqro') !== false);
+            if ($isIqro === $lastIsIqro) {
+                $awalId = $lastBtaq->akhir ?? $lastBtaq->awal;
+            } else {
+                if ($isIqro) {
+                    $firstIqro = \App\Models\TabelIqro::where('jilid', $jilidInt)->where('halaman', 1)->first();
+                    $awalId = $firstIqro ? $firstIqro->id : $recordId;
+                } else {
+                    $firstAyat = \App\Models\TabelAlquran::where('surat', $request->surat)->where('ayat', 1)->first();
+                    $awalId = $firstAyat ? $firstAyat->id : $recordId;
+                }
+            }
+        } else {
+            if ($isIqro) {
+                $firstIqro = \App\Models\TabelIqro::where('jilid', $jilidInt)->where('halaman', 1)->first();
+                $awalId = $firstIqro ? $firstIqro->id : $recordId;
+            } else {
+                $firstAyat = \App\Models\TabelAlquran::where('surat', $request->surat)->where('ayat', 1)->first();
+                $awalId = $firstAyat ? $firstAyat->id : $recordId;
+            }
+        }
+
         $btaqData = $request->only(['tanggal', 'nis', 'id_kelas', 'level', 'id_guru']);
-        $btaqData['awal']  = $recordId;
+        $btaqData['awal']  = $awalId;
         $btaqData['akhir'] = $recordId;
 
         Btaq::create($btaqData);
@@ -273,8 +297,40 @@ class BtaqController extends Controller
         }
 
         $btaq = Btaq::findOrFail($id);
+
+        $prevBtaq = Btaq::where('nis', $request->nis)
+            ->where('id_btaq', '!=', $id)
+            ->where('tanggal', '<=', $request->tanggal)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id_btaq')
+            ->first();
+
+        $awalId = $recordId;
+        if ($prevBtaq) {
+            $prevIsIqro = (stripos($prevBtaq->level, 'Iqra') !== false || stripos($prevBtaq->level, 'Iqro') !== false);
+            if ($isIqro === $prevIsIqro) {
+                $awalId = $prevBtaq->akhir ?? $prevBtaq->awal;
+            } else {
+                if ($isIqro) {
+                    $firstIqro = \App\Models\TabelIqro::where('jilid', $jilidInt)->where('halaman', 1)->first();
+                    $awalId = $firstIqro ? $firstIqro->id : $recordId;
+                } else {
+                    $firstAyat = \App\Models\TabelAlquran::where('surat', $request->surat)->where('ayat', 1)->first();
+                    $awalId = $firstAyat ? $firstAyat->id : $recordId;
+                }
+            }
+        } else {
+            if ($isIqro) {
+                $firstIqro = \App\Models\TabelIqro::where('jilid', $jilidInt)->where('halaman', 1)->first();
+                $awalId = $firstIqro ? $firstIqro->id : $recordId;
+            } else {
+                $firstAyat = \App\Models\TabelAlquran::where('surat', $request->surat)->where('ayat', 1)->first();
+                $awalId = $firstAyat ? $firstAyat->id : $recordId;
+            }
+        }
+
         $btaqData = $request->only(['tanggal', 'nis', 'id_kelas', 'level', 'id_guru']);
-        $btaqData['awal']  = $recordId;
+        $btaqData['awal']  = $awalId;
         $btaqData['akhir'] = $recordId;
 
         $btaq->update($btaqData);
