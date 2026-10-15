@@ -247,15 +247,17 @@ function filterSiswa(q) {
 const btnDownload = document.getElementById('btnDownloadSemua');
 if (btnDownload) {
     btnDownload.addEventListener('click', function () {
-        this.style.opacity = '0.65';
-        this.style.pointerEvents = 'none';
-        this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-        // Kembalikan tombol setelah 20 detik (fallback jika download terlalu lama)
+        const btn = this;
         setTimeout(() => {
-            this.style.opacity = '';
-            this.style.pointerEvents = '';
-            this.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download Semua Raport';
-        }, 20000);
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan PDF Kelas...';
+        }, 50);
+        setTimeout(() => {
+            btn.style.opacity = '';
+            btn.style.pointerEvents = '';
+            btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download Semua Raport';
+        }, 15000);
     });
 }
 </script>

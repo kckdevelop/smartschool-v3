@@ -2,10 +2,17 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Raport Kelas</title>
+    <title>Raport Kelas {{ $kelas->nama_kelas ?? '' }}</title>
     <style>
-        @page { size: A4 portrait; margin: 0; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 8.5pt;
@@ -18,54 +25,187 @@
             padding: 12mm 16mm 14mm 16mm;
             page-break-after: always;
         }
-        .page-siswa:last-child { page-break-after: avoid; }
-        table { width: 100%; border-collapse: collapse; }
-        tr { page-break-inside: avoid; }
-        .divider-double { border: none; border-top: 2.5px double #000; margin: 4px 0 8px; }
-        .divider-single { border: none; border-top: 1px solid #ccc; margin: 8px 0; }
-        .judul-raport { text-align: center; margin: 6px 0 10px; }
-        .judul-raport h2 { font-size: 11.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
-        .judul-raport p { font-size: 8pt; color: #444; margin-top: 2px; }
-        .section-title {
-            font-size: 8.5pt; font-weight: bold; text-transform: uppercase;
-            letter-spacing: 0.03em; border-left: 3px solid #1a5276;
-            padding-left: 6px; margin: 10px 0 6px; color: #1a5276;
+        .page-siswa:last-child {
+            page-break-after: avoid;
         }
-        .info-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 4px; }
-        .info-table td { padding: 2px 4px; vertical-align: middle; }
-        .info-table .lbl { width: 95px; color: #444; }
-        .info-table .sep { width: 8px; color: #666; text-align: center; }
-        .info-table .val { font-weight: bold; color: #000; }
-        .prs-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 7.5pt; }
-        .prs-table td { text-align: center; padding: 4px 3px; border: 1px solid #d0d7de; vertical-align: middle; }
-        .prs-table .val { font-size: 11pt; font-weight: bold; line-height: 1; display: block; }
-        .prs-table .lbl { font-size: 6.5pt; font-weight: 600; display: block; margin-top: 1px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        tr {
+            page-break-inside: avoid;
+        }
+
+        .divider-double {
+            border: none;
+            border-top: 2.5px double #000;
+            margin: 4px 0 8px;
+        }
+        .divider-single {
+            border: none;
+            border-top: 1px solid #ccc;
+            margin: 8px 0;
+        }
+
+        .judul-raport {
+            text-align: center;
+            margin: 6px 0 10px;
+        }
+        .judul-raport h2 {
+            font-size: 11.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .judul-raport p {
+            font-size: 8pt;
+            color: #444;
+            margin-top: 2px;
+        }
+
+        .section-title {
+            font-size: 8.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-left: 3px solid #1a5276;
+            padding-left: 6px;
+            margin: 10px 0 6px;
+            color: #1a5276;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin-bottom: 4px;
+        }
+        .info-table td {
+            padding: 2px 4px;
+            vertical-align: middle;
+        }
+        .info-table .lbl {
+            width: 95px;
+            color: #444;
+        }
+        .info-table .sep {
+            width: 8px;
+            color: #666;
+            text-align: center;
+        }
+        .info-table .val {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .prs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            font-size: 7.5pt;
+        }
+        .prs-table td {
+            text-align: center;
+            padding: 4px 3px;
+            border: 1px solid #d0d7de;
+            vertical-align: middle;
+        }
+        .prs-table .val {
+            font-size: 11pt;
+            font-weight: bold;
+            line-height: 1;
+            display: block;
+        }
+        .prs-table .lbl {
+            font-size: 6.5pt;
+            font-weight: 600;
+            display: block;
+            margin-top: 1px;
+        }
         .prs-h { background: #d5f5e3; color: #1e8449; }
         .prs-i { background: #d6eaf8; color: #1a5276; }
         .prs-s { background: #fef9c3; color: #7d6608; }
         .prs-a { background: #fadbd8; color: #922b21; }
         .prs-t { background: #f2f3f4; color: #2c3e50; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 7pt; margin-bottom: 8px; line-height: 1.15; }
-        .data-table th {
-            background: #eaf0fb; color: #1a3a5c; font-weight: bold;
-            font-size: 6.8pt; padding: 3.5px 5px; border: 1px solid #c5cfe3; text-align: center;
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7pt;
+            margin-bottom: 8px;
+            line-height: 1.15;
         }
-        .data-table td { padding: 2.2px 5px; border: 1px solid #dce3ed; color: #000; vertical-align: middle; }
-        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
-        .data-table .tc { text-align: center; }
-        .btaq-stats-table { width: 240px; border-collapse: collapse; font-size: 7.5pt; margin-bottom: 6px; }
-        .btaq-stats-table td { padding: 3px 6px; border: 1px solid #dce3ed; }
+        .data-table th {
+            background: #eaf0fb;
+            color: #1a3a5c;
+            font-weight: bold;
+            font-size: 6.8pt;
+            padding: 3.5px 5px;
+            border: 1px solid #c5cfe3;
+            text-align: center;
+        }
+        .data-table td {
+            padding: 2.2px 5px;
+            border: 1px solid #dce3ed;
+            color: #000;
+            vertical-align: middle;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        .data-table .tc {
+            text-align: center;
+        }
+
+        .btaq-stats-table {
+            width: 240px;
+            border-collapse: collapse;
+            font-size: 7.5pt;
+            margin-bottom: 6px;
+        }
+        .btaq-stats-table td {
+            padding: 3px 6px;
+            border: 1px solid #dce3ed;
+        }
         .btaq-stats-table .lbl { color: #555; }
         .btaq-stats-table .val { font-weight: bold; }
+
         .uks-note {
-            background: #fff0f0; border: 1px solid #f5c6c6; border-radius: 3px;
-            padding: 4px 8px; font-size: 7.5pt; color: #7b0000; margin-bottom: 6px;
+            background: #fff0f0;
+            border: 1px solid #f5c6c6;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 7.5pt;
+            color: #7b0000;
+            margin-bottom: 6px;
         }
-        .ttd-wrap { margin-top: 18px; text-align: right; }
-        .ttd-block { display: inline-block; text-align: center; min-width: 180px; font-size: 8pt; }
-        .ttd-space { height: 48px; }
-        .ttd-name { font-weight: bold; text-decoration: underline; }
-        .badge { display: inline-block; border-radius: 3px; padding: 1px 5px; font-size: 6.5pt; font-weight: bold; }
+
+        .ttd-wrap {
+            margin-top: 18px;
+            text-align: right;
+        }
+        .ttd-block {
+            display: inline-block;
+            text-align: center;
+            min-width: 180px;
+            font-size: 8pt;
+        }
+        .ttd-space {
+            height: 48px;
+        }
+        .ttd-name {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 6.5pt;
+            font-weight: bold;
+        }
         .badge-hadir { background: #d5f5e3; color: #1e8449; }
         .badge-izin  { background: #d6eaf8; color: #1a5276; }
         .badge-sakit { background: #fef9c3; color: #7d6608; }
@@ -73,7 +213,13 @@
         .badge-muted { background: #f2f3f4; color: #555555; }
         .badge-iqro  { background: #d6eaf8; color: #1a5276; }
         .badge-quran { background: #fef9c3; color: #7d6608; }
-        .empty-note { font-style: italic; color: #888; font-size: 7.5pt; padding: 4px 0; }
+
+        .empty-note {
+            font-style: italic;
+            color: #888;
+            font-size: 7.5pt;
+            padding: 4px 0;
+        }
     </style>
 </head>
 <body>
@@ -88,14 +234,57 @@
 <div class="page-siswa">
 
     {{-- KOP SEKOLAH --}}
-    @include('partials.kop-surat', ['isPdf' => true])
+    @if(!empty($kopSrc))
+        <div class="kop-surat-container kop-uploaded" style="width: 100%; text-align: center; margin-bottom: 6px;">
+            <img src="{{ $kopSrc }}" alt="Kop Surat Sekolah" style="width: 100%; max-height: 110px; object-fit: contain; display: block; margin: 0 auto;">
+        </div>
+    @elseif(!empty($logoSrc))
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; border: none;">
+            <tr style="border: none;">
+                <td style="width: 80px; text-align: center; vertical-align: middle; padding: 0 15px 10px 0; border: none;">
+                    <img src="{{ $logoSrc }}" alt="Logo" style="max-width: 65px; max-height: 65px; object-fit: contain; display: block; margin: 0 auto;">
+                </td>
+                <td style="text-align: center; vertical-align: middle; padding-bottom: 10px; border: none; padding-right: 80px;">
+                    <div style="font-family: 'Times New Roman', Times, serif; font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 0; line-height: 1.2; color: #000; text-align: center;">
+                        {{ $sekolah->nama_sekolah ?? 'SMART SCHOOL ACADEMY' }}
+                    </div>
+                    @if($sekolah && $sekolah->alamat)
+                        <div style="font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; margin-top: 3px; color: #333; line-height: 1.25; text-align: center;">
+                            {{ $sekolah->alamat }}
+                            @if($sekolah->kota || $sekolah->provinsi)
+                                , {{ $sekolah->kota }} {{ $sekolah->provinsi }}
+                            @endif
+                        </div>
+                    @endif
+                    @if($sekolah && ($sekolah->telepon || $sekolah->email || $sekolah->website))
+                        <div style="font-family: 'Times New Roman', Times, serif; font-size: 7.5pt; margin-top: 2px; color: #555; text-align: center;">
+                            @if($sekolah->telepon) Telp: {{ $sekolah->telepon }} @endif
+                            @if($sekolah->email) | Email: {{ $sekolah->email }} @endif
+                            @if($sekolah->website) | Web: {{ $sekolah->website }} @endif
+                        </div>
+                    @endif
+                </td>
+            </tr>
+        </table>
+    @else
+        <div style="text-align: center; margin-bottom: 6px;">
+            <div style="font-family: 'Times New Roman', Times, serif; font-size: 15pt; font-weight: bold; text-transform: uppercase; margin: 0; line-height: 1.2; color: #000;">
+                {{ $sekolah->nama_sekolah ?? 'SMART SCHOOL ACADEMY' }}
+            </div>
+            @if($sekolah && $sekolah->alamat)
+                <div style="font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; margin-top: 3px; color: #333;">
+                    {{ $sekolah->alamat }}
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- Judul --}}
     <div class="judul-raport">
         <h2>Laporan Hasil Belajar Siswa</h2>
         <p>
-            Semester {{ $semester?->semester ?? 'x' }}
-            &mdash; Tahun Ajaran {{ optional($semester?->tahunAjaran)->tahun ?? 'x' }}
+            Semester {{ $semester?->semester ?? '—' }}
+            &mdash; Tahun Ajaran {{ optional($semester?->tahunAjaran)->tahun ?? '—' }}
             @if($semester?->awal && $semester?->akhir)
             &nbsp;|&nbsp; Periode:
             {{ \Carbon\Carbon::parse($semester->awal)->format('d/m/Y') }} s/d
@@ -112,28 +301,28 @@
             <td class="lbl">Nama Lengkap</td><td class="sep">:</td>
             <td class="val">{{ $siswa->nama_siswa }}</td>
             <td class="lbl">Kelas</td><td class="sep">:</td>
-            <td class="val">{{ optional($siswa->kelas)->nama_kelas ?? 'x' }}</td>
+            <td class="val">{{ optional($siswa->kelas)->nama_kelas ?? '—' }}</td>
         </tr>
         <tr>
             <td class="lbl">NIS / NISN</td><td class="sep">:</td>
-            <td class="val">{{ $siswa->nis }} / {{ $siswa->nisn ?? 'x' }}</td>
+            <td class="val">{{ $siswa->nis }} / {{ $siswa->nisn ?? '—' }}</td>
             <td class="lbl">Jurusan</td><td class="sep">:</td>
-            <td class="val">{{ optional(optional($siswa->kelas)->jurusan)->nama_jurusan ?? 'x' }}</td>
+            <td class="val">{{ optional(optional($siswa->kelas)->jurusan)->nama_jurusan ?? '—' }}</td>
         </tr>
         <tr>
             <td class="lbl">Jenis Kelamin</td><td class="sep">:</td>
             <td class="val">{{ $siswa->jenkel === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
             <td class="lbl">Wali Kelas</td><td class="sep">:</td>
-            <td class="val">{{ optional(optional($siswa->kelas)->guru)->nama_guru ?? 'x' }}</td>
+            <td class="val">{{ optional(optional($siswa->kelas)->guru)->nama_guru ?? '—' }}</td>
         </tr>
         <tr>
             <td class="lbl">Tempat, Tgl Lahir</td><td class="sep">:</td>
             <td class="val">
-                {{ $siswa->tempat_lahir ?? 'x' }},
-                {{ $siswa->tgl_lahir ? \Carbon\Carbon::parse($siswa->tgl_lahir)->translatedFormat('d F Y') : 'x' }}
+                {{ $siswa->tempat_lahir ?? '—' }},
+                {{ $siswa->tgl_lahir ? \Carbon\Carbon::parse($siswa->tgl_lahir)->translatedFormat('d F Y') : '—' }}
             </td>
             <td class="lbl">Alamat</td><td class="sep">:</td>
-            <td class="val">{{ optional($siswa->detail)->alamat ?? 'x' }}</td>
+            <td class="val">{{ optional($siswa->detail)->alamat ?? '—' }}</td>
         </tr>
     </table>
     <div class="divider-single"></div>
@@ -160,21 +349,21 @@
             @php
                 $st = strval($p->status);
                 if (in_array($st, ['1','Hadir','hadir','H','h'], true))
-                    { $label='Hadir'; $cls='badge-hadir'; $jam=$p->jam??'x'; }
+                    { $label='Hadir'; $cls='badge-hadir'; $jam=$p->jam ?? '—'; }
                 elseif (in_array($st, ['2','Sakit','sakit','S','s'], true))
-                    { $label='Sakit'; $cls='badge-sakit'; $jam='x'; }
+                    { $label='Sakit'; $cls='badge-sakit'; $jam='—'; }
                 elseif (in_array($st, ['3','Izin','izin','I','i'], true))
-                    { $label='Izin';  $cls='badge-izin';  $jam='x'; }
+                    { $label='Izin';  $cls='badge-izin';  $jam='—'; }
                 elseif (in_array($st, ['4','Alfa','alfa','Alpha','alpha','A','a'], true))
-                    { $label='Alpha'; $cls='badge-alpha'; $jam='x'; }
-                else { $label=$p->status?:'x'; $cls='badge-muted'; $jam='x'; }
+                    { $label='Alpha'; $cls='badge-alpha'; $jam='—'; }
+                else { $label=$p->status ?: '—'; $cls='badge-muted'; $jam='—'; }
             @endphp
             <tr>
                 <td class="tc">{{ $idx+1 }}</td>
                 <td>{{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d F Y') }}</td>
                 <td class="tc">{{ $jam }}</td>
                 <td class="tc"><span class="badge {{ $cls }}">{{ $label }}</span></td>
-                <td>{{ $p->keterangan ?? 'x' }}</td>
+                <td>{{ $p->keterangan ?? '—' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -216,7 +405,7 @@
                 </td>
                 <td class="tc">{{ $b->awal_display ?? $b->awal_formatted }}</td>
                 <td class="tc">{{ $b->akhir_display ?? $b->akhir_formatted }}</td>
-                <td>{{ optional($b->guru)->nama_guru ?? 'x' }}</td>
+                <td>{{ optional($b->guru)->nama_guru ?? '—' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -242,10 +431,10 @@
             <tr>
                 <td class="tc">{{ $idx+1 }}</td>
                 <td>{{ \Carbon\Carbon::parse($k->tanggal)->translatedFormat('d F Y') }}</td>
-                <td class="tc">{{ $k->jam ?? 'x' }}</td>
-                <td>{{ $k->keluhan ?? 'x' }}</td>
-                <td>{{ $k->diagnosa ?? 'x' }}</td>
-                <td>{{ $k->tindakan ?? 'x' }}</td>
+                <td class="tc">{{ $k->jam ?? '—' }}</td>
+                <td>{{ $k->keluhan ?? '—' }}</td>
+                <td>{{ $k->diagnosa ?? '—' }}</td>
+                <td>{{ $k->tindakan ?? '—' }}</td>
             </tr>
             @endforeach
         </tbody>
