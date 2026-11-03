@@ -677,7 +677,7 @@
 {{-- ============================================================================ --}}
 {{-- MODAL PILIH GURU PEMBIMBING SEKOLAH SECARA CEPAT --}}
 {{-- ============================================================================ --}}
-<div class="modal-overlay" id="modal-pilih-pembimbing" style="display:none;">
+<div class="modal-overlay" id="modal-pilih-pembimbing">
     <div class="modal modal-md" style="max-width: 560px; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
         <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155); color: #fff; padding: 16px 20px;">
             <div>

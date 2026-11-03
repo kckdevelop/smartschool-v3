@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -501,7 +501,13 @@ document.addEventListener('DOMContentLoaded', function () {
 // â”€â”€ Global Modal Functions â”€â”€
 function openModal(id) {
     const el = document.getElementById(id);
-    if (el) { el.classList.add('active'); document.body.style.overflow = 'hidden'; }
+    if (el) { 
+        if (el.style.display === 'none') {
+            el.style.display = '';
+        }
+        el.classList.add('active'); 
+        document.body.style.overflow = 'hidden'; 
+    }
 }
 function closeModal(id) {
     const el = document.getElementById(id);
