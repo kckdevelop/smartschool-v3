@@ -446,7 +446,7 @@
     {{-- ============================================================================ --}}
     {{-- VIEW MODE 2: TABEL FLAT DUDI ALTERNATIF --}}
     {{-- ============================================================================ --}}
-    <div id="view-panel-flat" style="display:none;">
+    <div id="view-panel-flat" style="display:block;">
         <div class="card">
             <div class="card-header" style="background:#fafbff; border-bottom:1px solid #f1f5f9;">
                 <h3 class="card-title" style="font-size:0.95rem; font-weight:700; color:var(--text-color,#1e293b);">
