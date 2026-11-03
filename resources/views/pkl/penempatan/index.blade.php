@@ -251,10 +251,10 @@
         </div>
 
         <div style="display:flex; gap:8px;">
-            <button type="button" onclick="switchView('dudi')" id="view-btn-dudi" class="btn btn-sm btn-primary" style="font-weight:600;">
+            <button type="button" onclick="switchView('dudi')" id="view-btn-dudi" class="btn btn-sm btn-secondary" style="font-weight:600;">
                 <i class="fa-solid fa-building"></i> Tampilan DUDI per Jurusan ({{ $dudisWithPenempatan->count() }})
             </button>
-            <button type="button" onclick="switchView('flat')" id="view-btn-flat" class="btn btn-sm btn-secondary" style="font-weight:600;">
+            <button type="button" onclick="switchView('flat')" id="view-btn-flat" class="btn btn-sm btn-primary" style="font-weight:600;">
                 <i class="fa-solid fa-table"></i> Tabel Flat DUDI ({{ $dudisWithPenempatan->count() }})
             </button>
         </div>
@@ -263,7 +263,7 @@
     {{-- ============================================================================ --}}
     {{-- VIEW MODE 1: TAMPILAN DUDI KELOMPOK PER JURUSAN --}}
     {{-- ============================================================================ --}}
-    <div id="view-panel-dudi" style="display:block;">
+    <div id="view-panel-dudi" style="display:none;">
         @forelse($groupedDudis as $jurusanNama => $items)
         <div class="jurusan-section mb-6" style="margin-bottom:28px;">
             {{-- Header Kelompok Jurusan --}}
@@ -307,7 +307,11 @@
                             <div id="pembimbing-display-header-{{ $dudi->id_dudi }}" style="display:inline-block;">
                                 @if($item->guru)
                                     <button type="button" class="btn-pembimbing-trigger"
-                                        onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', {{ $item->guru->id_guru }}, '{{ addslashes($item->guru->nama_guru) }}')"
+                                        data-id-dudi="{{ $dudi->id_dudi }}"
+                                        data-nama-dudi="{{ $dudi->nama_dudi }}"
+                                        data-id-guru="{{ $item->guru->id_guru }}"
+                                        data-nama-guru="{{ $item->guru->nama_guru }}"
+                                        onclick="openPilihPembimbingFromBtn(this)"
                                         title="Klik untuk ubah guru pembimbing">
                                         <span class="pembimbing-avatar"><i class="fa-solid fa-chalkboard-user"></i></span>
                                         <span class="pembimbing-name">{{ $item->guru->nama_guru }}</span>
@@ -315,7 +319,11 @@
                                     </button>
                                 @else
                                     <button type="button" class="btn-pembimbing-trigger empty"
-                                        onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', null, '')"
+                                        data-id-dudi="{{ $dudi->id_dudi }}"
+                                        data-nama-dudi="{{ $dudi->nama_dudi }}"
+                                        data-id-guru=""
+                                        data-nama-guru=""
+                                        onclick="openPilihPembimbingFromBtn(this)"
                                         title="Klik untuk pilih guru pembimbing">
                                         <i class="fa-solid fa-user-plus"></i>
                                         <span>+ Pilih Pembimbing</span>
