@@ -64,6 +64,117 @@
 .siswa-item-check:hover {
     background: #f8fafc;
 }
+
+/* Quick Pembimbing Selector Trigger */
+.btn-pembimbing-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 5px 11px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    max-width: 260px;
+}
+.btn-pembimbing-trigger:hover {
+    background: #eef2ff;
+    border-color: #818cf8;
+    color: var(--color-primary, #4f46e5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.12);
+}
+.btn-pembimbing-trigger.empty {
+    border-style: dashed;
+    border-color: #cbd5e1;
+    color: #64748b;
+    background: #fafbfc;
+}
+.btn-pembimbing-trigger.empty:hover {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    color: #b45309;
+}
+.btn-pembimbing-trigger .pembimbing-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(79, 70, 229, 0.12);
+    color: var(--color-primary, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+.btn-pembimbing-trigger .pembimbing-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.btn-pembimbing-trigger .pembimbing-edit-icon {
+    font-size: 0.72rem;
+    opacity: 0.5;
+    margin-left: auto;
+    transition: opacity 0.2s;
+}
+.btn-pembimbing-trigger:hover .pembimbing-edit-icon {
+    opacity: 1;
+}
+
+/* Modal Guru List Item */
+.guru-select-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+.guru-select-card:hover {
+    background: #f8faff;
+    border-color: #818cf8;
+    transform: translateX(3px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+.guru-select-card.selected-active {
+    background: #f0fdf4;
+    border-color: #10b981;
+}
+
+/* Toast Notification */
+.inline-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    z-index: 99999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+.inline-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
 </style>
 @endpush
 
@@ -191,6 +302,27 @@
                             <i class="fa-solid fa-location-dot"></i> {{ $dudi->alamat }} {{ $dudi->kota ? '('.$dudi->kota.')' : '' }}
                             @if($dudi->no_telepon) | <i class="fa-solid fa-phone"></i> {{ $dudi->no_telepon }} @endif
                         </div>
+                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted,#64748b); text-transform:uppercase;">Pembimbing Sekolah:</span>
+                            <div id="pembimbing-display-header-{{ $dudi->id_dudi }}" style="display:inline-block;">
+                                @if($item->guru)
+                                    <button type="button" class="btn-pembimbing-trigger"
+                                        onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', {{ $item->guru->id_guru }}, '{{ addslashes($item->guru->nama_guru) }}')"
+                                        title="Klik untuk ubah guru pembimbing">
+                                        <span class="pembimbing-avatar"><i class="fa-solid fa-chalkboard-user"></i></span>
+                                        <span class="pembimbing-name">{{ $item->guru->nama_guru }}</span>
+                                        <i class="fa-solid fa-pen-to-square pembimbing-edit-icon"></i>
+                                    </button>
+                                @else
+                                    <button type="button" class="btn-pembimbing-trigger empty"
+                                        onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', null, '')"
+                                        title="Klik untuk pilih guru pembimbing">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                        <span>+ Pilih Pembimbing</span>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div style="display:flex; align-items:center; gap:16px;">
@@ -245,7 +377,28 @@
                                 <td>
                                     <span class="badge badge-info" style="font-size:0.72rem;">{{ optional(optional($p->siswa)->kelas)->nama_kelas ?? '-' }}</span>
                                 </td>
-                                <td style="font-size:0.83rem;">{{ optional(optional($p->pembimbing)->guru)->nama_guru ?? '-' }}</td>
+                                <td>
+                                    @php
+                                        $currGuru = optional($p->pembimbing)->guru ?? $item->guru;
+                                    @endphp
+                                    <div class="pembimbing-student-cell-{{ $dudi->id_dudi }}">
+                                        @if($currGuru)
+                                            <button type="button" class="btn-pembimbing-trigger" style="padding:3px 8px; font-size:0.78rem;"
+                                                onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', {{ $currGuru->id_guru }}, '{{ addslashes($currGuru->nama_guru) }}')"
+                                                title="Klik untuk ubah guru pembimbing">
+                                                <i class="fa-solid fa-circle-check text-success" style="font-size:0.75rem;"></i>
+                                                <span class="pembimbing-name">{{ $currGuru->nama_guru }}</span>
+                                                <i class="fa-solid fa-pen-to-square pembimbing-edit-icon" style="font-size:0.68rem;"></i>
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn-pembimbing-trigger empty" style="padding:3px 8px; font-size:0.76rem;"
+                                                onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', null, '')"
+                                                title="Klik untuk pilih guru pembimbing">
+                                                <i class="fa-solid fa-plus"></i> <em>Pilih Pembimbing</em>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td style="font-size:0.83rem;">{{ $p->tanggal_masuk ? \Carbon\Carbon::parse($p->tanggal_masuk)->format('d/m/Y') : '-' }}</td>
                                 <td>
                                     @php $colors = ['aktif'=>'success','selesai'=>'info','ditarik'=>'warning','batal'=>'danger']; @endphp
@@ -302,6 +455,7 @@
                             <th>Jurusan</th>
                             <th>Bidang Usaha</th>
                             <th>Kota / Alamat</th>
+                            <th style="min-width:180px;">Pembimbing Sekolah</th>
                             <th>Kuota Gelombang Ini</th>
                             <th>Siswa Ditempatkan</th>
                             <th style="width:140px; text-align:center;">Aksi</th>
@@ -315,6 +469,7 @@
                             $terpakai = $item->terpakai;
                             $sisaKuota = $item->sisa_kuota;
                             $percent = $dudi->kuota_siswa > 0 ? min(100, round(($terpakai / $dudi->kuota_siswa) * 100)) : 0;
+                            $currGuru = $item->guru;
                         @endphp
                         <tr>
                             <td style="color:var(--text-muted);font-size:.8rem;">{{ $i + 1 }}</td>
@@ -331,6 +486,30 @@
                             </td>
                             <td style="font-size:.83rem;">{{ $dudi->bidang_usaha ?? '-' }}</td>
                             <td style="font-size:.83rem;">{{ $dudi->kota ?? '-' }}</td>
+                            <td>
+                                <div id="pembimbing-display-flat-{{ $dudi->id_dudi }}">
+                                    @if($currGuru)
+                                        <button type="button" 
+                                            class="btn-pembimbing-trigger"
+                                            onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', {{ $currGuru->id_guru }}, '{{ addslashes($currGuru->nama_guru) }}')"
+                                            title="Klik untuk ubah guru pembimbing">
+                                            <span class="pembimbing-avatar">
+                                                <i class="fa-solid fa-chalkboard-user"></i>
+                                            </span>
+                                            <span class="pembimbing-name">{{ $currGuru->nama_guru }}</span>
+                                            <i class="fa-solid fa-pen-to-square pembimbing-edit-icon"></i>
+                                        </button>
+                                    @else
+                                        <button type="button" 
+                                            class="btn-pembimbing-trigger empty"
+                                            onclick="openPilihPembimbingModal({{ $dudi->id_dudi }}, '{{ addslashes($dudi->nama_dudi) }}', null, '')"
+                                            title="Klik untuk pilih guru pembimbing">
+                                            <i class="fa-solid fa-user-plus"></i>
+                                            <span>+ Pilih Pembimbing</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            </td>
                             <td>
                                 <div style="font-size:0.83rem; font-weight:700;">
                                     <span style="color:var(--color-primary,#4f46e5);">{{ $terpakai }}</span> / {{ $dudi->kuota_siswa }} siswa
@@ -365,7 +544,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-6">
+                            <td colspan="9" class="text-center text-muted py-6">
                                 <i class="fa-solid fa-building-circle-xmark" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
                                 Tidak ada data DUDI ditemukan.
                             </td>
@@ -495,9 +674,70 @@
     </div>
 </div>
 
+{{-- ============================================================================ --}}
+{{-- MODAL PILIH GURU PEMBIMBING SEKOLAH SECARA CEPAT --}}
+{{-- ============================================================================ --}}
+<div class="modal-overlay" id="modal-pilih-pembimbing" style="display:none;">
+    <div class="modal modal-md" style="max-width: 560px; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155); color: #fff; padding: 16px 20px;">
+            <div>
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-chalkboard-user" style="color: #818cf8;"></i> Pilih Guru Pembimbing Sekolah
+                </h3>
+                <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 3px;">
+                    DUDI: <strong id="modal-pembimbing-dudi-name" style="color:#f8fafc;">-</strong>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-pilih-pembimbing')" class="modal-close" style="color: #fff; opacity: 0.8;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="modal-body" style="padding: 16px 20px 10px 20px;">
+            {{-- Quick Filter Box --}}
+            <div style="position: relative; margin-bottom: 12px;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.9rem;"></i>
+                <input type="text" id="search-guru-input" class="form-control"
+                    placeholder="🔍 Ketik nama guru atau NIP..."
+                    autocomplete="off"
+                    style="padding-left: 36px; padding-right: 32px; font-size: 0.88rem; border-radius: 8px; border: 1.5px solid #cbd5e1;"
+                    oninput="filterGuruList(this.value)">
+                <span id="btn-clear-guru-search" onclick="clearGuruSearch()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8; display: none; font-size:0.85rem;">
+                    <i class="fa-solid fa-xmark"></i>
+                </span>
+            </div>
+
+            {{-- Actions / Info Bar --}}
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.76rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;" id="guru-count-label">
+                    Daftar Guru ({{ count($allGuru ?? []) }})
+                </span>
+                <button type="button" class="btn btn-outline-danger btn-xs" onclick="selectGuru(null)" style="font-size: 0.74rem; padding: 3px 8px; border-radius: 5px;">
+                    <i class="fa-solid fa-user-xmark"></i> Kosongkan Pembimbing
+                </button>
+            </div>
+
+            {{-- Guru Cards List Container --}}
+            <div id="guru-list-container" style="max-height: 330px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 7px;">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.78rem; color: #64748b;">
+                <i class="fa-solid fa-circle-info text-primary"></i> Klik salah satu guru untuk langsung menyimpan pilihan.
+            </div>
+            <button type="button" onclick="closeModal('modal-pilih-pembimbing')" class="btn btn-secondary btn-sm">Tutup</button>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 let _allSiswaGelombang = [];
+let _allGuruList = @json($allGuru ?? []);
+let _guruDudiCount = @json($guruDudiCount ?? []);
+let _activePilihDudiId = null;
+let _activeCurrentGuruId = null;
+let _activePilihDudiNama = '';
 
 function switchView(viewMode) {
     const dudiPanel = document.getElementById('view-panel-dudi');
@@ -740,6 +980,246 @@ function editPenempatan(data) {
     }
 
     openModal('modal-penempatan');
+}
+
+function openPilihPembimbingModal(idDudi, namaDudi, currentGuruId, currentGuruNama) {
+    _activePilihDudiId = idDudi;
+    _activeCurrentGuruId = currentGuruId;
+    _activePilihDudiNama = namaDudi;
+
+    const titleEl = document.getElementById('modal-pembimbing-dudi-name');
+    if (titleEl) {
+        titleEl.textContent = namaDudi;
+    }
+
+    const searchInput = document.getElementById('search-guru-input');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    const clearBtn = document.getElementById('btn-clear-guru-search');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    renderGuruList('');
+    openModal('modal-pilih-pembimbing');
+
+    setTimeout(() => {
+        if (searchInput) searchInput.focus();
+    }, 150);
+}
+
+function filterGuruList(q) {
+    const clearBtn = document.getElementById('btn-clear-guru-search');
+    if (clearBtn) {
+        clearBtn.style.display = (q && q.trim().length > 0) ? 'block' : 'none';
+    }
+    renderGuruList(q);
+}
+
+function clearGuruSearch() {
+    const searchInput = document.getElementById('search-guru-input');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    filterGuruList('');
+}
+
+function renderGuruList(query) {
+    const container = document.getElementById('guru-list-container');
+    const labelCount = document.getElementById('guru-count-label');
+    if (!container) return;
+
+    const q = (query || '').trim().toLowerCase();
+    const filtered = _allGuruList.filter(g => {
+        const nama = (g.nama_guru || '').toLowerCase();
+        const nip = (g.no_id || '').toString().toLowerCase();
+        const hp = (g.no_hp || '').toLowerCase();
+        return q === '' || nama.includes(q) || nip.includes(q) || hp.includes(q);
+    });
+
+    if (labelCount) {
+        labelCount.textContent = `Daftar Guru (${filtered.length} dari ${_allGuruList.length})`;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:24px 10px; color:#94a3b8;">
+                <i class="fa-solid fa-user-slash" style="font-size:1.8rem; margin-bottom:8px; opacity:0.4;"></i>
+                <div style="font-size:0.85rem;">Tidak ada guru ditemukan dengan kata kunci "${query}".</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    filtered.forEach(g => {
+        const isCurrent = _activeCurrentGuruId && _activeCurrentGuruId == g.id_guru;
+        const totalBimbingan = _guruDudiCount[g.id_guru] || 0;
+
+        const card = document.createElement('div');
+        card.className = `guru-select-card ${isCurrent ? 'selected-active' : ''}`;
+        card.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:${isCurrent ? '#10b981' : '#e0e7ff'}; color:${isCurrent ? '#fff' : '#4338ca'}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;">
+                    ${isCurrent ? '<i class="fa-solid fa-check"></i>' : (g.nama_guru ? g.nama_guru.charAt(0).toUpperCase() : 'G')}
+                </div>
+                <div>
+                    <div style="font-weight:700; color:#1e293b; font-size:0.88rem; display:flex; align-items:center; gap:6px;">
+                        <span>${g.nama_guru}</span>
+                        ${isCurrent ? '<span class="badge badge-success" style="font-size:0.68rem; padding:2px 6px;">Sedang Aktif</span>' : ''}
+                    </div>
+                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                        ${g.no_id ? 'NIP: ' + g.no_id : ''} 
+                        <span style="display:inline-block; margin-left:4px; color:#4f46e5; font-weight:600;">
+                            • ${totalBimbingan} DUDI dibimbing
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm ${isCurrent ? 'btn-success' : 'btn-primary'}" style="padding:4px 12px; font-size:0.76rem; border-radius:6px; font-weight:600; pointer-events:none;">
+                ${isCurrent ? '<i class="fa-solid fa-check"></i> Terpilih' : '<i class="fa-solid fa-plus"></i> Pilih'}
+            </button>
+        `;
+
+        card.onclick = () => selectGuru(g.id_guru, g.nama_guru);
+        container.appendChild(card);
+    });
+}
+
+function selectGuru(idGuru, namaGuru) {
+    if (!_activePilihDudiId) return;
+
+    const gelombangId = '{{ optional($selectedGelombang)->id_gelombang ?? "" }}';
+    if (!gelombangId) {
+        alert('Gelombang PKL belum dipilih.');
+        return;
+    }
+
+    const payload = {
+        id_gelombang: gelombangId,
+        id_dudi: _activePilihDudiId,
+        id_guru: idGuru
+    };
+
+    fetch('{{ route("pkl.penempatan.update-pembimbing") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            closeModal('modal-pilih-pembimbing');
+            showInlineToast(res.message);
+
+            const safeDudiNama = _activePilihDudiNama.replace(/'/g, "\\'");
+
+            // Update display in Flat Table
+            const flatDisplay = document.getElementById(`pembimbing-display-flat-${_activePilihDudiId}`);
+            if (flatDisplay) {
+                if (res.guru) {
+                    const safeGuruNama = res.guru.nama_guru.replace(/'/g, "\\'");
+                    flatDisplay.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', ${res.guru.id_guru}, '${safeGuruNama}')">
+                            <span class="pembimbing-avatar"><i class="fa-solid fa-chalkboard-user"></i></span>
+                            <span class="pembimbing-name">${res.guru.nama_guru}</span>
+                            <i class="fa-solid fa-pen-to-square pembimbing-edit-icon"></i>
+                        </button>
+                    `;
+                } else {
+                    flatDisplay.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger empty"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', null, '')">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>+ Pilih Pembimbing</span>
+                        </button>
+                    `;
+                }
+            }
+
+            // Update display in DUDI Header (View Mode 1)
+            const headerDisplay = document.getElementById(`pembimbing-display-header-${_activePilihDudiId}`);
+            if (headerDisplay) {
+                if (res.guru) {
+                    const safeGuruNama = res.guru.nama_guru.replace(/'/g, "\\'");
+                    headerDisplay.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', ${res.guru.id_guru}, '${safeGuruNama}')">
+                            <span class="pembimbing-avatar"><i class="fa-solid fa-chalkboard-user"></i></span>
+                            <span class="pembimbing-name">${res.guru.nama_guru}</span>
+                            <i class="fa-solid fa-pen-to-square pembimbing-edit-icon"></i>
+                        </button>
+                    `;
+                } else {
+                    headerDisplay.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger empty"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', null, '')">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>+ Pilih Pembimbing</span>
+                        </button>
+                    `;
+                }
+            }
+
+            // Update student rows in View Mode 1
+            const studentCells = document.querySelectorAll(`.pembimbing-student-cell-${_activePilihDudiId}`);
+            studentCells.forEach(cell => {
+                if (res.guru) {
+                    const safeGuruNama = res.guru.nama_guru.replace(/'/g, "\\'");
+                    cell.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger" style="padding:3px 8px; font-size:0.78rem;"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', ${res.guru.id_guru}, '${safeGuruNama}')">
+                            <i class="fa-solid fa-circle-check text-success" style="font-size:0.75rem;"></i>
+                            <span class="pembimbing-name">${res.guru.nama_guru}</span>
+                            <i class="fa-solid fa-pen-to-square pembimbing-edit-icon" style="font-size:0.68rem;"></i>
+                        </button>
+                    `;
+                } else {
+                    cell.innerHTML = `
+                        <button type="button" class="btn-pembimbing-trigger empty" style="padding:3px 8px; font-size:0.76rem;"
+                            onclick="openPilihPembimbingModal(${_activePilihDudiId}, '${safeDudiNama}', null, '')">
+                            <i class="fa-solid fa-plus"></i> <em>Pilih Pembimbing</em>
+                        </button>
+                    `;
+                }
+            });
+
+            // Update local count cache
+            if (_activeCurrentGuruId && _guruDudiCount[_activeCurrentGuruId]) {
+                _guruDudiCount[_activeCurrentGuruId] = Math.max(0, _guruDudiCount[_activeCurrentGuruId] - 1);
+            }
+            if (idGuru) {
+                _guruDudiCount[idGuru] = (_guruDudiCount[idGuru] || 0) + 1;
+            }
+            _activeCurrentGuruId = idGuru;
+        } else {
+            alert(res.message || 'Gagal mengupdate pembimbing.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Terjadi kesalahan jaringan.');
+    });
+}
+
+function showInlineToast(message) {
+    let toast = document.getElementById('inline-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'inline-toast';
+        toast.className = 'inline-toast';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> <span>${message}</span>`;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3200);
 }
 
 // Close dropdown on click outside

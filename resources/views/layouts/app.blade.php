@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'SmartSchool Dashboard')</title>
-    <meta name="description" content="SmartSchool — Sistem Informasi Sekolah Digital yang lengkap dan modern.">
+    <meta name="description" content="SmartSchool â€” Sistem Informasi Sekolah Digital yang lengkap dan modern.">
 
     {{-- FontAwesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,7 +23,7 @@
 <body>
 <div class="dashboard-wrapper">
 
-    {{-- ══════════════════════ SIDEBAR ══════════════════════ --}}
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <aside class="sidebar" id="sidebar">
 
         {{-- Brand --}}
@@ -54,7 +54,7 @@
         <nav class="sidebar-nav">
             <ul class="sidebar-menu">
 
-                {{-- ── Dashboard ── --}}
+                {{-- â”€â”€ Dashboard â”€â”€ --}}
                 <li>
                     <a href="{{ route('dashboard') }}"
                        class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
@@ -64,7 +64,7 @@
                     </a>
                 </li>
 
-                {{-- ── Layar Display ── --}}
+                {{-- â”€â”€ Layar Display â”€â”€ --}}
                 <li>
                     <a href="{{ route('display.index') }}"
                        class="sidebar-link {{ request()->routeIs('display.index') ? 'active' : '' }}"
@@ -74,9 +74,9 @@
                     </a>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      ATUR DATA
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('atur-data*') ? 'active' : '' }}" id="group-aturdata">
                     <button class="nav-group-toggle" data-target="submenu-aturdata" aria-expanded="{{ request()->is('atur-data*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -102,9 +102,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      PRESENSI SISWA
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('presensi-siswa*') ? 'active' : '' }}" id="group-presensi">
                     <button class="nav-group-toggle" data-target="submenu-presensi" aria-expanded="{{ request()->is('presensi-siswa*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -122,9 +122,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU GURU
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ (request()->is('jurnal-guru*') || request()->is('atur-jam*') || request()->is('jadwal-mengajar*')) ? 'active' : '' }}" id="group-guru">
                     <button class="nav-group-toggle" data-target="submenu-guru" aria-expanded="{{ (request()->is('jurnal-guru*') || request()->is('atur-jam*') || request()->is('jadwal-mengajar*')) ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -141,9 +141,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      E - ADMIN GURU
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('generator-soal*') ? 'active' : '' }}" id="group-admin-guru">
                     <button class="nav-group-toggle" data-target="submenu-admin-guru" aria-expanded="{{ request()->is('generator-soal*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -160,9 +160,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU LMS (Learning Management System)
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('lms*') ? 'active' : '' }}" id="group-lms">
                     <button class="nav-group-toggle" data-target="submenu-lms" aria-expanded="{{ request()->is('lms*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -178,9 +178,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU GURU KELAS
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('guru-kelas*') ? 'active' : '' }}" id="group-guru-kelas">
                     <button class="nav-group-toggle" data-target="submenu-guru-kelas" aria-expanded="{{ request()->is('guru-kelas*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -195,9 +195,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU BK
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('bk*') ? 'active' : '' }}" id="group-bk">
                     <button class="nav-group-toggle" data-target="submenu-bk" aria-expanded="{{ request()->is('bk*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -222,9 +222,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU UKS
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('uks*') ? 'active' : '' }}" id="group-uks">
                     <button class="nav-group-toggle" data-target="submenu-uks" aria-expanded="{{ request()->is('uks*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -243,9 +243,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU ISMUBA
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('ismuba*') ? 'active' : '' }}" id="group-ismuba">
                     <button class="nav-group-toggle" data-target="submenu-ismuba" aria-expanded="{{ request()->is('ismuba*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -264,9 +264,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU PKL
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('pkl*') ? 'active' : '' }}" id="group-pkl">
                     <button class="nav-group-toggle" data-target="submenu-pkl" aria-expanded="{{ request()->is('pkl*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -285,12 +285,13 @@
                         <li><a href="{{ route('pkl.persuratan.index') }}" class="nav-sub-link {{ request()->routeIs('pkl.persuratan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Persuratan</a></li>
                         <li><a href="{{ route('pkl.pembimbing.index') }}" class="nav-sub-link {{ request()->routeIs('pkl.pembimbing.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Pembimbing PKL</a></li>
                         <li><a href="{{ route('pkl.laporan.index') }}" class="nav-sub-link {{ request()->routeIs('pkl.laporan.*') ? 'active' : '' }}"><i class="fa-solid fa-chevron-right"></i> Laporan & Rekap</a></li>
+                        <li><a href="{{ route('pkl.download-data.index') }}" class="nav-sub-link {{ request()->routeIs('pkl.download-data.*') ? 'active' : '' }}"><i class="fa-solid fa-file-arrow-down"></i> Download Data</a></li>
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU WALI KELAS
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('wali-kelas*') ? 'active' : '' }}" id="group-wali-kelas">
                     <button class="nav-group-toggle" data-target="submenu-wali-kelas" aria-expanded="{{ request()->is('wali-kelas*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -304,9 +305,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      MENU PEMBAYARAN & VA BPD DIY
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
                 <li class="nav-group {{ request()->is('pembayaran*') ? 'active' : '' }}" id="group-pembayaran">
                     <button class="nav-group-toggle" data-target="submenu-pembayaran" aria-expanded="{{ request()->is('pembayaran*') ? 'true' : 'false' }}">
                         <span class="nav-group-left">
@@ -324,9 +325,9 @@
                     </ul>
                 </li>
 
-                {{-- ══════════════════════════════════════
+                {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
                      ATUR USER
-                ═══════════════════════════════════════ --}}
+                â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 
                 <li>
                     <a href="{{ route('atur-data.user') }}"
@@ -355,7 +356,7 @@
     {{-- Sidebar overlay for mobile --}}
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    {{-- ══════════════════════ MAIN CONTENT ══════════════════════ --}}
+    {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MAIN CONTENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-title" style="display:flex;align-items:center;gap:12px;">
@@ -452,7 +453,7 @@ function confirmDelete(url, message) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // ── Accordion ──
+    // â”€â”€ Accordion â”€â”€
     const toggles = document.querySelectorAll('.nav-group-toggle');
     toggles.forEach(function (btn) {
         const targetId = btn.getAttribute('data-target');
@@ -482,14 +483,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Close modal on overlay click ──
+    // â”€â”€ Close modal on overlay click â”€â”€
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', function(e) {
             if (e.target === this) closeModal(this.id);
         });
     });
 
-    // ── Close modal on Escape ──
+    // â”€â”€ Close modal on Escape â”€â”€
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal-overlay.active').forEach(m => closeModal(m.id));
@@ -497,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// ── Global Modal Functions ──
+// â”€â”€ Global Modal Functions â”€â”€
 function openModal(id) {
     const el = document.getElementById(id);
     if (el) { el.classList.add('active'); document.body.style.overflow = 'hidden'; }
@@ -511,7 +512,7 @@ function closeModal(id) {
     }
 }
 
-// ── Global Loading Functions ──
+// â”€â”€ Global Loading Functions â”€â”€
 function showLoading(title = 'Memproses Data', desc = 'Harap tunggu, proses ini mungkin memakan waktu beberapa saat...') {
     const elTitle = document.getElementById('loading-title');
     const elDesc = document.getElementById('loading-desc');
@@ -523,7 +524,7 @@ function hideLoading() {
     closeModal('loading-overlay');
 }
 
-// ── Responsive Sidebar Toggle ──
+// â”€â”€ Responsive Sidebar Toggle â”€â”€
 (function() {
     const sidebar      = document.getElementById('sidebar');
     const overlay      = document.getElementById('sidebar-overlay');
@@ -710,3 +711,5 @@ function applyCrop() {
 
 </body>
 </html>
+
+

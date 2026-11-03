@@ -410,6 +410,7 @@ Route::middleware('auth')->group(function () {
         Route::post('penempatan/quick-place', [\App\Http\Controllers\Pkl\PenempatanController::class, 'quickPlace'])->name('penempatan.quick-place');
         Route::get('penempatan/dudi-by-jurusan', [\App\Http\Controllers\Pkl\PenempatanController::class, 'getDudiByJurusan'])->name('penempatan.dudi-by-jurusan');
         Route::get('penempatan', [\App\Http\Controllers\Pkl\PenempatanController::class, 'index'])->name('penempatan.index');
+        Route::post('penempatan/update-pembimbing', [\App\Http\Controllers\Pkl\PenempatanController::class, 'updatePembimbing'])->name('penempatan.update-pembimbing');
         Route::post('penempatan', [\App\Http\Controllers\Pkl\PenempatanController::class, 'store'])->name('penempatan.store');
         Route::put('penempatan/{id}', [\App\Http\Controllers\Pkl\PenempatanController::class, 'update'])->name('penempatan.update');
         Route::delete('penempatan/{id}', [\App\Http\Controllers\Pkl\PenempatanController::class, 'destroy'])->name('penempatan.destroy');
@@ -439,6 +440,10 @@ Route::middleware('auth')->group(function () {
         // Laporan & Rekap Data PKL
         Route::get('laporan', [\App\Http\Controllers\Pkl\LaporanPklController::class, 'index'])->name('laporan.index');
         Route::get('laporan/print', [\App\Http\Controllers\Pkl\LaporanPklController::class, 'print'])->name('laporan.print');
+
+        // Download Data PKL (Excel)
+        Route::get('download-data', [\App\Http\Controllers\Pkl\DownloadDataPklController::class, 'index'])->name('download-data.index');
+        Route::post('download-data/download', [\App\Http\Controllers\Pkl\DownloadDataPklController::class, 'download'])->name('download-data.download');
     });
 
     // ─── Generator Soal LLM ──────────────────────────────────────────────────

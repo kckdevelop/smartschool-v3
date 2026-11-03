@@ -11,6 +11,7 @@ use App\Models\PklKelasGelombang;
 use App\Models\UserSiswa;
 use App\Models\Kelas;
 use App\Models\Jurusan;
+use App\Models\Guru;
 use Illuminate\Http\Request;
 
 class PenempatanController extends Controller
@@ -27,8 +28,14 @@ class PenempatanController extends Controller
 
         $idGelombang = optional($selectedGelombang)->id_gelombang;
 
-        // Ambil SEMUA DUDI aktif (dengan relasi jurusan)
-        $dudiQuery = PklDudi::with('jurusan')->where('status', 'aktif');
+        // Ambil SEMUA DUDI aktif (dengan relasi jurusan & pembimbing sesuai gelombang)
+        $dudiQuery = PklDudi::with([
+            'jurusan',
+            'pembimbing' => function($q) use ($idGelombang) {
+                $q->where('id_gelombang', $idGelombang)->with('guru');
+            }
+        ])->where('status', 'aktif');
+
         if ($request->filled('search_dudi')) {
             $search = $request->search_dudi;
             $dudiQuery->where(function($q) use ($search) {
@@ -57,12 +64,15 @@ class PenempatanController extends Controller
 
             $terpakai = $penempatanList->whereIn('status', ['aktif', 'selesai'])->count();
             $sisaKuota = max(0, $dudi->kuota_siswa - $terpakai);
+            $pembimbingRecord = $dudi->pembimbing->first();
 
             return (object)[
                 'dudi'           => $dudi,
                 'penempatanList' => $penempatanList,
                 'terpakai'       => $terpakai,
                 'sisa_kuota'     => $sisaKuota,
+                'pembimbing'     => $pembimbingRecord,
+                'guru'           => $pembimbingRecord?->guru,
             ];
         });
 
@@ -114,9 +124,21 @@ class PenempatanController extends Controller
 
         $jurusanList = Jurusan::orderBy('nama_jurusan')->get();
 
+        // Daftar semua guru aktif untuk modal pemilih pembimbing cepat
+        $allGuru = Guru::where('status', 'aktif')->orderBy('nama_guru')->get(['id_guru', 'nama_guru', 'no_id', 'no_hp']);
+
+        // Hitung beban bimbingan DUDI tiap guru pada gelombang ini
+        $guruDudiCount = PklPembimbing::where('id_gelombang', $idGelombang)
+            ->whereNotNull('id_guru')
+            ->selectRaw('id_guru, count(*) as total')
+            ->groupBy('id_guru')
+            ->pluck('total', 'id_guru')
+            ->toArray();
+
         return view('pkl.penempatan.index', compact(
             'data', 'gelombangList', 'selectedGelombang', 'gelombangAktif',
-            'allDudis', 'dudisWithPenempatan', 'groupedDudis', 'pembimbingList', 'jurusanList'
+            'allDudis', 'dudisWithPenempatan', 'groupedDudis', 'pembimbingList', 'jurusanList',
+            'allGuru', 'guruDudiCount'
         ));
     }
 
@@ -150,6 +172,11 @@ class PenempatanController extends Controller
             return back()->with('error', 'Silakan pilih atau isi setidaknya 1 siswa.');
         }
 
+        $dudiPembimbing = PklPembimbing::where('id_gelombang', $idGelombang)
+            ->where('id_dudi', $idDudi)
+            ->first();
+        $idPembimbingToAssign = $request->id_pembimbing ?: ($dudiPembimbing?->id_pembimbing);
+
         $insertedCount = 0;
         $skippedCount = 0;
 
@@ -174,7 +201,7 @@ class PenempatanController extends Controller
                 'id_gelombang'   => $idGelombang,
                 'id_dudi'        => $idDudi,
                 'nis'            => $nisItem,
-                'id_pembimbing'  => $request->id_pembimbing,
+                'id_pembimbing'  => $idPembimbingToAssign,
                 'tanggal_masuk'  => $request->tanggal_masuk,
                 'tanggal_keluar' => $request->tanggal_keluar,
                 'status'         => $request->status ?? 'aktif',
@@ -213,6 +240,77 @@ class PenempatanController extends Controller
 
         return redirect()->route('pkl.penempatan.index', ['id_gelombang' => $penempatan->id_gelombang])
             ->with('success', 'Data penempatan berhasil diperbarui.');
+    }
+
+    public function updatePembimbing(Request $request)
+    {
+        $request->validate([
+            'id_gelombang' => 'required|integer',
+            'id_dudi'      => 'required|integer',
+            'id_guru'      => 'nullable|integer',
+        ]);
+
+        $idGelombang = $request->id_gelombang;
+        $idDudi      = $request->id_dudi;
+        $idGuru      = $request->id_guru;
+
+        $dudi = PklDudi::findOrFail($idDudi);
+
+        $pembimbing = PklPembimbing::where('id_gelombang', $idGelombang)
+            ->where('id_dudi', $idDudi)
+            ->first();
+
+        if (empty($idGuru)) {
+            if ($pembimbing) {
+                // Update related penempatan records to null pembimbing
+                PklPenempatan::where('id_gelombang', $idGelombang)
+                    ->where('id_dudi', $idDudi)
+                    ->where('id_pembimbing', $pembimbing->id_pembimbing)
+                    ->update(['id_pembimbing' => null]);
+
+                $pembimbing->delete();
+            }
+
+            $message = "Pembimbing sekolah untuk {$dudi->nama_dudi} berhasil dikosongkan.";
+            $guruData = null;
+        } else {
+            $guru = Guru::findOrFail($idGuru);
+
+            if ($pembimbing) {
+                $pembimbing->update(['id_guru' => $idGuru]);
+            } else {
+                $pembimbing = PklPembimbing::create([
+                    'id_gelombang' => $idGelombang,
+                    'id_dudi'      => $idDudi,
+                    'id_guru'      => $idGuru,
+                ]);
+            }
+
+            // Sinkronkan semua siswa penempatan di DUDI ini pada gelombang ini
+            PklPenempatan::where('id_gelombang', $idGelombang)
+                ->where('id_dudi', $idDudi)
+                ->update(['id_pembimbing' => $pembimbing->id_pembimbing]);
+
+            $message = "Pembimbing sekolah untuk {$dudi->nama_dudi} berhasil diatur ke {$guru->nama_guru}.";
+            $guruData = [
+                'id_guru'   => $guru->id_guru,
+                'nama_guru' => $guru->nama_guru,
+            ];
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success'       => true,
+                'message'       => $message,
+                'id_dudi'       => $idDudi,
+                'id_guru'       => $idGuru,
+                'id_pembimbing' => $pembimbing?->id_pembimbing,
+                'guru'          => $guruData,
+            ]);
+        }
+
+        return redirect()->route('pkl.penempatan.index', ['id_gelombang' => $idGelombang])
+            ->with('success', $message);
     }
 
     public function destroy(int $id)
