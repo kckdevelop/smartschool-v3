@@ -279,6 +279,17 @@ class PersuratanController extends Controller
                 ->where('id_dudi', $surat->id_dudi)
                 ->first();
 
+            if (!$pembimbing) {
+                $penempatanWithPb = PklPenempatan::with('pembimbing.guru')
+                    ->where('id_gelombang', $idGelombang)
+                    ->where('id_dudi', $surat->id_dudi)
+                    ->whereNotNull('id_pembimbing')
+                    ->first();
+                if ($penempatanWithPb) {
+                    $pembimbing = $penempatanWithPb->pembimbing;
+                }
+            }
+
             $dataCetak[] = [
                 'surat'      => $surat,
                 'penempatan' => $penempatan,
@@ -324,6 +335,17 @@ class PersuratanController extends Controller
             ->where('id_gelombang', $surat->id_gelombang)
             ->where('id_dudi', $surat->id_dudi)
             ->first();
+
+        if (!$pembimbing) {
+            $penempatanWithPb = PklPenempatan::with('pembimbing.guru')
+                ->where('id_gelombang', $surat->id_gelombang)
+                ->where('id_dudi', $surat->id_dudi)
+                ->whereNotNull('id_pembimbing')
+                ->first();
+            if ($penempatanWithPb) {
+                $pembimbing = $penempatanWithPb->pembimbing;
+            }
+        }
 
         $view = match($surat->jenis_surat) {
             'permohonan' => 'pkl.persuratan.cetak-permohonan',

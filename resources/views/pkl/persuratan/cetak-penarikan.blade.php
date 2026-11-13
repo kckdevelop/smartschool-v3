@@ -397,7 +397,7 @@
         <tr>
             <td>Pembimbing</td>
             <td>:</td>
-            <td></td>
+            <td><strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong>{{ !empty($pembimbing?->guru?->no_hp) ? ' (No. HP: ' . $pembimbing->guru->no_hp . ')' : '' }}</td>
         </tr>
     </table>
 

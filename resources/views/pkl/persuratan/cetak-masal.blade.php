@@ -318,7 +318,7 @@
                 Sesuai dengan kesepakatan tentang kesediaan menerima peserta Praktik Kerja Lapangan (PKL) dari {{ $sekolah->nama_sekolah ?? 'SMK Muhammadiyah 1 Bantul' }}, maka kepada perusahaan / bengkel ini, kami menerjunkan / mengirimkan siswa peserta Praktik Kerja Lapangan - PKL, seperti yang tercantum pada lampiran.
             </p>
             <p class="isi-p">
-                Selanjutnya kami mohon bantuannya agar pihak perusahaan/ bengkel berkenan memberikan bimbingan langsung dan memberikan penilaian hasil praktik terhadap siswa kami yang melaksanakan Praktik Kerja Lapangan, bersama dengan Pembimbing dari Sekolah.
+                Selanjutnya kami mohon bantuannya agar pihak perusahaan/ bengkel berkenan memberikan bimbingan langsung dan memberikan penilaian hasil praktik terhadap siswa kami yang melaksanakan Praktik Kerja Lapangan, bersama dengan Pembimbing dari Sekolah{{ !empty($pembimbing?->guru?->nama_guru) ? ' (' . $pembimbing->guru->nama_guru . ')' : '' }}.
             </p>
             <p class="isi-p">
                 Demikian surat ini dibuat, atas perhatian dan kerjasamanya kami sampaikan terima kasih yang sebesar-besarnya.
@@ -422,7 +422,7 @@
             <tr>
                 <td>Nama Pembimbing</td>
                 <td>:</td>
-                <td></td>
+                <td><strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong>{{ !empty($pembimbing?->guru?->no_hp) ? ' (No. HP: ' . $pembimbing->guru->no_hp . ')' : '' }}</td>
             </tr>
             <tr>
                 <td>Waktu PKL</td>
@@ -674,7 +674,7 @@
             <tr>
                 <td>Pembimbing</td>
                 <td>:</td>
-                <td></td>
+                <td><strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong>{{ !empty($pembimbing?->guru?->no_hp) ? ' (No. HP: ' . $pembimbing->guru->no_hp . ')' : '' }}</td>
             </tr>
         </table>
 
