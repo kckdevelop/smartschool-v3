@@ -13,14 +13,22 @@ return new class extends Migration
     {
         // Tambah kecamatan & kabupaten ke tabel guru
         Schema::table('guru', function (Blueprint $table) {
-            $table->string('kecamatan', 100)->nullable()->after('no_hp');
-            $table->string('kabupaten', 100)->nullable()->after('kecamatan');
+            if (!Schema::hasColumn('guru', 'kecamatan')) {
+                $table->string('kecamatan', 100)->nullable()->after('no_hp');
+            }
+            if (!Schema::hasColumn('guru', 'kabupaten')) {
+                $table->string('kabupaten', 100)->nullable()->after('kecamatan');
+            }
         });
 
         // Tambah kecamatan & kabupaten ke tabel pkl_dudi
         Schema::table('pkl_dudi', function (Blueprint $table) {
-            $table->string('kecamatan', 100)->nullable()->after('kota');
-            $table->string('kabupaten', 100)->nullable()->after('kecamatan');
+            if (!Schema::hasColumn('pkl_dudi', 'kecamatan')) {
+                $table->string('kecamatan', 100)->nullable()->after('kota');
+            }
+            if (!Schema::hasColumn('pkl_dudi', 'kabupaten')) {
+                $table->string('kabupaten', 100)->nullable()->after('kecamatan');
+            }
         });
     }
 

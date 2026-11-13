@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pkl_dudi', function (Blueprint $table) {
-            $table->integer('id_jurusan')->nullable()->after('id_dudi');
-            $table->foreign('id_jurusan')->references('id_jurusan')->on('jurusan')->onDelete('set null');
+            if (!Schema::hasColumn('pkl_dudi', 'id_jurusan')) {
+                $table->integer('id_jurusan')->nullable()->after('id_dudi');
+                $table->foreign('id_jurusan')->references('id_jurusan')->on('jurusan')->onDelete('set null');
+            }
         });
     }
 
