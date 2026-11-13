@@ -304,11 +304,11 @@
             Agar sekolah mendapatkan data dari Perusahaan atau Industri yang berkenan menerima peserta praktik, mohon agar pihak Perusahaan/Industri mengisi Surat Kesediaan menerima peserta praktik rangkap 2 seperti terlampir.
         </p>
         <p class="isi-p">
-            Selanjutnya kami mohon agar dari pihak perusahaan juga dapat memberikan bimbingan langsung dan memberikan penilaian hasil praktik industri terhadap para siswa kami yang melaksanakan PKL, bersama dengan Guru Pembimbing dari sekolah{{ !empty($pembimbing?->guru?->nama_guru) ? ' (' . $pembimbing->guru->nama_guru . ')' : '' }}.
+            Selanjutnya kami mohon agar dari pihak perusahaan juga dapat memberikan bimbingan langsung dan memberikan penilaian hasil praktik industri terhadap para siswa kami yang melaksanakan PKL, bersama dengan Guru Pembimbing Sekolah{{ !empty($pembimbing?->guru?->nama_guru) ? ' (' . $pembimbing->guru->nama_guru . ')' : '' }}.
         </p>
         @if(!empty($pembimbing?->guru?->nama_guru))
         <p class="isi-p">
-            Sebagai narahubung dan guru pembimbing dari sekolah selama pelaksanaan PKL, pihak sekolah menugaskan Bapak/Ibu <strong>{{ $pembimbing->guru->nama_guru }}</strong>{{ !empty($pembimbing->guru->no_hp) ? ' (No. HP/WA: ' . $pembimbing->guru->no_hp . ')' : '' }}.
+            Sebagai narahubung dan guru pembimbing sekolah selama pelaksanaan PKL, pihak sekolah menugaskan Bapak/Ibu <strong>{{ $pembimbing->guru->nama_guru }}</strong>{{ !empty($pembimbing->guru->no_hp) ? ' (No. HP/WA: ' . $pembimbing->guru->no_hp . ')' : '' }}.
         </p>
         @endif
         <p class="isi-p" style="text-indent: 50px;">
@@ -412,8 +412,8 @@
             <td>{{ \Carbon\Carbon::parse($surat->tanggal_surat)->translatedFormat('d F Y') }}</td>
         </tr>
         <tr>
-            <td>Guru Pembimbing</td>
-            <td>:</td>
+            <td style="width:170px;">Guru Pembimbing Sekolah</td>
+            <td style="width:15px;">:</td>
             <td><strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong>{{ !empty($pembimbing?->guru?->no_hp) ? ' (No. HP: ' . $pembimbing->guru->no_hp . ')' : '' }}</td>
         </tr>
     </table>
@@ -469,7 +469,7 @@
 
     <div style="font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
         <div>Jumlah siswa : {{ count($penempatan) }} Siswa</div>
-        <div>Guru Pembimbing : <strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong></div>
+        <div>Guru Pembimbing Sekolah : <strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong></div>
     </div>
 
     {{-- Tabel Daftar Siswa Kesediaan --}}

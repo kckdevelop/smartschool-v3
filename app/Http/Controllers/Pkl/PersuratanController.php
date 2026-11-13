@@ -284,8 +284,27 @@ class PersuratanController extends Controller
                     ->where('id_gelombang', $idGelombang)
                     ->where('id_dudi', $surat->id_dudi)
                     ->whereNotNull('id_pembimbing')
+                    ->latest('id_penempatan')
                     ->first();
-                if ($penempatanWithPb) {
+                if ($penempatanWithPb && $penempatanWithPb->pembimbing) {
+                    $pembimbing = $penempatanWithPb->pembimbing;
+                }
+            }
+
+            if (!$pembimbing) {
+                $pembimbing = PklPembimbing::with('guru')
+                    ->where('id_dudi', $surat->id_dudi)
+                    ->latest('id_pembimbing')
+                    ->first();
+            }
+
+            if (!$pembimbing) {
+                $penempatanWithPb = PklPenempatan::with('pembimbing.guru')
+                    ->where('id_dudi', $surat->id_dudi)
+                    ->whereNotNull('id_pembimbing')
+                    ->latest('id_penempatan')
+                    ->first();
+                if ($penempatanWithPb && $penempatanWithPb->pembimbing) {
                     $pembimbing = $penempatanWithPb->pembimbing;
                 }
             }
@@ -341,8 +360,41 @@ class PersuratanController extends Controller
                 ->where('id_gelombang', $surat->id_gelombang)
                 ->where('id_dudi', $surat->id_dudi)
                 ->whereNotNull('id_pembimbing')
+                ->latest('id_penempatan')
                 ->first();
-            if ($penempatanWithPb) {
+            if ($penempatanWithPb && $penempatanWithPb->pembimbing) {
+                $pembimbing = $penempatanWithPb->pembimbing;
+            }
+        }
+
+        if (!$pembimbing && !empty($surat->daftar_siswa) && is_array($surat->daftar_siswa)) {
+            $nisList = collect($surat->daftar_siswa)->pluck('nis')->filter()->all();
+            if (!empty($nisList)) {
+                $penempatanWithPb = PklPenempatan::with('pembimbing.guru')
+                    ->whereIn('nis', $nisList)
+                    ->whereNotNull('id_pembimbing')
+                    ->latest('id_penempatan')
+                    ->first();
+                if ($penempatanWithPb && $penempatanWithPb->pembimbing) {
+                    $pembimbing = $penempatanWithPb->pembimbing;
+                }
+            }
+        }
+
+        if (!$pembimbing) {
+            $pembimbing = PklPembimbing::with('guru')
+                ->where('id_dudi', $surat->id_dudi)
+                ->latest('id_pembimbing')
+                ->first();
+        }
+
+        if (!$pembimbing) {
+            $penempatanWithPb = PklPenempatan::with('pembimbing.guru')
+                ->where('id_dudi', $surat->id_dudi)
+                ->whereNotNull('id_pembimbing')
+                ->latest('id_penempatan')
+                ->first();
+            if ($penempatanWithPb && $penempatanWithPb->pembimbing) {
                 $pembimbing = $penempatanWithPb->pembimbing;
             }
         }

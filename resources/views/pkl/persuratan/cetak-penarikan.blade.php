@@ -395,8 +395,8 @@
             <td>{{ trim(($surat->dudi?->alamat ?? '') . ' ' . ($surat->dudi?->kota ?? '')) }}</td>
         </tr>
         <tr>
-            <td>Pembimbing</td>
-            <td>:</td>
+            <td style="width: 190px;">Pembimbing Sekolah</td>
+            <td style="width: 15px;">:</td>
             <td><strong>{{ $pembimbing?->guru?->nama_guru ?? '-' }}</strong>{{ !empty($pembimbing?->guru?->no_hp) ? ' (No. HP: ' . $pembimbing->guru->no_hp . ')' : '' }}</td>
         </tr>
     </table>
